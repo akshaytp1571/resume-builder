@@ -1,0 +1,41 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Job discovery agent harness
+.scraper-profile
+api-test.json
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Apply agent test artifacts
+apply-*.png
+ui-*.png
+
+# Deployment build artifacts
+*.zip
+DEPLOY.txt
+
+# Local env
+.env
+.env.local
+.env.*.local

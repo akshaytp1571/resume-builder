@@ -1,0 +1,184 @@
+@import "tailwindcss";
+
+:root {
+  --flora-wine-deep: #140715;
+  --flora-wine: #200d23;
+  --flora-plum: #2e1233;
+  --flora-plum-card: rgba(38, 17, 42, 0.75);
+  --flora-peony: #e11d48;
+  --flora-rose: #f43f5e;
+  --flora-blush: #fb7185;
+  --flora-petal: #fce7f3;
+  --flora-sage: #10b981;
+  --flora-leaf: #059669;
+  --flora-mint: #34d399;
+  --flora-amber: #f59e0b;
+  --flora-gold: #fbbf24;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #160718;
+  color: #fdf2f8;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  overflow-x: hidden;
+  /* Authentic Layered Canvas Background from user's uploaded painting */
+  background-image: 
+    linear-gradient(135deg, rgba(20, 6, 23, 0.78) 0%, rgba(35, 11, 39, 0.65) 50%, rgba(18, 5, 21, 0.82) 100%),
+    url('/canvas-thread-texture.png'),
+    url('/canvas-bg-widescreen.jpg');
+  background-size: cover, 130px 130px, cover;
+  background-position: center, 0 0, center right;
+  background-attachment: fixed;
+  background-repeat: no-repeat, repeat, no-repeat;
+}
+
+/* Custom Botanical Velvet scrollbar */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: #19081c;
+  border-left: 1px solid rgba(244, 63, 94, 0.1);
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #f43f5e 0%, #be123c 60%, #701a75 100%);
+  border-radius: 9999px;
+  box-shadow: 0 0 10px rgba(244, 63, 94, 0.35);
+}
+
+/* Botanical Canvas Textured Cards & Panels */
+.flora-panel {
+  background-color: rgba(30, 9, 34, 0.82);
+  background-image: url('/canvas-thread-texture.png');
+  background-size: 130px 130px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(244, 114, 182, 0.22);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.flora-panel-active {
+  background-color: rgba(45, 15, 52, 0.92);
+  background-image: url('/canvas-thread-texture.png');
+  background-size: 130px 130px;
+  border: 1px solid rgba(251, 113, 133, 0.55);
+  box-shadow: 0 16px 45px rgba(225, 29, 72, 0.25), inset 0 0 15px rgba(244, 63, 94, 0.1);
+}
+
+.canvas-card {
+  background-color: rgba(28, 8, 32, 0.85);
+  background-image: url('/canvas-thread-texture.png');
+  background-size: 120px 120px;
+  border: 1px solid rgba(244, 114, 182, 0.2);
+  border-radius: 0.85rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+/* Soft Floral Glows */
+.glow-rose {
+  text-shadow: 0 0 12px rgba(251, 113, 133, 0.6), 0 0 24px rgba(225, 29, 72, 0.3);
+}
+
+.glow-sage {
+  text-shadow: 0 0 12px rgba(52, 211, 153, 0.6), 0 0 24px rgba(16, 185, 129, 0.3);
+}
+
+.box-glow-rose {
+  box-shadow: 0 0 20px rgba(244, 63, 94, 0.25);
+}
+
+/* Elegant Paper Container for Clean PDF / DOCX Output (Unchanged for Resume) */
+.resume-paper {
+  width: 210mm;
+  min-height: 297mm;
+  background: #ffffff;
+  color: #1e293b;
+  box-sizing: border-box;
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.5), 0 0 40px rgba(244, 63, 94, 0.08);
+  margin: 0 auto;
+  position: relative;
+  transition: all 0.2s ease-in-out;
+}
+
+@media print {
+  /* Remove browser headers and footers (date, time, URL, title, page numbers) */
+  @page {
+    size: A4 portrait;
+    margin: 0mm !important;
+  }
+
+  html, body {
+    background: #ffffff !important;
+    background-image: none !important;
+    color: #000000 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 100% !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Completely hide all UI elements, navigation, bars, sidebars, scanlines, and buttons */
+  .no-print,
+  header,
+  nav,
+  aside,
+  footer,
+  button {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* Reset main layout */
+  main {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #ffffff !important;
+  }
+
+  #resume-print-wrapper {
+    transform: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    display: block !important;
+    width: 100% !important;
+  }
+
+  .resume-paper {
+    width: 210mm !important;
+    min-height: 297mm !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: #ffffff !important;
+    transform: none !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Prevent page breaks from cutting section headings or lines awkwardly */
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  p, li, tr, blockquote {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+}
