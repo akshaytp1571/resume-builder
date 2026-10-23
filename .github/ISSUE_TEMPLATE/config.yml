@@ -1,0 +1,25 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🔒 Report a security vulnerability (privately)
+    url: https://github.com/akshaytp1571/resume-builder/security/advisories/new
+    about: |
+      Do not open a public issue for a security problem. Use GitHub's private
+      advisory flow so it can be fixed before it is disclosed. See SECURITY.md
+      for the threat model and scope.
+
+  - name: 📖 Read the documentation first
+    url: https://github.com/akshaytp1571/resume-builder#readme
+    about: |
+      Quick start, scripts, how the ATS score works, deployment, and how to add
+      a template. Most setup questions are answered there.
+
+  - name: 🏗️ How the code is put together
+    url: https://github.com/akshaytp1571/resume-builder/blob/main/docs/ARCHITECTURE.md
+    about: |
+      Data model, the trust boundary, the hooks, the export paths and the test
+      strategy. Read this before proposing a structural change.
+
+  - name: 🤝 Contributing
+    url: https://github.com/akshaytp1571/resume-builder/blob/main/CONTRIBUTING.md
+    about: |
+      The four-suite gate, the conventions, and how to add a template.

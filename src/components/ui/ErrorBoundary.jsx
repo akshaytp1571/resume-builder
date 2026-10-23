@@ -5,6 +5,11 @@ import { AlertTriangle, RefreshCw, Download, ShieldAlert } from 'lucide-react';
 // component has to keep working when that module (or its data) is the thing
 // that broke, so it must not import anything from it.
 const STORE_KEY = 'precision_resume_store_v2';
+/**
+ * Prefix of the quarantined copies resumeStore keeps when the main value will
+ * not parse. Duplicated for the same reason as STORE_KEY above.
+ */
+const RECOVERY_PREFIX = `${STORE_KEY}__recovery_`;
 
 const FOCUS_RING =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#18071c]';
@@ -33,36 +38,124 @@ export default class ErrorBoundary extends React.Component {
     window.location.reload();
   };
 
-  handleDownload = () => {
-    let raw = null;
+  /**
+   * Everything worth rescuing. Returns null when storage itself is blocked.
+   *
+   * The main key alone is not enough. When resumeStore cannot parse the store
+   * it moves the unreadable value to a `__recovery_` key and the next save
+   * writes a fresh, near-empty store over the main one. Rescuing only the main
+   * key in that state hands the user a blank resume and quietly loses the real
+   * one — the exact failure this button exists to prevent.
+   *
+   * Only the resume store and its recovery copies are included. Job-board
+   * credentials and the AI key live under separate keys and are deliberately
+   * NOT part of this download: someone recovering from a crash wants their
+   * resume back, not a plaintext file with their passwords in it.
+   */
+  collectRescuePayload() {
+    let storage = null;
     try {
-      raw = window.localStorage.getItem(STORE_KEY);
+      storage = window.localStorage;
+      // Touch length so disabled storage throws here, not mid-loop.
+      void storage.length;
     } catch (e) {
-      // Private mode / disabled storage throws on access rather than returning null.
+      // Private mode / disabled storage throws on access.
       console.error('localStorage unavailable while rescuing data:', e);
+      return null;
     }
 
-    if (raw == null) {
+    const read = (key) => {
+      try {
+        return storage.getItem(key);
+      } catch (e) {
+        return null;
+      }
+    };
+
+    const main = read(STORE_KEY);
+
+    const recovery = [];
+    try {
+      for (let i = 0; i < storage.length; i++) {
+        const key = storage.key(i);
+        if (key && key.startsWith(RECOVERY_PREFIX)) {
+          const raw = read(key);
+          if (raw != null) recovery.push({ key, raw });
+        }
+      }
+    } catch (e) {
+      // A storage that cannot be enumerated still leaves us the main key.
+    }
+    // Timestamps are the suffix, so a descending string sort is newest-first.
+    recovery.sort((a, b) => (a.key < b.key ? 1 : a.key > b.key ? -1 : 0));
+
+    return { main, recovery };
+  }
+
+  handleDownload = () => {
+    const collected = this.collectRescuePayload();
+
+    if (!collected) {
+      this.setState({
+        downloadNote: 'This browser is blocking storage access, so nothing can be read.',
+      });
+      return;
+    }
+
+    const { main, recovery } = collected;
+
+    // A lone recovery copy with no main store is still worth handing over: it
+    // is the only surviving copy of the user's data.
+    if (main == null && recovery.length === 0) {
       this.setState({
         downloadNote: 'No saved data found in this browser, so there is nothing to download.',
       });
       return;
     }
 
-    // Deliberately the RAW string, never JSON.parse'd: this button exists for
+    // Deliberately the RAW strings, never JSON.parse'd: this button exists for
     // the case where the store is malformed, and re-parsing would throw on
     // exactly the data we are trying to rescue.
-    const blob = new Blob([raw], { type: 'application/json' });
+    //
+    // One plain file when only the main store exists (unchanged behaviour); a
+    // bundle when quarantined copies exist, so nothing is left behind.
+    const isBundle = recovery.length > 0;
+    const body = isBundle
+      ? JSON.stringify(
+          {
+            exportedAt: new Date().toISOString(),
+            note:
+              'Crash rescue bundle. "store" is the main value; "recovery" holds ' +
+              'quarantined copies of a store that could not be parsed, newest first. ' +
+              'Values are raw strings and may be malformed.',
+            store: main,
+            recovery: recovery.map((entry) => ({ key: entry.key, raw: entry.raw })),
+          },
+          null,
+          2
+        )
+      : main;
+
+    const stamp = new Date().toISOString().slice(0, 10);
+    const blob = new Blob([body], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = `resume-data-rescue-${new Date().toISOString().slice(0, 10)}.json`;
+    anchor.download = isBundle
+      ? `resume-data-rescue-${stamp}.bundle.json`
+      : `resume-data-rescue-${stamp}.json`;
     document.body.appendChild(anchor);
     anchor.click();
     anchor.remove();
     URL.revokeObjectURL(url);
 
-    this.setState({ downloadNote: 'Saved your raw resume data to a .json file.' });
+    this.setState({
+      downloadNote: isBundle
+        ? `Saved your resume data plus ${recovery.length} quarantined ${
+            recovery.length === 1 ? 'copy' : 'copies'
+          } to a .json file.`
+        : 'Saved your raw resume data to a .json file.',
+    });
   };
 
   render() {

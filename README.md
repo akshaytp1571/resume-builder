@@ -11,7 +11,7 @@ Built with React 19, Vite 8 and Tailwind CSS 4.
 > terms of service, and you are responsible for how you use it.
 
 **v2.1** adds layout-aware ATS scoring and a cover letter builder. **v2.0** added
-a 597-test component suite, undo/redo, and photo upload guards. See
+a 783-test component suite, undo/redo, and photo upload guards. See
 [CHANGELOG.md](./CHANGELOG.md).
 
 ---
@@ -64,6 +64,8 @@ without looking sharper on GitHub.
   content spilling onto a second page
 - **Job-description matcher** — paste a posting and see weighted keyword
   coverage against your resume, offline, with no AI call
+- **Installable and offline** — a PWA with a service worker. Install it to your dock, and open it on a plane. Your resume never needed a server anyway
+- **Keyboard-first** — Ctrl/Cmd+Z to undo, Ctrl/Cmd+S to export DOCX, ? for the full list. Every shortcut is announced to screen readers via ria-keyshortcuts and documented in an in-app panel
 - **Theme customiser** — colours, fonts, density, single-page auto-fit
 - **Resume ingestion** — import a PDF, DOCX, JSON or TXT resume and auto-fill
   the form, using AI when configured and a rule-based parser otherwise
@@ -112,7 +114,7 @@ discover available models from the endpoint and test the connection.
 
 ## Quick start
 
-Requires **Node.js 18+**.
+Requires **Node.js 22.12+**. Vite 8 and Vitest 5 both refuse Node 18.
 
 ```bash
 git clone https://github.com/akshaytp1571/resume-builder.git
@@ -152,7 +154,7 @@ and AI buttons prompt you to configure a provider.
 |---|---|
 | `npm run dev` | Vite dev server on :5173 |
 | `npm run build` | Production build to `dist/` |
-| `npm run build:static` | Build + add `404.html`, `_headers`, SHA-256 manifest |
+| `npm run build:static` | Build + add `404.html`, `_headers`, the PWA manifest, icons and service worker, SHA-256 manifest |
 | `npm run package:zip` | Package `dist/` into an uploadable ZIP |
 | `npm run preview` | Serve the production build locally |
 | `npm test` | **The gate.** All four suites, chained with `&&` |
@@ -173,7 +175,7 @@ and AI buttons prompt you to configure a provider.
 | `test-fixes.cjs` | 87 | Source-level assertions across parsers, scorer, exporters, store, agent |
 | `test-integrity.mjs` | ~90 | Behavioural regressions: hostile data, corrupt store, quota, two-tab merge, stemming traps, contrast tokens |
 | `smoke-test.mjs` | ~15 | Imports the real modules and asserts runtime outcomes |
-| `vitest` | **597** | Mounts all 9 templates and all 8 modals against a hostile-data matrix; focus traps, Escape, accessible names, HTML-injection containment |
+| `vitest` | **783** | Mounts all 9 templates and all 8 modals against a hostile-data matrix; focus traps, Escape, accessible names, HTML-injection containment |
 
 The component suite exists because the first three cannot catch a render crash —
 they either grep source text or import plain modules. Every P0 found by the
@@ -332,7 +334,7 @@ Issues and pull requests are welcome.
 
 ```bash
 npm install
-npm test           # all four suites: 87 source checks + smoke + integrity + 597 component tests
+npm test           # all four suites: 87 source checks + smoke + integrity + 783 component tests
 npm run lint       # must report 0 errors
 ```
 
@@ -351,6 +353,25 @@ user filled in. `npm test` enforces that every configured template is declared.
 Please do not open issues asking for help evading bot detection on specific
 sites. Keep contributions focused on the app, the templates, the exporters and
 the agent's correctness and safety model.
+
+See **[CONTRIBUTING.md](./CONTRIBUTING.md)** for the four-suite gate, the
+conventions, and how to add a template. By participating you agree to the
+[Code of Conduct](./CODE_OF_CONDUCT.md).
+
+---
+
+## Security
+
+This app stores resumes, photos and optionally job-board credentials in your
+browser's `localStorage` — **in plaintext, not encrypted**. Read
+**[SECURITY.md](./SECURITY.md)** for the full threat model, what is stored, what
+the AI integration sends, and the limits of what the app can protect.
+
+Please report vulnerabilities **privately** via GitHub security advisories, not
+as a public issue.
+
+For how the code fits together — data model, trust boundary, hooks, export
+paths, test strategy — see **[docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)**.
 
 ---
 

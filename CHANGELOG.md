@@ -4,6 +4,89 @@ All notable changes to this project. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning is
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.0] - 2026-10-23
+
+Open-source hygiene, and a security audit that found a real hole.
+
+### Added
+- **`SECURITY.md`** — an honest threat model. It leads with the uncomfortable
+  truth: resume data and job board credentials live in plaintext `localStorage`,
+  are not encrypted, and are readable by any script on the origin or anyone with
+  the browser profile. Includes a full key inventory with sensitivity ratings and
+  an explicit "does not protect against" table.
+- **`docs/ARCHITECTURE.md`** — the data model, the trust boundary, the six hooks
+  and the ref handshake, the four-suite test strategy, the three export paths,
+  and where the AI boundary sits.
+- **`CONTRIBUTING.md`**, **`CODE_OF_CONDUCT.md`** (Contributor Covenant 2.1), and
+  GitHub issue/PR templates. The bug-report form warns against pasting real
+  resume data into a public issue.
+- **`SECURITY-FINDINGS.md`** — the audit report, with severities and an explicit
+  "accepted risks" section.
+
+### Fixed
+- **The job agent bound to every network interface.** `app.listen(PORT)` with no
+  host makes Node listen on `::` — the unauthenticated API, including
+  `/api/apply`, was reachable from any device on the same network. Verified: the
+  socket was `{"address":"::"}`. It now binds `127.0.0.1` explicitly, and a LAN
+  client is refused. CORS was also a bare `cors()` reflecting any origin; it is
+  now an allowlist of the app's own dev and preview origins.
+- **Crash rescue silently handed back a blank resume.** `ErrorBoundary` read only
+  the main store key. When `resumeStore` cannot parse the store it quarantines
+  the unreadable value to a `__recovery_<ts>` key and leaves the main key alone —
+  but the next save writes a fresh blank store over it. From then on the real
+  data exists *only* in the recovery key, and "Download my data" gave the user the
+  blank store while saying "Saved your raw resume data". Now collects the main key
+  plus all recovery copies.
+- **`maskSecret` revealed 4 of 5 characters** — `"abcde"` became `"ab••••••de"`.
+  Nothing is revealed below 12 characters now, and the masked length matches the
+  secret. It had no call sites, so this was a latent trap rather than a live leak.
+- **`VITE_AI_API_KEY` could be inlined into the public bundle with no warning.**
+  Vite inlines `VITE_`-prefixed vars into shipped JavaScript; a build-time key
+  ends up as plain text in `dist/assets/index-*.js`. Proved with a canary build.
+  `vite.config.js` now fails the build if the variable is set, unless
+  `ALLOW_INLINE_AI_KEY=1` is passed for a genuinely private build.
+
+### Documentation corrections found during the audit
+- **README claimed Node 18+.** Vite 8 requires `^20.19.0 || >=22.12.0` and Vitest
+  5 requires `^22.12.0` — `npm test`, the project's own gate, could not run on
+  Node 18. Now says 22.12+.
+- **README's test count was stale in three places** (597 → 783).
+- **This changelog had no v2.4.0 entry** despite `package.json` reading 2.4.0.
+
+## [2.4.0] - 2026-10-23
+
+Installable, offline-capable, and keyboard-complete.
+
+### Added
+- **PWA support.** A web app manifest with generated icons (a document glyph in
+  the app palette, produced by a reproducible script), and a service worker with
+  a deliberate caching strategy:
+  - HTML shell: **network-first with a cache fallback** — a deploy lands on the
+    next load, and an offline load still works
+  - `/assets/*`: **cache-first** — hashed filenames are immutable
+  - The job agent on `:3457` and all cross-origin requests are never cached; the
+    agent is dynamic and stale job results would be worse than none
+  - Versioned cache name (SHA-256 of the precache list), old caches deleted on
+    activate
+  - Registered behind `import.meta.env.PROD` only, so it never fights HMR
+  - A missing or broken worker degrades gracefully — the app still loads
+- **Keyboard shortcuts, announced and discoverable.** There were zero
+  `aria-keyshortcuts` in the codebase. Now: undo `Ctrl+Z`, redo `Ctrl+Shift+Z`,
+  export DOCX `Ctrl+S`, export PDF `Ctrl+Shift+S`, shortcut help `?`, with Mac
+  `⌘` equivalents.
+- **A shortcut help panel.** One `SHORTCUTS` array drives both the keydown
+  dispatcher and the panel, so the help can never document a key that does
+  nothing.
+
+### Notes
+- **Ctrl+P is deliberately not intercepted.** The browser owns it for print, and
+  the Print button already uses the browser's vector print path. Hijacking a
+  browser shortcut surprises users more than not having the shortcut at all.
+- Every shortcut respects the `isEditableTarget` guard: typing in a field is never
+  intercepted, and `Ctrl+Z` still performs native text undo.
+- No new dependency. `vite-plugin-pwa` and workbox are absent; the worker needs
+  only the file list and a version string, so a ~40-line inline plugin covers it.
+
 ## [2.3.0] - 2026-10-23
 
 Maintainability and accessibility. `App.jsx` split from 907 to 477 lines, a skip

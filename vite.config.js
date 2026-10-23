@@ -87,6 +87,34 @@ function serviceWorker({ source = 'src/sw.js', outFile = 'sw.js' } = {}) {
   }
 }
 
+/**
+ * Refuse to build a public bundle with an AI key baked in.
+ *
+ * VITE_ prefixed vars are INLINED into the shipped JavaScript, not looked up at
+ * runtime. A key set at build time therefore ends up as plain text in
+ * dist/assets/index-*.js, readable by anyone who loads the site. This was
+ * verified by building with a canary value and grepping the output.
+ *
+ * The app reads its key from localStorage instead (entered in the AI config
+ * modal), so a build-time key is only ever a mistake. Fail loudly rather than
+ * shipping it. Set ALLOW_INLINE_AI_KEY=1 to override for a private build.
+ */
+function forbidInlineAiKey() {
+  return {
+    name: 'forbid-inline-ai-key',
+    apply: 'build',
+    buildStart() {
+      const key = process.env.VITE_AI_API_KEY
+      if (key && process.env.ALLOW_INLINE_AI_KEY !== '1') {
+        throw new Error(
+          'VITE_AI_API_KEY is set and would be inlined into the public bundle.\n' +
+            'Remove it, or set ALLOW_INLINE_AI_KEY=1 if this build is genuinely private.'
+        )
+      }
+    },
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig({
   // The app ships as plain static files served from the domain root. Keep this
@@ -96,6 +124,7 @@ export default defineConfig({
     react(),
     tailwindcss(),
     serviceWorker(),
+    forbidInlineAiKey(),
   ],
   server: {
     port: 5173,

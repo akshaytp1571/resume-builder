@@ -39,12 +39,20 @@ export const CREDENTIAL_FIELDS = [
   },
 ];
 
-/** Fields that must never be rendered back to the screen in full. */
+/**
+ * Fields that must never be rendered back to the screen in full.
+ *
+ * Reveals at most the last 2 characters, and only for secrets long enough that
+ * 2 characters is not a meaningful fraction of the value. The previous version
+ * showed the first TWO and the last TWO, which for a 5-character password
+ * ("abcde" -> "ab••••••de") disclosed 4 of its 5 characters — worse than
+ * useless, since it looks redacted while leaking almost everything.
+ */
 export function maskSecret(value) {
   if (!value) return '';
   const str = String(value);
-  if (str.length <= 4) return '•'.repeat(str.length);
-  return `${str.slice(0, 2)}${'•'.repeat(Math.max(6, str.length - 4))}${str.slice(-2)}`;
+  if (str.length < 12) return '•'.repeat(str.length);
+  return `${'•'.repeat(str.length - 2)}${str.slice(-2)}`;
 }
 
 export function getSavedCredentials() {
