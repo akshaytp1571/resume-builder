@@ -14,6 +14,7 @@ import {
   Upload,
   Undo2,
   Redo2,
+  Briefcase,
 } from 'lucide-react';
 import { sound } from '../../utils/soundEffects';
 import { isAiConfigReady } from '../../utils/aiService';
@@ -30,6 +31,8 @@ export default function Navbar({
   onOpenAts,
   onOpenAiConfig,
   onOpenJobMatch,
+  onOpenApplications,
+  applicationCount = 0,
   aiConfig,
   atsScore,
   isExporting,
@@ -207,6 +210,33 @@ export default function Navbar({
           >
             <Target size={14} className="text-emerald-400" />
             <span className="hidden md:inline">JOB_MATCH</span>
+          </button>
+
+          {/* Applications Tracker Button */}
+          <button
+            type="button"
+            onClick={() => {
+              sound.playAction();
+              onOpenApplications?.();
+            }}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1e1430] border border-violet-500/40 hover:border-violet-400 text-violet-200 text-xs font-bold transition-all cursor-pointer shadow-xs relative ${FOCUS_RING}`}
+            title="Applications you have sent, and which resume each one used"
+            aria-label={
+              applicationCount > 0
+                ? `Open application tracker, ${applicationCount} application${applicationCount === 1 ? '' : 's'} recorded`
+                : 'Open application tracker'
+            }
+          >
+            <Briefcase size={14} className="text-violet-300" aria-hidden="true" />
+            <span className="hidden lg:inline">APPLICATIONS</span>
+            {applicationCount > 0 && (
+              <span
+                aria-hidden="true"
+                className="min-w-[16px] h-4 px-1 rounded-full bg-violet-500/90 text-white text-[9.5px] font-black flex items-center justify-center leading-none"
+              >
+                {applicationCount > 99 ? '99+' : applicationCount}
+              </span>
+            )}
           </button>
 
           {/* ATS Radar Capsule */}

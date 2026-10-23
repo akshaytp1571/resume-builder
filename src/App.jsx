@@ -10,6 +10,7 @@ import AiRefineModal from './components/ui/AiRefineModal';
 import JobMatchModal from './components/ui/JobMatchModal';
 import JobCredentialsModal from './components/ui/JobCredentialsModal';
 import ApplyModal from './components/ui/ApplyModal';
+import ApplicationTracker from './components/ui/ApplicationTracker';
 import ResumeUploadModal from './components/ui/ResumeUploadModal';
 import { INITIAL_RESUME_DATA, DEFAULT_THEME, TEMPLATES_CONFIG } from './data/initialData.js';
 import { exportToDocx, exportCoverLetterToDocx } from './utils/docxExporter.js';
@@ -34,6 +35,7 @@ import {
   hasRecoveryCopy,
   listRecoveryKeys,
 } from './utils/resumeStore.js';
+import { countApplications, loadApplications } from './utils/applicationTracker.js';
 import { CheckCircle2, AlertCircle, ShieldAlert, Download, X } from 'lucide-react';
 import { createHistory, isEditableTarget } from './utils/history.js';
 
@@ -487,6 +489,15 @@ export default function App() {
   const [isAiConfigOpen, setIsAiConfigOpen] = useState(false);
   const [isJobMatchOpen, setIsJobMatchOpen] = useState(false);
   const [isJobCredentialsOpen, setIsJobCredentialsOpen] = useState(false);
+  // Application tracker. The count is read from storage rather than derived from
+  // the variant store: applications outlive the resume that was sent, and
+  // ApplyModal writes to that key directly when the agent confirms a submission.
+  const [isTrackerOpen, setIsTrackerOpen] = useState(false);
+  const [applications, setApplications] = useState(() => loadApplications());
+  const [applicationCount, setApplicationCount] = useState(() => countApplications());
+  const refreshApplicationCount = useCallback(() => {
+    setApplicationCount(countApplications());
+  }, []);
   const [applyJob, setApplyJob] = useState(null);
   // Absolute path to the resume file the apply agent should attach.
   const [resumePath, setResumePathState] = useState(() => getResumePath());
@@ -644,6 +655,8 @@ export default function App() {
         onOpenAts={() => setIsAtsOpen(true)}
         onOpenAiConfig={() => setIsAiConfigOpen(true)}
         onOpenJobMatch={() => setIsJobMatchOpen(true)}
+        onOpenApplications={() => setIsTrackerOpen(true)}
+        applicationCount={applicationCount}
         aiConfig={aiConfig}
         atsScore={atsResult}
         isExporting={isExporting}
@@ -825,7 +838,21 @@ export default function App() {
         resumePath={resumePath}
         aiConfig={aiConfig}
         onSubmitted={() => {
+          // ApplyModal has already written the record; re-read the count so the
+          // Navbar badge reflects it without a reload.
+          refreshApplicationCount();
           setToast({ type: 'success', message: 'APPLICATION SUBMITTED!' });
+        }}
+      />
+
+      {/* Application Tracker */}
+      <ApplicationTracker
+        isOpen={isTrackerOpen}
+        onClose={() => setIsTrackerOpen(false)}
+        applications={applications}
+        onListChange={(next) => {
+          setApplications(next);
+          refreshApplicationCount();
         }}
       />
 

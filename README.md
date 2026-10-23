@@ -1,6 +1,6 @@
 # Precision Resume Studio
 
-A resume builder with a live ATS score, six templates, native DOCX/PDF export,
+A resume builder with a live ATS score, nine templates, native DOCX/PDF export,
 multi-provider AI writing assistance, and an optional Playwright agent that
 scrapes job boards and pre-fills application forms.
 
@@ -10,8 +10,9 @@ Built with React 19, Vite 8 and Tailwind CSS 4.
 > job-discovery agent.** It automates actions that job boards prohibit in their
 > terms of service, and you are responsible for how you use it.
 
-**v1.0** adds multiple resume variants, Projects and Custom Sections, and a full
-accessibility pass. See [CHANGELOG.md](./CHANGELOG.md).
+**v2.1** adds layout-aware ATS scoring and a cover letter builder. **v2.0** added
+a 597-test component suite, undo/redo, and photo upload guards. See
+[CHANGELOG.md](./CHANGELOG.md).
 
 ---
 
@@ -39,21 +40,35 @@ without looking sharper on GitHub.
 - **Multiple resume variants** — keep a named, job-targeted copy per application
   ("QA Lead - Dubai", "Automation Engineer"), switch between them instantly,
   duplicate one to tailor it, and export/import the whole set as JSON
-- **Six templates** — Executive Classic, Modern Two-Tone, Minimalist ATS Pro,
-  Emerald Horizon, Nordic Luxury, Grid Master (single-page dense)
+- **Nine templates** — Executive Classic, Modern Two-Tone, Minimalist ATS Pro,
+  Emerald Horizon, Nordic Luxury, Grid Master, Developer Console, Academic CV,
+  Startup One-Pager
+- **Undo / redo** — Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z, plus toolbar buttons. A
+  bounded 50-step history that coalesces typing pauses rather than every
+  keystroke, and deliberately does not fire while you are editing a field, so
+  the browser's native text undo keeps working
+- **Cover letter builder** — a matching letter per variant, with a draft
+  generator that writes from your own summary, skills and most recent role.
+  Exports to DOCX as a business letter, not a resume
 - **Projects & custom sections** — showcase side projects, publications,
   volunteering or anything else; rendered by every template
 - **Template capability warnings** — if switching templates would hide a section
   you filled in, the picker tells you before you switch
 - **Native DOCX export** — real `.docx` with an embedded photo (aspect ratio
   preserved), coloured headings and proper bullet lists
-- **PDF export and print** — captured at A4's true width so text stays sharp
-- **Live ATS score** — weighted scoring across contact info, summary length,
-  skill coverage, action verbs, quantified results, education and projects
+- **PDF export and print** — captured at A4's true width so text stays sharp,
+  or as true vector text via the browser's own print-to-PDF
+- **Live ATS score** — weighted across contact info, summary length, skill
+  coverage, action verbs, quantified results, education, projects, **and whether
+  the page actually fits**. A one-page resume scores higher than the same
+  content spilling onto a second page
+- **Job-description matcher** — paste a posting and see weighted keyword
+  coverage against your resume, offline, with no AI call
 - **Theme customiser** — colours, fonts, density, single-page auto-fit
-- **Resume ingestion** — import a DOCX/JSON/TXT resume and auto-fill the form,
-  using AI when configured and a rule-based parser otherwise
-- **Photo crop tool** — zoom, rotate, pan, with square/rounded/circle frames
+- **Resume ingestion** — import a PDF, DOCX, JSON or TXT resume and auto-fill
+  the form, using AI when configured and a rule-based parser otherwise
+- **Photo crop tool** — zoom, rotate, pan, with square/rounded/circle frames.
+  Uploads over 10 MB are rejected before decoding, with the real size shown
 
 ### Accessibility
 
@@ -140,13 +155,29 @@ and AI buttons prompt you to configure a provider.
 | `npm run build:static` | Build + add `404.html`, `_headers`, SHA-256 manifest |
 | `npm run package:zip` | Package `dist/` into an uploadable ZIP |
 | `npm run preview` | Serve the production build locally |
-| `npm test` | 87 source checks over parsers, scorer, exporters, store and agent logic |
+| `npm test` | **The gate.** All four suites, chained with `&&` |
+| `npm run test:unit` | Component tests only (Vitest + Testing Library) |
+| `npm run test:watch` | Component tests in watch mode |
+| `npm run test:coverage` | Component tests with a coverage summary |
 | `npm run test:smoke` | Import the real modules and assert runtime behaviour |
-| `npm run test:all` | Both suites |
+| `npm run test:integrity` | Data-integrity regressions (store, ATS, matcher) |
 | `npm run lint` | oxlint |
 | `npm run verify:deploy <url>` | Verify a deployed site is actually working |
 | `npm run jobs:api` | Start the job agent API on :3457 |
 | `npm run jobs:test` | Run the scrapers standalone against live sites |
+
+### What the tests actually cover
+
+| Suite | Count | What it catches |
+|---|---|---|
+| `test-fixes.cjs` | 87 | Source-level assertions across parsers, scorer, exporters, store, agent |
+| `test-integrity.mjs` | ~90 | Behavioural regressions: hostile data, corrupt store, quota, two-tab merge, stemming traps, contrast tokens |
+| `smoke-test.mjs` | ~15 | Imports the real modules and asserts runtime outcomes |
+| `vitest` | **597** | Mounts all 9 templates and all 8 modals against a hostile-data matrix; focus traps, Escape, accessible names, HTML-injection containment |
+
+The component suite exists because the first three cannot catch a render crash —
+they either grep source text or import plain modules. Every P0 found by the
+adversarial QA pass was a render crash or a data bug.
 
 ---
 
@@ -203,7 +234,7 @@ src/
 ├── components/
 │   ├── editor/              # Resume form panels
 │   ├── preview/             # Live preview + zoom + page-budget indicator
-│   ├── templates/           # The six templates, PhotoFrame, ExtraSections
+│   ├── templates/           # The nine templates, PhotoFrame, ExtraSections, templateData
 │   └── ui/                  # Modals, ModalShell, VariantSwitcher
 ├── data/
 │   ├── initialData.js       # Placeholder resume + default theme
@@ -222,16 +253,27 @@ ESM (`"type": "module"`).
 
 ## How the ATS score works
 
-The score is a weighted sum, capped at 100:
+The score is a weighted sum, capped at 100.
+
+**When the preview has measured the page** (the normal case in the app):
 
 | Category | Max | What it checks |
 |---|---|---|
 | Contact & header | 25 | Name, title, valid email, phone, location |
-| Professional summary | 15 | Word count in a recruiter-friendly band |
-| Skills & keywords | 15 | Category count, skill count, custom-section keywords |
-| Experience & impact | 25 | Action verbs and quantified results |
-| Education | 10 | Presence and completeness |
-| Projects & portfolio | 10 | Presence, action verbs, quantified results |
+| Professional summary | 12 | Word count in a recruiter-friendly band |
+| Skills & keywords | 12 | Category count, skill count, custom-section keywords |
+| Experience & impact | 22 | Action verbs (word-boundary matched) and quantified results |
+| Education | 8 | Presence and completeness |
+| Projects & portfolio | 8 | Presence, action verbs, quantified results |
+| Layout & fit | 13 | Does the content fit one page? A 200% spill loses 11 points |
+
+Layout gets the largest non-Contact allocation because a second page filters
+more candidates than a weak Education section. Fit is withheld entirely when
+there is almost no content, so a blank page cannot earn 13 points for "fitting".
+
+**When no layout is available** — a direct API call, a test, a server render —
+the legacy six-category table (`25/15/15/25/10/10`) is returned verbatim, so
+`calculateAtsScore(data)` behaves exactly as it did before v2.1.
 
 Each category reports its own status so the UI can show what to fix.
 
@@ -290,7 +332,7 @@ Issues and pull requests are welcome.
 
 ```bash
 npm install
-npm run test:all   # 87 source checks + runtime smoke test, all must pass
+npm test           # all four suites: 87 source checks + smoke + integrity + 597 component tests
 npm run lint       # must report 0 errors
 ```
 

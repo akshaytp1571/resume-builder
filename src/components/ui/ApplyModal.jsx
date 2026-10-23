@@ -19,6 +19,7 @@ import {
   isApplyAgentOnline,
 } from '../../utils/applyService';
 import { sound } from '../../utils/soundEffects';
+import { addApplication } from '../../utils/applicationTracker';
 import ModalShell from './ModalShell';
 
 export default function ApplyModal({
@@ -29,6 +30,9 @@ export default function ApplyModal({
   resumePath = '',
   aiConfig,
   onSubmitted,
+  activeVariantId = '',
+  activeVariantName = '',
+  onApplicationRecorded,
 }) {
   const [step, setStep] = useState('review'); // review | cover | prepare | result
   const [agentOnline, setAgentOnline] = useState(null);
@@ -107,8 +111,24 @@ export default function ApplyModal({
     setBusy(false);
     setResult(res);
     setConfirmSubmit(false);
-    if (res.submitted) {
+
+    // Record ONLY on the agent's own confirmation. `status: 'filled'` means the
+    // form was prepared but never sent, 'failed'/'refused' mean it did not go
+    // out, and an offline agent returns 'failed'. Recording any of those would
+    // fill the tracker with applications that never happened.
+    if (res.submitted === true || res.status === 'submitted') {
       sound.playSuccess();
+
+      const recorded = addApplication({
+        company: job.company || '',
+        title: job.title || '',
+        url: job.applyUrl || '',
+        status: 'applied',
+        variantId: activeVariantId || '',
+        variantName: activeVariantName || '',
+      });
+
+      onApplicationRecorded?.(recorded);
       onSubmitted?.(res);
     }
   };
