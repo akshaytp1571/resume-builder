@@ -90,6 +90,60 @@ body {
   box-shadow: 0 0 20px rgba(244, 63, 94, 0.25);
 }
 
+/* ---------------------------------------------------------------------------
+   Skip-to-content link.
+
+   Hidden from sight but still focusable and still in the tab order: the standard
+   technique is clipping to a 1px box rather than display:none, because
+   display:none removes the element from the accessibility tree and the tab
+   order entirely, which would defeat the purpose.
+
+   On focus it is positioned back on screen, top-left, above everything.
+   --------------------------------------------------------------------------- */
+.skip-link {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link:focus,
+.skip-link:focus-visible {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 100;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 0.625rem 1rem;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(251, 113, 133, 0.55);
+  background-color: #200824;
+  color: #fce7f3;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 0 2px rgba(244, 63, 94, 0.45);
+  outline: none;
+}
+
+/* The <main> target must not draw a focus ring when the skip link moves focus
+   to it programmatically — it is a region, not a control. */
+#main-content:focus,
+#main-content:focus-visible {
+  outline: none;
+}
+
 /* Elegant Paper Container for Clean PDF / DOCX Output (Unchanged for Resume) */
 .resume-paper {
   width: 210mm;
@@ -129,6 +183,7 @@ body {
      Every chrome element carries .no-print; the tag selectors and the dialog
      rule are belt-and-braces for anything added later. */
   .no-print,
+  .skip-link,
   header,
   nav,
   aside,

@@ -15,6 +15,7 @@ import {
   Undo2,
   Redo2,
   Briefcase,
+  FileText,
 } from 'lucide-react';
 import { sound } from '../../utils/soundEffects';
 import { isAiConfigReady } from '../../utils/aiService';
@@ -24,6 +25,7 @@ const FOCUS_RING =
 
 export default function Navbar({
   onDownloadPdf,
+  onDownloadVectorPdf,
   onDownloadDocx,
   onPrint,
   onResetDefault,
@@ -124,8 +126,12 @@ export default function Navbar({
           </div>
         </div>
 
-        {/* Center / AI Tools & ATS Radar Capsule */}
-        <div className="flex items-center gap-2">
+        {/* Center / AI Tools & ATS Radar Capsule.
+            flex-wrap: at 320px these five controls total ~356px and none of them
+            can shrink further without losing its meaning (an icon-only ATS badge
+            would just read "92%"). Wrapping keeps them on screen instead of
+            pushing the header 48px past the viewport. */}
+        <div className="flex flex-wrap items-center gap-2">
           {/* Undo / Redo */}
           <div className="flex items-center rounded-xl border border-pink-500/20 bg-[#200b24] overflow-hidden">
             <button
@@ -254,7 +260,7 @@ export default function Navbar({
             </div>
             <div className="text-left font-sans">
               <div className="flex items-center gap-1.5">
-                <span className="text-[11px] font-bold text-pink-300/80">
+                <span className="hidden sm:inline text-[11px] font-bold text-pink-300/80">
                   ATS:
                 </span>
                 <span className="text-xs font-black text-rose-300">
@@ -281,7 +287,7 @@ export default function Navbar({
             aria-pressed={singlePage}
           >
             <Sparkles size={13} className={singlePage ? 'text-emerald-400 animate-pulse' : 'text-slate-400'} />
-            <span>{singlePage ? '1_PAGE: ON' : '1_PAGE: OFF'}</span>
+            <span className="hidden sm:inline">{singlePage ? '1_PAGE: ON' : '1_PAGE: OFF'}</span>
           </button>
         </div>
 
@@ -322,8 +328,8 @@ export default function Navbar({
               onPrint();
             }}
             className={`px-3 py-2 rounded-xl bg-[#240e29] hover:bg-[#301336] text-pink-200 border border-pink-500/30 hover:border-pink-400 transition-all cursor-pointer flex items-center gap-1.5 shadow-sm ${FOCUS_RING}`}
-            title="Print or Vector PDF"
-            aria-label="Print resume or save as vector PDF"
+            title="Open the print dialog (print to PDF for vector text)"
+            aria-label="Open the print dialog"
           >
             <Printer size={13} className="text-pink-300" />
             <span className="hidden sm:inline">PRINT</span>
@@ -345,21 +351,50 @@ export default function Navbar({
             <span>.DOCX</span>
           </button>
 
-          {/* Download PDF Button */}
-          <button
-            type="button"
-            onClick={() => {
-              sound.playSuccess();
-              onDownloadPdf();
-            }}
-            disabled={isExporting}
-            className={`px-4 py-2 font-bold tracking-wider text-white rounded-xl bg-gradient-to-r from-rose-500 via-pink-500 to-amber-500 hover:from-rose-400 hover:to-amber-400 shadow-[0_4px_25px_rgba(244,63,94,0.45)] transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-95 ${FOCUS_RING}`}
-            title="Export high-res PDF"
-            aria-label="Export resume as PDF"
-          >
-            <Download size={14} className="stroke-[2.5]" />
-            <span>EXPORT_PDF</span>
-          </button>
+          {/* Download PDF — SPLIT BUTTON.
+              Left segment: the existing raster export (html2pdf JPEG), unchanged.
+              Right segment: vector export (window.print), which emits real
+              selectable text that ATS parsers can actually read.
+
+              Chosen over the alternatives in the brief:
+                - a second navbar button would add ~110px to a row that already
+                  wraps, and duplicates the PDF label;
+                - a keyboard modifier is undiscoverable without a tooltip the
+                  user has to hover to find.
+              The caret segment is a small icon-only control butted against the
+              primary, and the EXPORT_PDF label collapses below md (matching
+              PRINT/UPLOAD/RESET in this same row). Net effect: narrower than
+              before at 320px, ~22px wider only at >=768px where the row has
+              slack. a11yNav.test.jsx asserts no overflow at 320px. */}
+          <div className="flex items-stretch">
+            <button
+              type="button"
+              onClick={() => {
+                sound.playSuccess();
+                onDownloadPdf();
+              }}
+              disabled={isExporting}
+              className={`pl-4 pr-2 py-2 font-bold tracking-wider text-white rounded-l-xl bg-gradient-to-r from-rose-500 via-pink-500 to-amber-500 hover:from-rose-400 hover:to-amber-400 shadow-[0_4px_25px_rgba(244,63,94,0.45)] transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-95 ${FOCUS_RING}`}
+              title="Export high-res PDF (image-based)"
+              aria-label="Export resume as PDF"
+            >
+              <Download size={14} className="stroke-[2.5]" aria-hidden="true" />
+              <span className="hidden md:inline">EXPORT_PDF</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                sound.playSuccess();
+                onDownloadVectorPdf?.();
+              }}
+              disabled={isExporting}
+              className={`px-2 py-2 text-white rounded-r-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 border-l border-amber-300/40 shadow-[0_4px_25px_rgba(244,63,94,0.45)] transition-all flex items-center cursor-pointer disabled:opacity-50 active:scale-95 ${FOCUS_RING}`}
+              title="Export vector PDF — selectable text, smaller file, ATS-readable"
+              aria-label="Export resume as vector PDF with selectable text"
+            >
+              <FileText size={13} aria-hidden="true" />
+            </button>
+          </div>
         </div>
       </div>
     </header>
