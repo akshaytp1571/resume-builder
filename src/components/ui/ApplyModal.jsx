@@ -19,6 +19,7 @@ import {
   isApplyAgentOnline,
 } from '../../utils/applyService';
 import { sound } from '../../utils/soundEffects';
+import ModalShell from './ModalShell';
 
 export default function ApplyModal({
   isOpen,
@@ -116,8 +117,7 @@ export default function ApplyModal({
   const filledCount = result?.filled?.length || 0;
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md font-sans select-none animate-fade-in">
-      <div className="w-full max-w-2xl bg-[#18071c] border border-pink-500/35 rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.7)] overflow-hidden flex flex-col max-h-[92vh] relative canvas-card">
+    <ModalShell onClose={onClose} labelledBy="apply-modal-title" zIndex="z-[70]" className="max-w-2xl">
         {/* Header */}
         <div className="p-4 border-b border-pink-500/20 flex items-center justify-between bg-[#200824]/90 backdrop-blur-xl">
           <div className="flex items-center gap-3">
@@ -125,7 +125,10 @@ export default function ApplyModal({
               <Send size={18} />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-pink-50 tracking-wide">
+              <h2
+                id="apply-modal-title"
+                className="text-sm font-bold text-pink-50 tracking-wide"
+              >
                 Apply Agent
               </h2>
               <p className="text-[11px] text-pink-300/70">
@@ -134,11 +137,13 @@ export default function ApplyModal({
             </div>
           </div>
           <button
+            type="button"
+            aria-label="Close apply agent dialog"
             onClick={() => {
               sound.playAction();
               onClose();
             }}
-            className="p-1.5 rounded-xl text-pink-400/60 hover:text-pink-100 hover:bg-pink-900/30 transition-colors cursor-pointer"
+            className="p-1.5 rounded-xl text-pink-400/60 hover:text-pink-100 hover:bg-pink-900/30 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#18071c]"
           >
             <X size={18} />
           </button>
@@ -412,7 +417,6 @@ export default function ApplyModal({
             </div>
           )}
         </div>
-      </div>
-    </div>
+      </ModalShell>
   );
 }

@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import confetti from 'canvas-confetti';
 import Navbar from './components/ui/Navbar';
+import VariantSwitcher from './components/ui/VariantSwitcher';
 import EditorSidebar from './components/editor/EditorSidebar';
 import ResumePreview from './components/preview/ResumePreview';
 import AtsScoreModal from './components/ui/AtsScoreModal';
@@ -17,37 +18,156 @@ import { calculateAtsScore } from './utils/atsScorer.js';
 import { getSavedAiConfig } from './utils/aiService.js';
 import { getResumePath } from './utils/resumePath.js';
 import { sound } from './utils/soundEffects.js';
+import {
+  loadStore,
+  saveStore,
+  getActiveVariant,
+  updateVariant,
+  addVariant,
+  duplicateVariant,
+  removeVariant,
+  setActiveVariant,
+  createVariant,
+  exportStoreJson,
+  importStoreJson,
+  normalizeResume,
+} from './utils/resumeStore.js';
 import { CheckCircle2, AlertCircle } from 'lucide-react';
 
+/** Apply either a value or an updater function. */
+function resolveValue(updater, previous) {
+  return typeof updater === 'function' ? updater(previous) : updater;
+}
+
 export default function App() {
-  const [resumeData, setResumeData] = useState(() => {
-    try {
-      const saved = localStorage.getItem('precision_resume_data_v1');
-      return saved ? JSON.parse(saved) : INITIAL_RESUME_DATA;
-    } catch (e) {
-      return INITIAL_RESUME_DATA;
-    }
-  });
+  // --- resume variants -----------------------------------------------------
+  // The store is the single source of truth. `resumeData` and `theme` are
+  // derived from whichever variant is active, so switching variants needs no
+  // extra state juggling.
+  const [store, setStore] = useState(() => loadStore());
 
-  const [theme, setTheme] = useState(() => {
-    try {
-      const saved = localStorage.getItem('precision_theme_data_v1');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        return {
-          ...DEFAULT_THEME,
-          ...parsed,
-          // Guarantee singlePage is active by default to prevent spillover
-          singlePage: parsed.singlePage !== undefined ? parsed.singlePage : true,
-        };
-      }
-      return DEFAULT_THEME;
-    } catch (e) {
-      return DEFAULT_THEME;
-    }
-  });
+  const activeVariant = getActiveVariant(store);
+  const resumeData = activeVariant?.data || INITIAL_RESUME_DATA;
+  const theme = activeVariant?.theme || DEFAULT_THEME;
 
-  // AI State & Modals
+  // Persist, debounced so typing does not hammer localStorage on every keypress.
+  const saveTimer = useRef(null);
+  useEffect(() => {
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      saveStore(store);
+    }, 400);
+    return () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+    };
+  }, [store]);
+
+  // Flush pending writes if the tab is closed mid-edit.
+  useEffect(() => {
+    const flush = () => saveStore(store);
+    window.addEventListener('beforeunload', flush);
+    return () => window.removeEventListener('beforeunload', flush);
+  }, [store]);
+
+  const setResumeData = useCallback((updater) => {
+    setStore((prev) => {
+      const active = getActiveVariant(prev);
+      if (!active) return prev;
+      return updateVariant(prev, active.id, {
+        data: normalizeResume(resolveValue(updater, active.data)),
+      });
+    });
+  }, []);
+
+  const setTheme = useCallback((updater) => {
+    setStore((prev) => {
+      const active = getActiveVariant(prev);
+      if (!active) return prev;
+      return updateVariant(prev, active.id, {
+        theme: resolveValue(updater, active.theme),
+      });
+    });
+  }, []);
+
+  // --- variant actions -----------------------------------------------------
+  const handleSelectVariant = (id) => {
+    sound.playTab();
+    setStore((prev) => setActiveVariant(prev, id));
+  };
+
+  const handleCreateVariant = () => {
+    sound.playSuccess();
+    setStore((prev) =>
+      addVariant(
+        prev,
+        createVariant({
+          name: `Resume ${prev.variants.length + 1}`,
+          data: INITIAL_RESUME_DATA,
+          theme: DEFAULT_THEME,
+        })
+      )
+    );
+    setToast({ type: 'success', message: 'NEW RESUME VARIANT CREATED' });
+  };
+
+  const handleDuplicateVariant = (id) => {
+    sound.playAction();
+    setStore((prev) => duplicateVariant(prev, id));
+    setToast({ type: 'success', message: 'VARIANT DUPLICATED' });
+  };
+
+  const handleRenameVariant = (id, name) => {
+    const clean = String(name || '').trim();
+    if (!clean) return;
+    setStore((prev) => updateVariant(prev, id, { name: clean }));
+  };
+
+  const handleDeleteVariant = (id) => {
+    if (store.variants.length <= 1) {
+      setToast({ type: 'error', message: 'CANNOT DELETE THE ONLY REMAINING RESUME' });
+      return;
+    }
+    sound.playAction();
+    setStore((prev) => removeVariant(prev, id));
+    setToast({ type: 'success', message: 'VARIANT DELETED' });
+  };
+
+  const handleExportAllVariants = () => {
+    try {
+      const json = exportStoreJson(store);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `resume-variants-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setToast({ type: 'success', message: `EXPORTED ${store.variants.length} VARIANT(S)` });
+    } catch (err) {
+      console.error(err);
+      setToast({ type: 'error', message: 'EXPORT FAILED' });
+    }
+  };
+
+  const handleImportVariants = async (file) => {
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const imported = importStoreJson(text);
+      sound.playSuccess();
+      setStore(imported);
+      setToast({
+        type: 'success',
+        message: `IMPORTED ${imported.variants.length} VARIANT(S)`,
+      });
+    } catch (err) {
+      setToast({ type: 'error', message: err.message || 'IMPORT FAILED' });
+    }
+  };
+
+  // --- AI state & modals ---------------------------------------------------
   const [aiConfig, setAiConfig] = useState(getSavedAiConfig);
   const [isAiConfigOpen, setIsAiConfigOpen] = useState(false);
   const [isJobMatchOpen, setIsJobMatchOpen] = useState(false);
@@ -68,23 +188,6 @@ export default function App() {
   const [isAtsOpen, setIsAtsOpen] = useState(false);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [toast, setToast] = useState(null);
-
-  // Sync with localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem('precision_resume_data_v1', JSON.stringify(resumeData));
-    } catch (e) {
-      console.error(e);
-    }
-  }, [resumeData]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('precision_theme_data_v1', JSON.stringify(theme));
-    } catch (e) {
-      console.error(e);
-    }
-  }, [theme]);
 
   // Toast auto-dismiss
   useEffect(() => {
@@ -154,13 +257,23 @@ export default function App() {
     triggerPrint(resumeData);
   };
 
-  // Reset to default
+  // Reset the ACTIVE variant to the shipped sample data.
   const handleResetDefault = () => {
-    if (window.confirm('Reset resume data to original document content and default executive theme?')) {
-      setResumeData(INITIAL_RESUME_DATA);
-      setTheme(DEFAULT_THEME);
+    if (
+      window.confirm(
+        `Reset "${activeVariant?.name || 'this resume'}" to the sample data and default theme?\n\nOther resume variants are not affected.`
+      )
+    ) {
+      setStore((prev) => {
+        const active = getActiveVariant(prev);
+        if (!active) return prev;
+        return updateVariant(prev, active.id, {
+          data: normalizeResume(INITIAL_RESUME_DATA),
+          theme: DEFAULT_THEME,
+        });
+      });
       sound.playAction();
-      setToast({ type: 'success', message: 'REVERTED TO ORIGINAL SPECIMEN DATA' });
+      setToast({ type: 'success', message: 'REVERTED TO SAMPLE DATA' });
     }
   };
 
@@ -207,6 +320,19 @@ export default function App() {
             };
           });
         }}
+      />
+
+      {/* Resume variant bar */}
+      <VariantSwitcher
+        variants={store.variants}
+        activeId={store.activeId}
+        onSelect={handleSelectVariant}
+        onDuplicate={handleDuplicateVariant}
+        onRename={handleRenameVariant}
+        onDelete={handleDeleteVariant}
+        onCreate={handleCreateVariant}
+        onExportAll={handleExportAllVariants}
+        onImportFile={handleImportVariants}
       />
 
       {/* Main Workspace */}
@@ -313,7 +439,7 @@ export default function App() {
         onClose={() => setIsUploadOpen(false)}
         currentResumeData={resumeData}
         onApplyParsedResume={(newResume) => {
-          setResumeData(newResume);
+          setResumeData(normalizeResume(newResume));
           fireCelebration();
           setToast({ type: 'success', message: 'RESUME INGESTED & SYNCHRONIZED SUCCESSFULLY!' });
         }}
@@ -322,7 +448,11 @@ export default function App() {
 
       {/* Atelier Studio Toast Notification */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl bg-[#200824]/95 border border-pink-500/40 shadow-[0_10px_35px_rgba(0,0,0,0.6)] text-xs font-sans text-pink-100 animate-fade-in no-print backdrop-blur-xl">
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl bg-[#200824]/95 border border-pink-500/40 shadow-[0_10px_35px_rgba(0,0,0,0.6)] text-xs font-sans text-pink-100 animate-fade-in no-print backdrop-blur-xl"
+        >
           {toast.type === 'success' && (
             <CheckCircle2 size={17} className="text-emerald-400 shrink-0" />
           )}

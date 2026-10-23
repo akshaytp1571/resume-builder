@@ -1,7 +1,9 @@
 import React from 'react';
+import PhotoFrame from './PhotoFrame';
+import ExtraSections from './ExtraSections';
 
 export default function NordicTemplate({ data, theme }) {
-  const { personalInfo, summary, skills, experience, education, languages, certifications } = data;
+  const { personalInfo, summary, skills, experience, education, languages, certifications, projects, customSections } = data;
 
   return (
     <div
@@ -16,17 +18,13 @@ export default function NordicTemplate({ data, theme }) {
       <div className="text-center pb-6 border-b-2 border-slate-900/10 mb-6">
         {personalInfo?.showPhoto && personalInfo?.photo && (
           <div className="flex justify-center mb-4">
-            <div
-              className={`w-24 h-24 overflow-hidden border-2 border-slate-700 shadow-md ${
-                personalInfo.photoStyle === 'circle' ? 'rounded-full' : 'rounded-md'
-              }`}
-            >
-              <img
-                src={personalInfo.photo}
-                alt={personalInfo.fullName}
-                className="w-full h-full object-cover"
-              />
-            </div>
+            <PhotoFrame
+              personalInfo={personalInfo}
+              size={96}
+              borderColor="#334155"
+              borderWidth="2px"
+              shadow="0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1)"
+            />
           </div>
         )}
 
@@ -172,6 +170,17 @@ export default function NordicTemplate({ data, theme }) {
           </div>
         </div>
       )}
+
+      <ExtraSections
+        projects={projects}
+        customSections={customSections}
+        className="mt-6"
+        renderHeading={(label) => (
+          <h2 className="text-xs font-sans font-bold tracking-widest uppercase text-slate-900 border-b border-slate-200 pb-1 mb-2">
+            {label}
+          </h2>
+        )}
+      />
     </div>
   );
 }

@@ -117,8 +117,28 @@ export const INITIAL_RESUME_DATA = {
       year: "2022",
     },
   ],
-  projects: [],
-  customSections: [],
+  projects: [
+    {
+      id: "proj-1",
+      name: "Test Automation Framework",
+      role: "Creator & Maintainer",
+      period: "2022 – Present",
+      link: "github.com/example-user/qa-framework",
+      highlights: [
+        "Built a Selenium + TestNG framework covering 120 regression scenarios.",
+        "Cut regression run time from 6 hours to 45 minutes.",
+      ],
+    },
+  ],
+  customSections: [
+    {
+      id: "custom-1",
+      title: "Publications",
+      items: [
+        "Practical API Testing with Postman - internal engineering blog, 2023",
+      ],
+    },
+  ],
 };
 
 export const DEFAULT_THEME = {

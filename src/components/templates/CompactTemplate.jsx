@@ -1,7 +1,9 @@
 import React from 'react';
+import PhotoFrame from './PhotoFrame';
+import ExtraSections from './ExtraSections';
 
 export default function CompactTemplate({ data, theme }) {
-  const { personalInfo, summary, skills, experience, education, languages, certifications } = data;
+  const { personalInfo, summary, skills, experience, education, languages, certifications, projects, customSections } = data;
   const primaryColor = theme?.primaryColor || '#4f46e5';
 
   return (
@@ -17,13 +19,13 @@ export default function CompactTemplate({ data, theme }) {
       <div className="flex items-center justify-between border-b-2 pb-3 mb-3" style={{ borderColor: primaryColor }}>
         <div className="flex items-center gap-4">
           {personalInfo?.showPhoto && personalInfo?.photo && (
-            <div className="w-16 h-16 rounded-md overflow-hidden border border-gray-300 shadow-sm shrink-0">
-              <img
-                src={personalInfo.photo}
-                alt={personalInfo.fullName}
-                className="w-full h-full object-cover"
-              />
-            </div>
+            <PhotoFrame
+              personalInfo={personalInfo}
+              size={64}
+              borderColor="#d1d5db"
+              borderWidth="1px"
+              shadow="0 1px 2px 0 rgba(0,0,0,0.05)"
+            />
           )}
           <div>
             <h1 className="text-xl sm:text-2xl font-black uppercase tracking-tight" style={{ color: primaryColor }}>
@@ -97,6 +99,20 @@ export default function CompactTemplate({ data, theme }) {
               </div>
             </div>
           )}
+
+          <ExtraSections
+            projects={projects}
+            customSections={customSections}
+            dense
+            renderHeading={(label) => (
+              <h2
+                className="text-[11px] font-black uppercase tracking-wider mb-1"
+                style={{ color: primaryColor }}
+              >
+                {label}
+              </h2>
+            )}
+          />
         </div>
 
         {/* Right Column (4 cols): Skills, Education, Languages */}

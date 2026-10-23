@@ -1,8 +1,10 @@
 import React from 'react';
 import { Mail, Phone, MapPin, Sparkles } from 'lucide-react';
+import PhotoFrame from './PhotoFrame';
+import ExtraSections from './ExtraSections';
 
 export default function CreativeTemplate({ data, theme }) {
-  const { personalInfo, summary, skills, experience, education, languages } = data;
+  const { personalInfo, summary, skills, experience, education, languages, certifications, projects, customSections } = data;
   const primaryColor = theme?.primaryColor || '#059669';
 
   return (
@@ -20,23 +22,13 @@ export default function CreativeTemplate({ data, theme }) {
         }}
       >
         <div className="flex flex-col sm:flex-row items-center gap-6">
-          {personalInfo?.showPhoto && personalInfo?.photo && (
-            <div
-              className={`w-28 h-28 shrink-0 overflow-hidden border-4 border-white shadow-2xl bg-white ${
-                personalInfo.photoStyle === 'circle'
-                  ? 'rounded-full'
-                  : personalInfo.photoStyle === 'rounded'
-                  ? 'rounded-2xl'
-                  : 'rounded-lg'
-              }`}
-            >
-              <img
-                src={personalInfo.photo}
-                alt={personalInfo.fullName}
-                className="w-full h-full object-cover"
-              />
-            </div>
-          )}
+          <PhotoFrame
+            personalInfo={personalInfo}
+            size={112}
+            borderColor="#ffffff"
+            borderWidth="4px"
+            shadow="0 25px 50px -12px rgba(0,0,0,0.25)"
+          />
 
           <div className="text-center sm:text-left flex-1">
             <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-white/20 text-white text-xs font-semibold backdrop-blur-md mb-2">
@@ -183,6 +175,37 @@ export default function CreativeTemplate({ data, theme }) {
             </div>
           )}
         </div>
+
+        {/* Certifications */}
+        {certifications && certifications.length > 0 && (
+          <div>
+            <h2 className="text-xs font-bold uppercase tracking-wider text-gray-900 border-b border-emerald-500/30 pb-1 mb-3">
+              Certifications & Credentials
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {certifications.map((cert, idx) => (
+                <div key={cert.id || idx} className="p-3 rounded-lg border border-gray-100 bg-gray-50/70">
+                  <p className="text-xs font-bold text-gray-900">{cert.name}</p>
+                  <p className="text-[11px] text-gray-600 mt-0.5">
+                    {cert.issuer}
+                    {cert.issuer && cert.year && ' • '}
+                    {cert.year && <span className="text-emerald-700 font-medium">{cert.year}</span>}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <ExtraSections
+          projects={projects}
+          customSections={customSections}
+          renderHeading={(label) => (
+            <h2 className="text-xs font-bold uppercase tracking-wider text-gray-900 border-b border-emerald-500/30 pb-1 mb-3">
+              {label}
+            </h2>
+          )}
+        />
       </div>
     </div>
   );

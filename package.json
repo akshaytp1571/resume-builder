@@ -1,7 +1,7 @@
 {
   "name": "resume-builder",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -13,7 +13,9 @@
     "preview": "vite preview",
     "jobs:api": "node src/agents/api-server.cjs",
     "jobs:test": "node test-engine.cjs",
-    "test": "node test-fixes.cjs"
+    "test": "node test-fixes.cjs",
+    "test:smoke": "node smoke-test.mjs",
+    "test:all": "node test-fixes.cjs && node smoke-test.mjs"
   },
   "dependencies": {
     "canvas-confetti": "^1.9.4",

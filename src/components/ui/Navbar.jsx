@@ -16,6 +16,9 @@ import {
 import { sound } from '../../utils/soundEffects';
 import { isAiConfigReady } from '../../utils/aiService';
 
+const FOCUS_RING =
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#18071c]';
+
 export default function Navbar({
   onDownloadPdf,
   onDownloadDocx,
@@ -64,8 +67,10 @@ export default function Navbar({
           <button
             type="button"
             onClick={toggleSound}
-            className="hover:text-pink-200 flex items-center gap-1 cursor-pointer transition-colors"
+            className={`hover:text-pink-200 flex items-center gap-1 cursor-pointer transition-colors ${FOCUS_RING}`}
             title="Toggle UI Sound FX"
+            aria-label={soundEnabled ? 'Mute interface sounds' : 'Unmute interface sounds'}
+            aria-pressed={soundEnabled}
           >
             {soundEnabled ? (
               <>
@@ -119,12 +124,17 @@ export default function Navbar({
               sound.playAction();
               onOpenAiConfig();
             }}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${FOCUS_RING} ${
               isAiConfigured
                 ? 'bg-[#2b102e] border-pink-500/50 text-pink-200 shadow-[0_0_15px_rgba(244,63,94,0.2)] hover:border-pink-400'
                 : 'bg-amber-950/40 border-amber-500/60 text-amber-300 animate-pulse'
             }`}
             title="Configure AI Provider (Vyce AI, DeepSeek, OpenAI, Groq)"
+            aria-label={
+              isAiConfigured
+                ? `AI settings, configured with ${aiConfig?.providerId?.toUpperCase()}`
+                : 'Configure AI provider and API key'
+            }
           >
             <Bot size={14} className={isAiConfigured ? 'text-rose-300' : 'text-amber-400'} />
             <span className="hidden sm:inline">
@@ -144,8 +154,9 @@ export default function Navbar({
               sound.playAction();
               onOpenJobMatch();
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#13251e] border border-emerald-500/40 hover:border-emerald-400 text-emerald-200 text-xs font-bold transition-all cursor-pointer shadow-xs"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#13251e] border border-emerald-500/40 hover:border-emerald-400 text-emerald-200 text-xs font-bold transition-all cursor-pointer shadow-xs ${FOCUS_RING}`}
             title="Paste Job Description to check keyword match and tailor resume"
+            aria-label="Open job matcher"
           >
             <Target size={14} className="text-emerald-400" />
             <span className="hidden md:inline">JOB_MATCH</span>
@@ -158,7 +169,8 @@ export default function Navbar({
               sound.playAction();
               onOpenAts();
             }}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#280f2b] border border-pink-500/30 hover:border-pink-400 transition-all cursor-pointer group shadow-[0_0_12px_rgba(244,63,94,0.15)] relative overflow-hidden"
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#280f2b] border border-pink-500/30 hover:border-pink-400 transition-all cursor-pointer group shadow-[0_0_12px_rgba(244,63,94,0.15)] relative overflow-hidden ${FOCUS_RING}`}
+            aria-label={`Open ATS score breakdown, current score ${atsScore.score} percent`}
           >
             <div className="w-5 h-5 rounded-lg bg-pink-950/90 border border-pink-400/40 flex items-center justify-center text-pink-300 group-hover:scale-110 transition-transform">
               <Activity size={12} className="animate-pulse text-rose-400" />
@@ -182,12 +194,14 @@ export default function Navbar({
               sound.playAction();
               if (onToggleSinglePage) onToggleSinglePage();
             }}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${FOCUS_RING} ${
               singlePage
                 ? 'bg-[#102b20] border-emerald-400 text-emerald-200 shadow-[0_0_15px_rgba(16,185,129,0.3)]'
                 : 'bg-[#220e26] border-pink-500/20 text-pink-300/60 hover:border-pink-500/40 hover:text-pink-200'
             }`}
             title="Single-Page Fit: Auto-compresses margins & line height to lock entire resume on 1 page"
+            aria-label="Single-page auto-fit"
+            aria-pressed={singlePage}
           >
             <Sparkles size={13} className={singlePage ? 'text-emerald-400 animate-pulse' : 'text-slate-500'} />
             <span>{singlePage ? '1_PAGE: ON' : '1_PAGE: OFF'}</span>
@@ -202,8 +216,9 @@ export default function Navbar({
               sound.playAction();
               onOpenUpload();
             }}
-            className="px-3 py-2 rounded-xl bg-[#2a112e] hover:bg-[#38163d] text-pink-200 border border-pink-500/40 hover:border-pink-300 transition-all cursor-pointer flex items-center gap-1.5 shadow-[0_0_12px_rgba(244,63,94,0.18)] active:scale-95"
+            className={`px-3 py-2 rounded-xl bg-[#2a112e] hover:bg-[#38163d] text-pink-200 border border-pink-500/40 hover:border-pink-300 transition-all cursor-pointer flex items-center gap-1.5 shadow-[0_0_12px_rgba(244,63,94,0.18)] active:scale-95 ${FOCUS_RING}`}
             title="Upload Word DOCX, JSON or Paste Resume to Auto-Fill"
+            aria-label="Upload resume file"
           >
             <Upload size={13} className="text-rose-400" />
             <span className="hidden sm:inline font-bold">UPLOAD</span>
@@ -215,8 +230,9 @@ export default function Navbar({
               sound.playAction();
               onResetDefault();
             }}
-            className="px-2.5 py-2 rounded-xl bg-[#200b24] hover:bg-[#2c1031] text-pink-300/60 hover:text-pink-100 border border-pink-500/20 hover:border-pink-500/40 transition-all cursor-pointer flex items-center gap-1.5"
+            className={`px-2.5 py-2 rounded-xl bg-[#200b24] hover:bg-[#2c1031] text-pink-300/60 hover:text-pink-100 border border-pink-500/20 hover:border-pink-500/40 transition-all cursor-pointer flex items-center gap-1.5 ${FOCUS_RING}`}
             title="Reset to original document data"
+            aria-label="Reset resume to original document data"
           >
             <RotateCcw size={13} />
             <span className="hidden xl:inline">RESET</span>
@@ -228,8 +244,9 @@ export default function Navbar({
               sound.playAction();
               onPrint();
             }}
-            className="px-3 py-2 rounded-xl bg-[#240e29] hover:bg-[#301336] text-pink-200 border border-pink-500/30 hover:border-pink-400 transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
+            className={`px-3 py-2 rounded-xl bg-[#240e29] hover:bg-[#301336] text-pink-200 border border-pink-500/30 hover:border-pink-400 transition-all cursor-pointer flex items-center gap-1.5 shadow-sm ${FOCUS_RING}`}
             title="Print or Vector PDF"
+            aria-label="Print resume or save as vector PDF"
           >
             <Printer size={13} className="text-pink-300" />
             <span className="hidden sm:inline">PRINT</span>
@@ -243,8 +260,9 @@ export default function Navbar({
               onDownloadDocx();
             }}
             disabled={isExporting}
-            className="px-3.5 py-2 font-bold tracking-wider rounded-xl bg-gradient-to-r from-purple-800 via-pink-700 to-rose-700 hover:from-purple-700 hover:to-rose-600 text-white shadow-[0_4px_16px_rgba(168,85,247,0.3)] transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-95"
+            className={`px-3.5 py-2 font-bold tracking-wider rounded-xl bg-gradient-to-r from-purple-800 via-pink-700 to-rose-700 hover:from-purple-700 hover:to-rose-600 text-white shadow-[0_4px_16px_rgba(168,85,247,0.3)] transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-95 ${FOCUS_RING}`}
             title="Generate native Word DOCX"
+            aria-label="Download resume as DOCX"
           >
             <FileSpreadsheet size={14} />
             <span>.DOCX</span>
@@ -258,8 +276,9 @@ export default function Navbar({
               onDownloadPdf();
             }}
             disabled={isExporting}
-            className="px-4 py-2 font-bold tracking-wider text-white rounded-xl bg-gradient-to-r from-rose-500 via-pink-500 to-amber-500 hover:from-rose-400 hover:to-amber-400 shadow-[0_4px_25px_rgba(244,63,94,0.45)] transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-95"
+            className={`px-4 py-2 font-bold tracking-wider text-white rounded-xl bg-gradient-to-r from-rose-500 via-pink-500 to-amber-500 hover:from-rose-400 hover:to-amber-400 shadow-[0_4px_25px_rgba(244,63,94,0.45)] transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-95 ${FOCUS_RING}`}
             title="Export high-res PDF"
+            aria-label="Export resume as PDF"
           >
             <Download size={14} className="stroke-[2.5]" />
             <span>EXPORT_PDF</span>

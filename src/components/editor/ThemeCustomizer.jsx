@@ -1,6 +1,7 @@
 import React from 'react';
-import { Palette, Type, Layout, Check, Sparkles, FileText, Layers } from 'lucide-react';
+import { Palette, Type, Layout, Check, Sparkles, FileText, Layers, AlertTriangle } from 'lucide-react';
 import { TEMPLATES_CONFIG } from '../../data/initialData';
+import { getDroppedSections } from '../../data/templateCapabilities';
 import { sound } from '../../utils/soundEffects';
 
 const COLOR_PRESETS = [
@@ -44,7 +45,7 @@ const FONT_OPTIONS = [
   { name: 'Merriweather (Classic Serif)', value: "'Merriweather', Georgia, serif" },
 ];
 
-export default function ThemeCustomizer({ theme, onChange }) {
+export default function ThemeCustomizer({ theme, onChange, resumeData }) {
   const handleUpdate = (field, value) => {
     sound.playAction();
     onChange({
@@ -68,6 +69,7 @@ export default function ThemeCustomizer({ theme, onChange }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           {TEMPLATES_CONFIG.map((tpl) => {
             const isSelected = theme.templateId === tpl.id;
+            const dropped = getDroppedSections(tpl.id, resumeData);
             return (
               <button
                 key={tpl.id}
@@ -99,6 +101,15 @@ export default function ThemeCustomizer({ theme, onChange }) {
                 <p className="text-[11px] text-pink-300/60 line-clamp-2 leading-relaxed">
                   {tpl.description}
                 </p>
+                {!isSelected && dropped.length > 0 && (
+                  <p
+                    className="mt-1.5 flex items-start gap-1 text-[10px] font-medium text-amber-300/90 leading-snug"
+                    title={`This template does not render: ${dropped.join(', ')}`}
+                  >
+                    <AlertTriangle size={10} className="mt-0.5 shrink-0 text-amber-400" />
+                    <span>Hides {dropped.join(', ')}</span>
+                  </p>
+                )}
               </button>
             );
           })}

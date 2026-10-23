@@ -1,8 +1,10 @@
 import React from 'react';
 import { LinkedinIcon, GithubIcon } from '../ui/Icons';
+import PhotoFrame from './PhotoFrame';
+import ExtraSections from './ExtraSections';
 
 export default function DefaultTemplate({ data, theme }) {
-  const { personalInfo, summary, skills, experience, education, languages, certifications } = data;
+  const { personalInfo, summary, skills, experience, education, languages, certifications, projects, customSections } = data;
   const primaryColor = theme?.primaryColor || '#3E5566';
   const secondaryColor = theme?.secondaryColor || '#56707F';
 
@@ -22,31 +24,7 @@ export default function DefaultTemplate({ data, theme }) {
     >
       {/* Header Table / Grid: Exact replica of the original docx */}
       <div className={`flex items-center gap-5 ${isCompact ? 'pb-2.5' : 'pb-4'}`}>
-        {personalInfo?.showPhoto && personalInfo?.photo && (
-          <div className="shrink-0">
-            <div
-              className={`overflow-hidden bg-white ${
-                personalInfo.photoStyle === 'circle'
-                  ? 'rounded-full'
-                  : personalInfo.photoStyle === 'rounded'
-                  ? 'rounded-xl'
-                  : 'rounded-sm'
-              }`}
-              style={{
-                width: isCompact ? '96px' : '115px',
-                height: isCompact ? '96px' : '115px',
-                border: '3px solid #ffffff',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(0, 0, 0, 0.08)',
-              }}
-            >
-              <img
-                src={personalInfo.photo}
-                alt={personalInfo.fullName}
-                className="w-full h-full object-cover"
-              />
-            </div>
-          </div>
-        )}
+        <PhotoFrame personalInfo={personalInfo} size={isCompact ? 96 : 115} />
 
         <div className="flex-1 min-w-0">
           <h1
@@ -271,6 +249,23 @@ export default function DefaultTemplate({ data, theme }) {
           </div>
         </div>
       )}
+
+      <ExtraSections
+        projects={projects}
+        customSections={customSections}
+        className={isCompact ? 'mt-2.5' : 'mt-4'}
+        renderHeading={(label) => (
+          <h2
+            className="font-bold text-xs sm:text-sm uppercase tracking-wider pb-0.5 mb-1"
+            style={{
+              color: primaryColor,
+              borderBottom: `1.5px solid ${secondaryColor}`,
+            }}
+          >
+            {label.toUpperCase()}
+          </h2>
+        )}
+      />
     </div>
   );
 }

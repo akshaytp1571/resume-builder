@@ -1,9 +1,11 @@
 import React from 'react';
 import { Mail, Phone, MapPin, Briefcase, Award } from 'lucide-react';
 import { LinkedinIcon, GithubIcon } from '../ui/Icons';
+import PhotoFrame from './PhotoFrame';
+import ExtraSections from './ExtraSections';
 
 export default function ModernTemplate({ data, theme }) {
-  const { personalInfo, summary, skills, experience, education, languages, certifications } = data;
+  const { personalInfo, summary, skills, experience, education, languages, certifications, projects, customSections } = data;
   const primaryColor = theme?.primaryColor || '#0f766e';
   const secondaryColor = theme?.secondaryColor || '#0d9488';
 
@@ -23,26 +25,15 @@ export default function ModernTemplate({ data, theme }) {
       >
         <div>
           {/* Photo */}
-          {personalInfo?.showPhoto && personalInfo?.photo && (
-            <div className="flex justify-center mb-6">
-              <div
-                className={`overflow-hidden border-4 border-white/20 shadow-xl ${
-                  personalInfo.photoStyle === 'circle'
-                    ? 'rounded-full'
-                    : personalInfo.photoStyle === 'rounded'
-                    ? 'rounded-2xl'
-                    : 'rounded-lg'
-                }`}
-                style={{ width: '120px', height: '120px' }}
-              >
-                <img
-                  src={personalInfo.photo}
-                  alt={personalInfo.fullName}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            </div>
-          )}
+          <div className="flex justify-center mb-6">
+            <PhotoFrame
+              personalInfo={personalInfo}
+              size={120}
+              borderColor="rgba(255,255,255,0.2)"
+              borderWidth="4px"
+              shadow="0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)"
+            />
+          </div>
 
           {/* Contact Details */}
           <div className="space-y-3 text-xs mb-8">
@@ -288,6 +279,22 @@ export default function ModernTemplate({ data, theme }) {
               </div>
             </div>
           )}
+          <ExtraSections
+            projects={projects}
+            customSections={customSections}
+            className={certifications?.length ? 'mt-6' : ''}
+            renderHeading={(label) => (
+              <div className="flex items-center gap-2 mb-2">
+                <Award size={16} style={{ color: primaryColor }} />
+                <h2
+                  className="font-bold text-xs uppercase tracking-wider"
+                  style={{ color: primaryColor }}
+                >
+                  {label}
+                </h2>
+              </div>
+            )}
+          />
         </div>
       </div>
     </div>

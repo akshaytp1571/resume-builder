@@ -10,6 +10,9 @@ Built with React 19, Vite 8 and Tailwind CSS 4.
 > job-discovery agent.** It automates actions that job boards prohibit in their
 > terms of service, and you are responsible for how you use it.
 
+**v1.0** adds multiple resume variants, Projects and Custom Sections, and a full
+accessibility pass. See [CHANGELOG.md](./CHANGELOG.md).
+
 ---
 
 ## Screenshots
@@ -28,17 +31,35 @@ To capture yours: run `npm run dev`, open http://localhost:5173, press
 
 ### Resume building
 
+- **Multiple resume variants** — keep a named, job-targeted copy per application
+  ("QA Lead - Dubai", "Automation Engineer"), switch between them instantly,
+  duplicate one to tailor it, and export/import the whole set as JSON
 - **Six templates** — Executive Classic, Modern Two-Tone, Minimalist ATS Pro,
   Emerald Horizon, Nordic Luxury, Grid Master (single-page dense)
+- **Projects & custom sections** — showcase side projects, publications,
+  volunteering or anything else; rendered by every template
+- **Template capability warnings** — if switching templates would hide a section
+  you filled in, the picker tells you before you switch
 - **Native DOCX export** — real `.docx` with an embedded photo (aspect ratio
   preserved), coloured headings and proper bullet lists
 - **PDF export and print** — captured at A4's true width so text stays sharp
 - **Live ATS score** — weighted scoring across contact info, summary length,
-  skill coverage, action verbs, quantified results and education
+  skill coverage, action verbs, quantified results, education and projects
 - **Theme customiser** — colours, fonts, density, single-page auto-fit
 - **Resume ingestion** — import a DOCX/JSON/TXT resume and auto-fill the form,
   using AI when configured and a rule-based parser otherwise
 - **Photo crop tool** — zoom, rotate, pan, with square/rounded/circle frames
+
+### Accessibility
+
+Every dialog is keyboard-operable and announced correctly to screen readers:
+
+- `role="dialog"` + `aria-modal` with a labelled heading
+- Focus moves into the dialog on open and returns to the trigger on close
+- Tab and Shift+Tab cycle inside the dialog; Escape closes it
+- Background scroll locked while open
+- Visible focus rings, `aria-label` on every icon-only control, `aria-pressed`
+  on toggles
 
 ### AI assistance
 
@@ -114,7 +135,9 @@ and AI buttons prompt you to configure a provider.
 | `npm run build:static` | Build + add `404.html`, `_headers`, SHA-256 manifest |
 | `npm run package:zip` | Package `dist/` into an uploadable ZIP |
 | `npm run preview` | Serve the production build locally |
-| `npm test` | 44 checks over parsers, scorer, exporters and agent logic |
+| `npm test` | 87 source checks over parsers, scorer, exporters, store and agent logic |
+| `npm run test:smoke` | Import the real modules and assert runtime behaviour |
+| `npm run test:all` | Both suites |
 | `npm run lint` | oxlint |
 | `npm run verify:deploy <url>` | Verify a deployed site is actually working |
 | `npm run jobs:api` | Start the job agent API on :3457 |
@@ -175,10 +198,14 @@ src/
 ├── components/
 │   ├── editor/              # Resume form panels
 │   ├── preview/             # Live preview + zoom + page-budget indicator
-│   ├── templates/           # The six resume templates
-│   └── ui/                  # Modals (AI config, ATS, job match, apply, crop)
-├── data/initialData.js      # Placeholder resume + default theme
-├── utils/                   # AI, ATS scoring, exporters, parsers, discovery
+│   ├── templates/           # The six templates, PhotoFrame, ExtraSections
+│   └── ui/                  # Modals, ModalShell, VariantSwitcher
+├── data/
+│   ├── initialData.js       # Placeholder resume + default theme
+│   └── templateCapabilities.js  # Which sections each template renders
+├── utils/
+│   ├── resumeStore.js       # Resume variants + migration
+│   └── ...                  # AI, ATS scoring, exporters, parsers, discovery
 └── assets/                  # Placeholder avatar, hero art
 scripts/                     # Build, packaging, verification, asset generation
 ```
@@ -195,10 +222,11 @@ The score is a weighted sum, capped at 100:
 | Category | Max | What it checks |
 |---|---|---|
 | Contact & header | 25 | Name, title, valid email, phone, location |
-| Professional summary | 20 | Word count in a recruiter-friendly band |
-| Skills & keywords | 20 | Category count and total skill count |
+| Professional summary | 15 | Word count in a recruiter-friendly band |
+| Skills & keywords | 15 | Category count, skill count, custom-section keywords |
 | Experience & impact | 25 | Action verbs and quantified results |
 | Education | 10 | Presence and completeness |
+| Projects & portfolio | 10 | Presence, action verbs, quantified results |
 
 Each category reports its own status so the UI can show what to fix.
 
@@ -257,9 +285,21 @@ Issues and pull requests are welcome.
 
 ```bash
 npm install
-npm test          # must pass
-npm run lint      # must report 0 errors
+npm run test:all   # 87 source checks + runtime smoke test, all must pass
+npm run lint       # must report 0 errors
 ```
+
+### Adding a template
+
+1. Create `src/components/templates/YourTemplate.jsx` using `PhotoFrame` for the
+   photo and `ExtraSections` for projects and custom sections.
+2. Add its entry to `TEMPLATES_CONFIG` in `src/data/initialData.js`.
+3. Add its capability list to `TEMPLATE_CAPABILITIES` in
+   `src/data/templateCapabilities.js` — the test suite fails if you skip this.
+4. Register it in the `switch` in `src/components/preview/ResumePreview.jsx`.
+
+The capability registry exists so a template can never silently hide a section a
+user filled in. `npm test` enforces that every configured template is declared.
 
 Please do not open issues asking for help evading bot detection on specific
 sites. Keep contributions focused on the app, the templates, the exporters and

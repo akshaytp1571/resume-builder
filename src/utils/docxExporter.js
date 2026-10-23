@@ -95,6 +95,8 @@ export async function exportToDocx(resumeData, themeSettings) {
   const education = Array.isArray(resumeData?.education) ? resumeData.education : [];
   const languages = Array.isArray(resumeData?.languages) ? resumeData.languages : [];
   const certifications = Array.isArray(resumeData?.certifications) ? resumeData.certifications : [];
+  const projects = Array.isArray(resumeData?.projects) ? resumeData.projects : [];
+  const customSections = Array.isArray(resumeData?.customSections) ? resumeData.customSections : [];
 
   const docChildren = [];
 
@@ -570,6 +572,105 @@ export async function exportToDocx(resumeData, themeSettings) {
           ].filter(Boolean),
         })
       );
+    });
+  }
+
+  // 7. PROJECTS
+  if (projects.length > 0) {
+    docChildren.push(createSectionHeading('PROJECTS'));
+    projects.forEach((proj) => {
+      if (!proj) return;
+      const headerLine = [proj.name, proj.role].filter(Boolean).join(' | ');
+      if (headerLine) {
+        docChildren.push(
+          new Paragraph({
+            spacing: { before: isSinglePage ? 40 : 100, after: 15 },
+            children: [
+              new TextRun({
+                text: headerLine,
+                bold: true,
+                size: isSinglePage ? 21 : 22,
+                color: primaryHex,
+                font: font,
+              }),
+              proj.period
+                ? new TextRun({
+                    text: `  ${proj.period}`,
+                    italics: true,
+                    size: 20,
+                    color: secondaryHex,
+                    font: font,
+                  })
+                : null,
+            ].filter(Boolean),
+          })
+        );
+      }
+
+      if (proj.link) {
+        docChildren.push(
+          new Paragraph({
+            spacing: { before: 0, after: 40 },
+            children: [
+              new TextRun({
+                text: proj.link,
+                size: 19,
+                color: '666666',
+                font: font,
+              }),
+            ],
+          })
+        );
+      }
+
+      if (Array.isArray(proj.highlights) && proj.highlights.length > 0) {
+        proj.highlights.forEach((hl) => {
+          if (!hl || !String(hl).trim()) return;
+          docChildren.push(
+            new Paragraph({
+              bullet: { level: 0 },
+              spacing: { before: 20, after: 20 },
+              children: [
+                new TextRun({
+                  text: String(hl),
+                  size: 21,
+                  color: '222222',
+                  font: font,
+                }),
+              ],
+            })
+          );
+        });
+      }
+    });
+  }
+
+  // 8. CUSTOM SECTIONS
+  if (customSections.length > 0) {
+    customSections.forEach((section) => {
+      if (!section || !section.title) return;
+      const items = Array.isArray(section.items)
+        ? section.items.filter((item) => item && String(item).trim())
+        : [];
+      if (items.length === 0) return;
+
+      docChildren.push(createSectionHeading(section.title));
+      items.forEach((item) => {
+        docChildren.push(
+          new Paragraph({
+            bullet: { level: 0 },
+            spacing: { before: 20, after: 20 },
+            children: [
+              new TextRun({
+                text: String(item),
+                size: 21,
+                color: '222222',
+                font: font,
+              }),
+            ],
+          })
+        );
+      });
     });
   }
 

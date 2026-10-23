@@ -1,7 +1,8 @@
 import React from 'react';
+import ExtraSections from './ExtraSections';
 
 export default function MinimalTemplate({ data, theme }) {
-  const { personalInfo, summary, skills, experience, education, languages, certifications } = data;
+  const { personalInfo, summary, skills, experience, education, languages, certifications, projects, customSections } = data;
   const isCompact = theme?.singlePage !== false || theme?.fontSize === 'compact';
 
   return (
@@ -151,6 +152,16 @@ export default function MinimalTemplate({ data, theme }) {
           </div>
         </div>
       )}
+
+      <ExtraSections
+        projects={projects}
+        customSections={customSections}
+        renderHeading={(label) => (
+          <h2 className="text-xs font-bold tracking-widest uppercase text-gray-950 border-b border-gray-300 pb-1 mb-2">
+            {label}
+          </h2>
+        )}
+      />
     </div>
   );
 }

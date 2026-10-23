@@ -7,6 +7,8 @@ import {
   Briefcase,
   GraduationCap,
   Award,
+  FolderKanban,
+  LayoutList,
 } from 'lucide-react';
 import { sound } from '../../utils/soundEffects';
 import PersonalInfoEditor from './PersonalInfoEditor';
@@ -16,6 +18,8 @@ import ExperienceEditor from './ExperienceEditor';
 import EducationEditor from './EducationEditor';
 import CertificationsEditor from './CertificationsEditor';
 import LanguagesEditor from './LanguagesEditor';
+import ProjectsEditor from './ProjectsEditor';
+import CustomSectionsEditor from './CustomSectionsEditor';
 import ThemeCustomizer from './ThemeCustomizer';
 
 const TABS = [
@@ -24,8 +28,10 @@ const TABS = [
   { id: 'summary', label: 'Summary', icon: FileText },
   { id: 'skills', label: 'Skills', icon: Sparkles },
   { id: 'experience', label: 'Experience', icon: Briefcase },
+  { id: 'projects', label: 'Projects', icon: FolderKanban },
   { id: 'education', label: 'Education', icon: GraduationCap },
   { id: 'certifications', label: 'Certs', icon: Award },
+  { id: 'custom', label: 'Custom', icon: LayoutList },
 ];
 
 export default function EditorSidebar({
@@ -44,18 +50,25 @@ export default function EditorSidebar({
   };
 
   return (
-    <aside className="w-full lg:w-[500px] shrink-0 border-r border-pink-500/20 bg-[#18071a]/95 backdrop-blur-2xl flex flex-col h-[calc(100vh-70px)] overflow-hidden no-print select-none">
+    <aside
+      aria-label="Resume editor"
+      className="w-full lg:w-[500px] shrink-0 border-r border-pink-500/20 bg-[#18071a]/95 backdrop-blur-2xl flex flex-col h-[calc(100vh-70px)] overflow-hidden no-print select-none"
+    >
       {/* Botanical Atelier Sub-Header */}
       <div className="px-4 py-2 bg-[#140616] border-b border-pink-500/20 flex items-center justify-between text-xs text-pink-200">
         <div className="flex items-center gap-1.5">
-          <Sparkles size={13} className="text-rose-400 animate-pulse" />
+          <Sparkles size={13} className="text-rose-400 animate-pulse" aria-hidden="true" />
           <span className="font-bold tracking-wider text-[11px] uppercase">✦ Resume Studio Workshop</span>
         </div>
         <span className="text-[10px] text-pink-400/60 font-sans">Live Auto-Sync</span>
       </div>
 
       {/* Elegant Tab Selector */}
-      <div className="grid grid-cols-4 sm:grid-cols-7 gap-1 p-2 bg-[#140516] border-b border-pink-500/15">
+      <div
+        role="tablist"
+        aria-label="Editor sections"
+        className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-5 gap-1 p-2 bg-[#140516] border-b border-pink-500/15"
+      >
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -63,15 +76,23 @@ export default function EditorSidebar({
             <button
               key={tab.id}
               type="button"
+              role="tab"
+              aria-selected={isActive}
+              aria-controls={`panel-${tab.id}`}
+              id={`tab-${tab.id}`}
               onClick={() => handleTabClick(tab.id)}
-              className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl text-[10px] tracking-wide transition-all cursor-pointer relative group ${
+              className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl text-[10px] tracking-wide transition-all cursor-pointer relative group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#140516] ${
                 isActive
                   ? 'bg-gradient-to-b from-[#3a133d] to-[#270b29] text-pink-100 border border-pink-400/60 shadow-[0_4px_16px_rgba(244,63,94,0.25)]'
                   : 'text-pink-300/60 hover:text-pink-100 hover:bg-pink-950/30 border border-transparent'
               }`}
             >
               <div className="flex items-center gap-1 mb-1">
-                <Icon size={14} className={isActive ? 'text-rose-300' : 'text-pink-400/50 group-hover:text-pink-300'} />
+                <Icon
+                  size={14}
+                  aria-hidden="true"
+                  className={isActive ? 'text-rose-300' : 'text-pink-400/50 group-hover:text-pink-300'}
+                />
               </div>
               <span className="truncate w-full text-center font-semibold text-[10px]">{tab.label}</span>
               {isActive && (
@@ -83,9 +104,14 @@ export default function EditorSidebar({
       </div>
 
       {/* Tab Content Panel */}
-      <div className="flex-1 overflow-y-auto p-4 sm:p-5 relative">
+      <div
+        className="flex-1 overflow-y-auto p-4 sm:p-5 relative"
+        role="tabpanel"
+        id={`panel-${activeTab}`}
+        aria-labelledby={`tab-${activeTab}`}
+      >
         {activeTab === 'templates' && (
-          <ThemeCustomizer theme={theme} onChange={onUpdateTheme} />
+          <ThemeCustomizer theme={theme} onChange={onUpdateTheme} resumeData={resumeData} />
         )}
 
         {activeTab === 'personal' && (
@@ -125,6 +151,13 @@ export default function EditorSidebar({
           />
         )}
 
+        {activeTab === 'projects' && (
+          <ProjectsEditor
+            projects={resumeData.projects || []}
+            onChange={(projects) => onUpdateResume({ ...resumeData, projects })}
+          />
+        )}
+
         {activeTab === 'education' && (
           <div className="space-y-6">
             <EducationEditor
@@ -151,7 +184,7 @@ export default function EditorSidebar({
                 <button
                   type="button"
                   onClick={() => handleTabClick('certifications')}
-                  className="px-3 py-1 text-[11px] font-bold rounded-xl bg-pink-950/60 hover:bg-pink-900/80 text-pink-200 border border-pink-500/40 cursor-pointer transition-colors"
+                  className="px-3 py-1 text-[11px] font-bold rounded-xl bg-pink-950/60 hover:bg-pink-900/80 text-pink-200 border border-pink-500/40 cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
                 >
                   Go to Certifications Tab →
                 </button>
@@ -165,6 +198,15 @@ export default function EditorSidebar({
             certifications={resumeData.certifications || []}
             onChange={(certifications) =>
               onUpdateResume({ ...resumeData, certifications })
+            }
+          />
+        )}
+
+        {activeTab === 'custom' && (
+          <CustomSectionsEditor
+            customSections={resumeData.customSections || []}
+            onChange={(customSections) =>
+              onUpdateResume({ ...resumeData, customSections })
             }
           />
         )}

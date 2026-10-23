@@ -14,6 +14,7 @@ import { tailorResumeToJobWithAi } from '../../utils/aiService';
 import { discoverJobs } from '../../utils/jobDiscoveryService';
 import { getConfiguredSites } from '../../utils/jobCredentials';
 import { sound } from '../../utils/soundEffects';
+import ModalShell from './ModalShell';
 
 export default function JobMatchModal({
   isOpen,
@@ -120,8 +121,7 @@ export default function JobMatchModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md font-sans select-none animate-fade-in">
-      <div className="w-full max-w-2xl bg-[#18071c] border border-pink-500/35 rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.7)] overflow-hidden flex flex-col max-h-[92vh] relative canvas-card">
+    <ModalShell onClose={onClose} labelledBy="job-match-title" className="max-w-2xl">
         {/* Modal Header */}
         <div className="p-4 border-b border-pink-500/20 flex items-center justify-between bg-[#200824]/90 backdrop-blur-xl">
           <div className="flex items-center gap-3">
@@ -129,7 +129,10 @@ export default function JobMatchModal({
               <Target size={18} />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-pink-50 tracking-wide flex items-center gap-2">
+              <h2
+                id="job-match-title"
+                className="text-sm font-bold text-pink-50 tracking-wide flex items-center gap-2"
+              >
                 Target Job Matcher & ATS Tailoring
               </h2>
               <p className="text-[11px] text-pink-300/70">
@@ -138,11 +141,13 @@ export default function JobMatchModal({
             </div>
           </div>
           <button
+            type="button"
+            aria-label="Close job matcher dialog"
             onClick={() => {
               sound.playAction();
               onClose();
             }}
-            className="p-1.5 rounded-xl text-pink-400/60 hover:text-pink-100 hover:bg-pink-900/30 transition-colors cursor-pointer"
+            className="p-1.5 rounded-xl text-pink-400/60 hover:text-pink-100 hover:bg-pink-900/30 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#18071c]"
           >
             <X size={18} />
           </button>
@@ -467,7 +472,6 @@ export default function JobMatchModal({
             </button>
           )}
         </div>
-      </div>
-    </div>
+      </ModalShell>
   );
 }

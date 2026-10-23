@@ -35,18 +35,18 @@ export function calculateAtsScore(resumeData) {
     suggestions.push('Ensure both a valid phone number and professional email are included.');
   }
 
-  // 2. Professional Summary (20 pts)
+  // 2. Professional Summary (15 pts)
   let summaryScore = 0;
   const summaryText = resumeData.summary?.trim() || '';
   const wordCount = summaryText ? summaryText.split(/\s+/).length : 0;
 
   if (wordCount >= 30 && wordCount <= 120) {
-    summaryScore = 20;
+    summaryScore = 15;
   } else if (wordCount > 10 && wordCount < 30) {
-    summaryScore = 12;
+    summaryScore = 9;
     suggestions.push('Expand your summary slightly (target 40-80 words) to highlight leadership and core achievements.');
   } else if (wordCount > 120) {
-    summaryScore = 14;
+    summaryScore = 10;
     suggestions.push('Your summary is a bit long. Aim to keep it punchy (under 100 words) for recruiter scannability.');
   } else {
     suggestions.push('Add an impactful 3-4 sentence professional summary.');
@@ -56,11 +56,11 @@ export function calculateAtsScore(resumeData) {
   breakdown.push({
     category: 'Professional Summary',
     score: summaryScore,
-    maxScore: 20,
-    status: summaryScore >= 16 ? 'good' : 'warning',
+    maxScore: 15,
+    status: summaryScore >= 12 ? 'good' : 'warning',
   });
 
-  // 3. Technical Skills (20 pts)
+  // 3. Technical Skills & Keyword Coverage (15 pts)
   let skillsScore = 0;
   const totalCategories = resumeData.skills?.length || 0;
   let totalSkillCount = 0;
@@ -70,13 +70,21 @@ export function calculateAtsScore(resumeData) {
     }
   });
 
+  // Custom sections are free-text keywords too, so they count toward coverage.
+  const customSections = Array.isArray(resumeData.customSections) ? resumeData.customSections : [];
+  customSections.forEach(section => {
+    (section?.items || []).forEach(item => {
+      if (typeof item === 'string' && item.trim()) totalSkillCount += 1;
+    });
+  });
+
   if (totalCategories >= 4 && totalSkillCount >= 10) {
-    skillsScore = 20;
+    skillsScore = 15;
   } else if (totalSkillCount >= 5) {
-    skillsScore = 12;
+    skillsScore = 9;
     suggestions.push('Categorize your skills into distinct domains (e.g. Automation, API, Performance, Tools).');
   } else {
-    skillsScore = 5;
+    skillsScore = 4;
     suggestions.push('Add more relevant industry tools and frameworks to pass automated keyword screens.');
   }
 
@@ -84,8 +92,8 @@ export function calculateAtsScore(resumeData) {
   breakdown.push({
     category: 'Skills & Keywords',
     score: skillsScore,
-    maxScore: 20,
-    status: skillsScore >= 16 ? 'good' : 'warning',
+    maxScore: 15,
+    status: skillsScore >= 12 ? 'good' : 'warning',
   });
 
   // 4. Work Experience & Impact Metrics (25 pts)
@@ -144,6 +152,40 @@ export function calculateAtsScore(resumeData) {
     score: eduScore,
     maxScore: 10,
     status: eduScore >= 8 ? 'good' : 'warning',
+  });
+
+  // 6. Projects & Portfolio (10 pts)
+  let projectScore = 0;
+  const projects = Array.isArray(resumeData.projects) ? resumeData.projects : [];
+  if (projects.length > 0) {
+    projectScore += 5;
+
+    let projectVerbCount = 0;
+    let projectNumberCount = 0;
+    projects.forEach(proj => {
+      (proj?.highlights || []).forEach(hl => {
+        const text = String(hl || '');
+        if (ACTION_VERBS.some(v => text.toLowerCase().includes(v))) projectVerbCount++;
+        if (/\d+/.test(text)) projectNumberCount++;
+      });
+    });
+
+    if (projectVerbCount >= 2) projectScore += 3;
+    if (projectNumberCount >= 1) projectScore += 2;
+
+    if (projectScore < 10) {
+      suggestions.push('Describe each project with an action verb and a measurable outcome (e.g. "Cut manual regression time by 60%").');
+    }
+  } else {
+    suggestions.push('Add 1-2 portfolio projects that prove the skills your target role asks for.');
+  }
+
+  score += projectScore;
+  breakdown.push({
+    category: 'Projects & Portfolio',
+    score: projectScore,
+    maxScore: 10,
+    status: projectScore >= 8 ? 'good' : 'warning',
   });
 
   const finalScore = Math.min(100, Math.round(score));
