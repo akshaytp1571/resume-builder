@@ -90,7 +90,7 @@ export default function JobCredentialsModal({ isOpen, onClose, onSaved }) {
               sound.playAction();
               onClose();
             }}
-            className="p-1.5 rounded-xl text-pink-400/60 hover:text-pink-100 hover:bg-pink-900/30 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#18071c]"
+            className="p-1.5 rounded-xl text-pink-400/85 hover:text-pink-100 hover:bg-pink-900/30 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#18071c]"
           >
             <X size={18} />
           </button>
@@ -119,7 +119,7 @@ export default function JobCredentialsModal({ isOpen, onClose, onSaved }) {
                 </span>
               )}
             </div>
-            <p className="text-[10px] text-pink-300/60 leading-relaxed">
+            <p className="text-[10px] text-pink-300/70 leading-relaxed">
               Absolute path to the DOCX or PDF the apply agent should upload.
               Export one from this app first, then paste its full path here.
             </p>
@@ -128,7 +128,7 @@ export default function JobCredentialsModal({ isOpen, onClose, onSaved }) {
               value={resumeFile}
               onChange={(e) => setResumeFile(e.target.value)}
               placeholder="C:\Users\aksha\Downloads\Akshay_Saseendran_Resume.docx"
-              className="w-full bg-[#100410] border border-pink-500/25 rounded-xl p-2 text-xs text-pink-100 placeholder:text-pink-300/25 focus:outline-none focus:border-rose-400 font-mono"
+              className="w-full bg-[#100410] border border-pink-500/25 rounded-xl p-2 text-xs text-pink-100 placeholder:text-pink-300/70 focus:outline-none focus:border-rose-400 font-mono"
             />
           </div>
 
@@ -161,7 +161,7 @@ export default function JobCredentialsModal({ isOpen, onClose, onSaved }) {
                   )}
                 </div>
 
-                <p className="text-[10px] text-pink-300/60 leading-relaxed">
+                <p className="text-[10px] text-pink-300/70 leading-relaxed">
                   {field.hint}
                 </p>
 
@@ -178,7 +178,7 @@ export default function JobCredentialsModal({ isOpen, onClose, onSaved }) {
                         setDraft({ ...draft, [field.id]: { ...entry, username: e.target.value } })
                       }
                       placeholder="you@example.com"
-                      className="w-full bg-[#100410] border border-pink-500/25 rounded-xl p-2 text-xs text-pink-100 placeholder:text-pink-300/25 focus:outline-none focus:border-rose-400"
+                      className="w-full bg-[#100410] border border-pink-500/25 rounded-xl p-2 text-xs text-pink-100 placeholder:text-pink-300/70 focus:outline-none focus:border-rose-400"
                     />
                   </div>
                   <div>
@@ -194,14 +194,14 @@ export default function JobCredentialsModal({ isOpen, onClose, onSaved }) {
                           setDraft({ ...draft, [field.id]: { ...entry, password: e.target.value } })
                         }
                         placeholder="••••••••"
-                        className="w-full bg-[#100410] border border-pink-500/25 rounded-xl p-2 pr-8 text-xs text-pink-100 placeholder:text-pink-300/25 focus:outline-none focus:border-rose-400"
+                        className="w-full bg-[#100410] border border-pink-500/25 rounded-xl p-2 pr-8 text-xs text-pink-100 placeholder:text-pink-300/70 focus:outline-none focus:border-rose-400"
                       />
                       <button
                         type="button"
                         onClick={() =>
                           setShowPassword({ ...showPassword, [field.id]: !showPassword[field.id] })
                         }
-                        className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 text-pink-400/50 hover:text-pink-200 cursor-pointer rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#18071c]"
+                        className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 text-pink-400/85 hover:text-pink-200 cursor-pointer rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#18071c]"
                         title={showPassword[field.id] ? 'Hide' : 'Show'}
                         aria-label={
                           showPassword[field.id]

@@ -187,7 +187,7 @@ export default function AiConfigModal({ isOpen, onClose, onConfigSaved }) {
               sound.playAction();
               onClose();
             }}
-            className="p-1.5 rounded-xl text-pink-400/60 hover:text-pink-100 hover:bg-pink-900/30 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#18071c]"
+            className="p-1.5 rounded-xl text-pink-400/85 hover:text-pink-100 hover:bg-pink-900/30 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#18071c]"
           >
             <X size={18} />
           </button>
@@ -221,7 +221,7 @@ export default function AiConfigModal({ isOpen, onClose, onConfigSaved }) {
                         <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-ping" />
                       )}
                     </div>
-                    <p className="text-[10px] text-pink-300/50 truncate mt-0.5">
+                    <p className="text-[10px] text-pink-300/70 truncate mt-0.5">
                       {prov.id === 'vyceai'
                         ? 'Vyce AI (deepseek-v4.1)'
                         : prov.id === 'groq'
@@ -296,7 +296,7 @@ export default function AiConfigModal({ isOpen, onClose, onConfigSaved }) {
                   className="w-full bg-[#150518] border border-pink-500/25 rounded-xl px-3 py-1.5 text-xs text-pink-100 focus:outline-none focus:border-rose-400 font-mono tracking-wider"
                 />
               </div>
-              <p className="text-[10px] text-pink-300/60 mt-1">
+              <p className="text-[10px] text-pink-300/70 mt-1">
                 🔒 Keys are saved locally in your browser session and never transmitted to third-party tracking servers.
               </p>
             </div>
@@ -336,7 +336,7 @@ export default function AiConfigModal({ isOpen, onClose, onConfigSaved }) {
                   type="button"
                   onClick={handleDiscoverModels}
                   disabled={discovering}
-                  className="px-3 py-1 rounded-xl bg-[#2a0c30] hover:bg-[#381040] border border-pink-400/50 hover:border-pink-300 text-rose-200 text-[11px] font-semibold tracking-wide transition-all cursor-pointer flex items-center gap-1.5 shadow-xs disabled:opacity-50"
+                  className="px-3 py-1 rounded-xl bg-[#2a0c30] hover:bg-[#381040] border border-pink-400/70 hover:border-pink-300 text-rose-200 text-[11px] font-semibold tracking-wide transition-all cursor-pointer flex items-center gap-1.5 shadow-xs disabled:opacity-50"
                   title="Query the server /models endpoint to discover available models"
                 >
                   <RefreshCw
@@ -358,7 +358,7 @@ export default function AiConfigModal({ isOpen, onClose, onConfigSaved }) {
                   setTestResult(null);
                 }}
                 placeholder="Enter model name (e.g. deepseek-v4.1, gpt-4o) or pick below..."
-                className="w-full bg-[#150518] border border-pink-500/35 focus:border-rose-400 rounded-xl px-3 py-2 text-xs text-pink-50 placeholder:text-pink-300/30 focus:outline-none shadow-inner font-mono"
+                className="w-full bg-[#150518] border border-pink-500/35 focus:border-rose-400 rounded-xl px-3 py-2 text-xs text-pink-50 placeholder:text-pink-300/70 focus:outline-none shadow-inner font-mono"
               />
               {config.model && (
                 <span className="absolute right-2.5 top-2 text-[9.5px] font-sans px-2 py-0.5 rounded-full bg-emerald-950/80 text-emerald-300 border border-emerald-500/40">
@@ -369,7 +369,7 @@ export default function AiConfigModal({ isOpen, onClose, onConfigSaved }) {
 
             {/* Quick-Pick Model Badges for the selected provider */}
             <div className="flex flex-wrap items-center gap-1.5 mt-2">
-              <span className="text-[10px] text-pink-300/60 font-sans">Quick Pick:</span>
+              <span className="text-[10px] text-pink-300/70 font-sans">Quick Pick:</span>
               {(config.providerId === 'vyceai'
                 ? ['deepseek-v4.1', 'deepseek-v4-flash', 'claude-sonnet-4-6', 'gpt-6-luna']
                 : config.providerId === 'groq'
@@ -423,13 +423,13 @@ export default function AiConfigModal({ isOpen, onClose, onConfigSaved }) {
                   </span>
                   {discoveredModels.length > 5 && (
                     <div className="relative">
-                      <Search size={11} className="absolute left-2.5 top-2 text-pink-400/60" />
+                      <Search size={11} className="absolute left-2.5 top-2 text-pink-400/85" />
                       <input
                         type="text"
                         value={modelFilter}
                         onChange={(e) => setModelFilter(e.target.value)}
                         placeholder="Filter..."
-                        className="w-36 bg-[#130416] border border-pink-500/25 rounded-lg pl-7 pr-2 py-0.5 text-[10.5px] text-pink-100 focus:outline-none focus:border-rose-400 placeholder:text-pink-300/30 font-mono"
+                        className="w-36 bg-[#130416] border border-pink-500/25 rounded-lg pl-7 pr-2 py-0.5 text-[10.5px] text-pink-100 focus:outline-none focus:border-rose-400 placeholder:text-pink-300/70 font-mono"
                       />
                     </div>
                   )}
@@ -437,7 +437,7 @@ export default function AiConfigModal({ isOpen, onClose, onConfigSaved }) {
 
                 <div className="max-h-36 overflow-y-auto pr-1 flex flex-wrap gap-1.5 custom-scrollbar">
                   {filteredModels.length === 0 ? (
-                    <span className="text-[10.5px] text-pink-300/50 py-1">
+                    <span className="text-[10.5px] text-pink-300/70 py-1">
                       No models matching "{modelFilter}"
                     </span>
                   ) : (
@@ -492,7 +492,7 @@ export default function AiConfigModal({ isOpen, onClose, onConfigSaved }) {
               }
               className="w-full accent-rose-500 cursor-pointer h-1.5 bg-[#120414] rounded-lg"
             />
-            <div className="flex justify-between text-[10px] text-pink-300/60 mt-0.5">
+            <div className="flex justify-between text-[10px] text-pink-300/70 mt-0.5">
               <span>Precise / Factual (0.1)</span>
               <span>Creative / Expressive (1.0)</span>
             </div>

@@ -147,7 +147,7 @@ export default function JobMatchModal({
               sound.playAction();
               onClose();
             }}
-            className="p-1.5 rounded-xl text-pink-400/60 hover:text-pink-100 hover:bg-pink-900/30 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#18071c]"
+            className="p-1.5 rounded-xl text-pink-400/85 hover:text-pink-100 hover:bg-pink-900/30 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#18071c]"
           >
             <X size={18} />
           </button>
@@ -294,7 +294,7 @@ export default function JobMatchModal({
                             </span>
                           </div>
                           {job.description && (
-                            <p className="text-[10.5px] text-pink-300/60 mt-1 line-clamp-2">
+                            <p className="text-[10.5px] text-pink-300/70 mt-1 line-clamp-2">
                               {job.description}
                             </p>
                           )}
@@ -341,7 +341,7 @@ export default function JobMatchModal({
                 value={jobDescription}
                 onChange={(e) => setJobDescription(e.target.value)}
                 placeholder="Paste the requirements, responsibilities, and role qualifications from LinkedIn, Indeed, or company careers page..."
-                className="w-full bg-[#150518] border border-pink-500/25 rounded-2xl p-3.5 text-xs text-pink-100 placeholder:text-pink-300/30 focus:outline-none focus:border-rose-400 font-sans leading-relaxed transition-colors"
+                className="w-full bg-[#150518] border border-pink-500/25 rounded-2xl p-3.5 text-xs text-pink-100 placeholder:text-pink-300/70 focus:outline-none focus:border-rose-400 font-sans leading-relaxed transition-colors"
               />
 
               {error && (

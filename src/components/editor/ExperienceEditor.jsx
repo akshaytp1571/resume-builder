@@ -168,7 +168,7 @@ export default function ExperienceEditor({
                       e.stopPropagation();
                       handleDeleteExperience(index);
                     }}
-                    className="p-1.5 rounded-lg text-pink-400/60 hover:text-rose-300 hover:bg-rose-950/50 transition-colors cursor-pointer"
+                    className="p-1.5 rounded-lg text-pink-400/85 hover:text-rose-300 hover:bg-rose-950/50 transition-colors cursor-pointer"
                     title="Delete role"
                   >
                     <Trash2 size={13} />
@@ -192,7 +192,7 @@ export default function ExperienceEditor({
                         value={exp.role}
                         onChange={(e) => handleFieldChange(index, 'role', e.target.value)}
                         placeholder="e.g. QA Lead / Test Architect"
-                        className="w-full bg-[#1e0823] border border-pink-500/25 rounded-xl px-2.5 py-1.5 text-xs text-pink-100 placeholder:text-pink-300/30 focus:outline-none focus:border-rose-400"
+                        className="w-full bg-[#1e0823] border border-pink-500/25 rounded-xl px-2.5 py-1.5 text-xs text-pink-100 placeholder:text-pink-300/70 focus:outline-none focus:border-rose-400"
                       />
                     </div>
 
@@ -205,7 +205,7 @@ export default function ExperienceEditor({
                         value={exp.company}
                         onChange={(e) => handleFieldChange(index, 'company', e.target.value)}
                         placeholder="e.g. Northwind Technologies, Austin"
-                        className="w-full bg-[#1e0823] border border-pink-500/25 rounded-xl px-2.5 py-1.5 text-xs text-pink-100 placeholder:text-pink-300/30 focus:outline-none focus:border-rose-400"
+                        className="w-full bg-[#1e0823] border border-pink-500/25 rounded-xl px-2.5 py-1.5 text-xs text-pink-100 placeholder:text-pink-300/70 focus:outline-none focus:border-rose-400"
                       />
                     </div>
 
@@ -218,7 +218,7 @@ export default function ExperienceEditor({
                         value={exp.period}
                         onChange={(e) => handleFieldChange(index, 'period', e.target.value)}
                         placeholder="e.g. April 2021 – Present"
-                        className="w-full bg-[#1e0823] border border-pink-500/25 rounded-xl px-2.5 py-1.5 text-xs text-pink-100 placeholder:text-pink-300/30 focus:outline-none focus:border-rose-400"
+                        className="w-full bg-[#1e0823] border border-pink-500/25 rounded-xl px-2.5 py-1.5 text-xs text-pink-100 placeholder:text-pink-300/70 focus:outline-none focus:border-rose-400"
                       />
                     </div>
 
@@ -231,7 +231,7 @@ export default function ExperienceEditor({
                         value={exp.product || ''}
                         onChange={(e) => handleFieldChange(index, 'product', e.target.value)}
                         placeholder="e.g. Platform: FleetWorks logistics suite"
-                        className="w-full bg-[#1e0823] border border-pink-500/25 rounded-xl px-2.5 py-1.5 text-xs text-pink-100 placeholder:text-pink-300/30 focus:outline-none focus:border-rose-400"
+                        className="w-full bg-[#1e0823] border border-pink-500/25 rounded-xl px-2.5 py-1.5 text-xs text-pink-100 placeholder:text-pink-300/70 focus:outline-none focus:border-rose-400"
                       />
                     </div>
                   </div>
@@ -263,12 +263,12 @@ export default function ExperienceEditor({
                                 value={hl}
                                 onChange={(e) => handleHighlightChange(index, hIdx, e.target.value)}
                                 placeholder="Detail testing achievements, metrics, or automation results..."
-                                className="flex-1 bg-[#230a28] border border-pink-500/25 rounded-xl p-2.5 text-xs text-pink-50 placeholder:text-pink-300/30 focus:outline-none focus:border-rose-400 transition-colors leading-relaxed font-sans"
+                                className="flex-1 bg-[#230a28] border border-pink-500/25 rounded-xl p-2.5 text-xs text-pink-50 placeholder:text-pink-300/70 focus:outline-none focus:border-rose-400 transition-colors leading-relaxed font-sans"
                               />
                               <button
                                 type="button"
                                 onClick={() => handleDeleteHighlight(index, hIdx)}
-                                className="p-1 mt-1 text-pink-400/60 hover:text-rose-300 cursor-pointer"
+                                className="p-1 mt-1 text-pink-400/85 hover:text-rose-300 cursor-pointer"
                                 title="Remove bullet"
                               >
                                 <Trash2 size={13} />

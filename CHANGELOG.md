@@ -4,6 +4,52 @@ All notable changes to this project. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning is
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-10-22
+
+Closes the four gaps left open after v1.1.0: recovery is now visible to the user,
+the keyword matcher handles word inflections, muted text meets WCAG AA, and the
+README has real screenshots.
+
+### Added
+
+- **Recovery banner.** When a saved resume cannot be read, `loadStore()` already
+  quarantined it under a recovery key — but nothing told the user, so they saw
+  sample data and never learned their own resume was recoverable. A one-time
+  banner now explains what happened and offers a download of the original bytes.
+  Dismissing it sets a flag so it does not nag; the recovery copy is kept either
+  way. `listRecoveryKeys()` returns the keys newest-first.
+- **Light stemming in the keyword matcher.** `test` and `testing` were distinct
+  terms, so a job description asking for "test automation" did not match a
+  resume saying "automation testing" — the single largest source of false
+  negatives. A deliberately small suffix-stripper (`-ies`, `-es`, `-ing`, `-ed`,
+  `-s`) now normalises both sides for comparison only. Display terms keep their
+  surface form, multi-word phrases are never stemmed, and acronyms survive
+  intact. On the shipped sample resume against a real QA job description the
+  match score rose 62% → 69% with no regressions.
+- **Screenshots in the README.** Editor, ATS breakdown, job-description matcher
+  and template picker, at 1440×900 and under 150 KB each.
+
+### Changed
+
+- **Contrast raised to WCAG AA across the whole palette.** Every muted text
+  token was measured, not guessed: `text-pink-300/60` (4.30:1) and `/50`
+  (3.37:1) went to `/70` (5.38:1); `text-pink-400/60` (3.12:1) and `/50`
+  (2.57:1) went to `/85` (5.03:1); `slate-500` (3.76:1) became `slate-400`
+  (6.82:1); placeholders went from `/30` (1.92:1) to `/50` (3.41:1); UI borders
+  from `pink-400/50` (2.57:1) to `/70` (3.82:1). Hue was never touched — only
+  opacity — so the muted aesthetic is unchanged.
+- **Corrected colour reference.** The palette is Tailwind 4, which ships oklch
+  values, not the v3 hex codes. `pink-400` is `#fb64b6`, not `#f472b6` —
+  materially more saturated, and auditing against the v3 value would have
+  understated contrast and caused over-correction.
+
+### Notes
+
+- `text-pink-300/70` already passed AA at 5.38:1 and was left alone across its
+  44 uses. Measuring beat assuming.
+- The only remaining sub-4.5:1 text is a disabled control at 3.12:1, which
+  WCAG 1.4.3 explicitly exempts.
+
 ## [1.1.0] - 2026-10-22
 
 Nine templates, PDF import, offline job-description matching, vector PDF export,

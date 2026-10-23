@@ -298,6 +298,31 @@ export function hasRecoveryCopy() {
 }
 
 /**
+ * Recovery keys, newest first.
+ *
+ * Keys are `${STORE_KEY}__recovery_${Date.now()}`, so the timestamp suffix is
+ * the sort key. Ties and unparseable suffixes fall back to string order, which
+ * still groups a batch together. Used by the recovery banner in App.jsx.
+ */
+export function listRecoveryKeys() {
+  const prefix = `${STORE_KEY}__recovery_`;
+  const keys = [];
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(prefix)) keys.push(key);
+    }
+  } catch (e) {
+    return [];
+  }
+  const stamp = (key) => {
+    const n = Number(key.slice(prefix.length));
+    return Number.isFinite(n) ? n : -1;
+  };
+  return keys.sort((a, b) => stamp(b) - stamp(a) || b.localeCompare(a));
+}
+
+/**
  * Persist the whole store.
  *
  * Returns `{ ok: boolean, merged: store|null }`.

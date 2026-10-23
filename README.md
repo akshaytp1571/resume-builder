@@ -17,13 +17,18 @@ accessibility pass. See [CHANGELOG.md](./CHANGELOG.md).
 
 ## Screenshots
 
-| Editor + live preview | ATS breakdown |
-|---|---|
-| _add a screenshot_ | _add a screenshot_ |
+![Editor and live preview](docs/editor.png)
 
-To capture yours: run `npm run dev`, open http://localhost:5173, press
-`Win+Shift+S` (Windows) or `Cmd+Shift+4` (macOS), and drop the files in
-`docs/`.
+| ATS breakdown | Job-description matcher |
+|---|---|
+| ![ATS breakdown](docs/ats.png) | ![Job-description matcher](docs/jd-match.png) |
+
+![Template picker](docs/templates.png)
+
+To recapture yours: run `npm run dev`, open http://localhost:5173, press
+`Win+Shift+S` (Windows) or `Cmd+Shift+4` (macOS), and replace the files in
+`docs/`. Capture at 1440×900 at 1× scale — larger screenshots bloat the repo
+without looking sharper on GitHub.
 
 ---
 

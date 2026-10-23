@@ -54,14 +54,14 @@ export default function LanguagesEditor({ languages, onChange }) {
         {languages?.map((lang, index) => (
           <div
             key={lang.id || index}
-            className="flex items-center gap-2 p-2.5 rounded-2xl canvas-card hover:border-pink-400/50 transition-all"
+            className="flex items-center gap-2 p-2.5 rounded-2xl canvas-card hover:border-pink-400/70 transition-all"
           >
             <input
               type="text"
               value={lang.name}
               onChange={(e) => handleFieldChange(index, 'name', e.target.value)}
               placeholder="e.g. English"
-              className="flex-1 bg-[#18071c] border border-pink-500/25 rounded-xl px-2.5 py-1.5 text-xs text-pink-100 placeholder:text-pink-300/30 focus:outline-none focus:border-rose-400"
+              className="flex-1 bg-[#18071c] border border-pink-500/25 rounded-xl px-2.5 py-1.5 text-xs text-pink-100 placeholder:text-pink-300/70 focus:outline-none focus:border-rose-400"
             />
             <select
               value={lang.proficiency || 'Conversational'}
@@ -77,7 +77,7 @@ export default function LanguagesEditor({ languages, onChange }) {
             <button
               type="button"
               onClick={() => handleDeleteLanguage(index)}
-              className="p-1.5 rounded-lg text-pink-400/60 hover:text-rose-300 hover:bg-rose-950/50 transition-colors cursor-pointer"
+              className="p-1.5 rounded-lg text-pink-400/85 hover:text-rose-300 hover:bg-rose-950/50 transition-colors cursor-pointer"
               title="Delete language"
             >
               <Trash2 size={13} />

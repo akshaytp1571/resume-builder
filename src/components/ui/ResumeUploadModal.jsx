@@ -169,7 +169,7 @@ export default function ResumeUploadModal({
               sound.playAction();
               onClose();
             }}
-            className="p-1.5 rounded-xl text-pink-400/60 hover:text-pink-100 hover:bg-pink-900/30 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#18071c]"
+            className="p-1.5 rounded-xl text-pink-400/85 hover:text-pink-100 hover:bg-pink-900/30 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#18071c]"
           >
             <X size={18} />
           </button>
@@ -252,7 +252,7 @@ export default function ResumeUploadModal({
                     value={rawText}
                     onChange={(e) => setRawText(e.target.value)}
                     placeholder="Paste the text of your resume here (Summary, Skills, Experience, Education)..."
-                    className="w-full bg-[#150518] border border-pink-500/25 rounded-2xl p-3.5 text-xs text-pink-100 placeholder:text-pink-300/30 focus:outline-none focus:border-rose-400 font-sans leading-relaxed"
+                    className="w-full bg-[#150518] border border-pink-500/25 rounded-2xl p-3.5 text-xs text-pink-100 placeholder:text-pink-300/70 focus:outline-none focus:border-rose-400 font-sans leading-relaxed"
                   />
                 </div>
               )}
@@ -315,19 +315,19 @@ export default function ResumeUploadModal({
 
                 <div className="grid grid-cols-2 gap-2.5 text-xs">
                   <div>
-                    <span className="text-pink-300/60 block text-[10.5px]">Candidate Name:</span>
+                    <span className="text-pink-300/70 block text-[10.5px]">Candidate Name:</span>
                     <strong className="text-pink-50">{parsedPreview.personalInfo?.fullName || 'Not detected'}</strong>
                   </div>
                   <div>
-                    <span className="text-pink-300/60 block text-[10.5px]">Professional Title:</span>
+                    <span className="text-pink-300/70 block text-[10.5px]">Professional Title:</span>
                     <strong className="text-pink-50">{parsedPreview.personalInfo?.title || 'Not detected'}</strong>
                   </div>
                   <div>
-                    <span className="text-pink-300/60 block text-[10.5px]">Contact:</span>
+                    <span className="text-pink-300/70 block text-[10.5px]">Contact:</span>
                     <span className="text-pink-200">{parsedPreview.personalInfo?.email || parsedPreview.personalInfo?.phone || 'None'}</span>
                   </div>
                   <div>
-                    <span className="text-pink-300/60 block text-[10.5px]">Extracted Sections:</span>
+                    <span className="text-pink-300/70 block text-[10.5px]">Extracted Sections:</span>
                     <span className="text-rose-300 font-semibold">
                       {parsedPreview.skills?.length || 0} skill domains • {parsedPreview.experience?.length || 0} roles • {parsedPreview.education?.length || 0} degrees
                     </span>
@@ -336,7 +336,7 @@ export default function ResumeUploadModal({
 
                 {parsedPreview.summary && (
                   <div className="pt-1">
-                    <span className="text-pink-300/60 block text-[10.5px] mb-1">Summary Preview:</span>
+                    <span className="text-pink-300/70 block text-[10.5px] mb-1">Summary Preview:</span>
                     <p className="text-pink-100 font-sans text-xs line-clamp-3 bg-[#150518] p-2.5 rounded-xl border border-pink-500/20 leading-relaxed">
                       {parsedPreview.summary}
                     </p>
@@ -347,7 +347,7 @@ export default function ResumeUploadModal({
           )}
 
           {/* Export JSON backup link */}
-          <div className="pt-2 flex justify-between items-center text-[11px] text-pink-300/60 border-t border-pink-500/15">
+          <div className="pt-2 flex justify-between items-center text-[11px] text-pink-300/70 border-t border-pink-500/15">
             <span>Need to back up current resume data?</span>
             <button
               type="button"

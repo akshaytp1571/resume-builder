@@ -55,12 +55,12 @@ export default function Navbar({
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-rose-400 animate-ping" />
             ✦ BOTANICAL CANVAS STUDIO // TEXTURED EDITION
           </span>
-          <span className="text-pink-300/40">•</span>
+          <span aria-hidden="true" className="text-pink-300/70">•</span>
           <span className="text-emerald-300 flex items-center gap-1">
             <Sparkles size={11} className="text-emerald-400" />
             AI_STATUS: {isAiConfigured ? `ONLINE (${aiConfig?.providerId?.toUpperCase()} : ${aiConfig?.model})` : !hasAuth ? 'UNCONFIGURED' : 'NEEDS_MODEL'}
           </span>
-          <span className="text-pink-300/40">•</span>
+          <span aria-hidden="true" className="text-pink-300/70">•</span>
           <span className="text-amber-200/80">TARGET: EXECUTIVE ATS</span>
         </div>
         <div className="flex items-center gap-4">
@@ -79,7 +79,7 @@ export default function Navbar({
               </>
             ) : (
               <>
-                <VolumeX size={12} className="text-pink-400/40" />
+                <VolumeX size={12} className="text-pink-400/70" />
                 <span>AUDIO: MUTED</span>
               </>
             )}
@@ -197,13 +197,13 @@ export default function Navbar({
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${FOCUS_RING} ${
               singlePage
                 ? 'bg-[#102b20] border-emerald-400 text-emerald-200 shadow-[0_0_15px_rgba(16,185,129,0.3)]'
-                : 'bg-[#220e26] border-pink-500/20 text-pink-300/60 hover:border-pink-500/40 hover:text-pink-200'
+                : 'bg-[#220e26] border-pink-500/20 text-pink-300/70 hover:border-pink-500/40 hover:text-pink-200'
             }`}
             title="Single-Page Fit: Auto-compresses margins & line height to lock entire resume on 1 page"
             aria-label="Single-page auto-fit"
             aria-pressed={singlePage}
           >
-            <Sparkles size={13} className={singlePage ? 'text-emerald-400 animate-pulse' : 'text-slate-500'} />
+            <Sparkles size={13} className={singlePage ? 'text-emerald-400 animate-pulse' : 'text-slate-400'} />
             <span>{singlePage ? '1_PAGE: ON' : '1_PAGE: OFF'}</span>
           </button>
         </div>
@@ -230,7 +230,7 @@ export default function Navbar({
               sound.playAction();
               onResetDefault();
             }}
-            className={`px-2.5 py-2 rounded-xl bg-[#200b24] hover:bg-[#2c1031] text-pink-300/60 hover:text-pink-100 border border-pink-500/20 hover:border-pink-500/40 transition-all cursor-pointer flex items-center gap-1.5 ${FOCUS_RING}`}
+            className={`px-2.5 py-2 rounded-xl bg-[#200b24] hover:bg-[#2c1031] text-pink-300/70 hover:text-pink-100 border border-pink-500/20 hover:border-pink-500/40 transition-all cursor-pointer flex items-center gap-1.5 ${FOCUS_RING}`}
             title="Reset to original document data"
             aria-label="Reset resume to original document data"
           >

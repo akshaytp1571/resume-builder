@@ -60,7 +60,7 @@ export default function EditorSidebar({
           <Sparkles size={13} className="text-rose-400 animate-pulse" aria-hidden="true" />
           <span className="font-bold tracking-wider text-[11px] uppercase">✦ Resume Studio Workshop</span>
         </div>
-        <span className="text-[10px] text-pink-400/60 font-sans">Live Auto-Sync</span>
+        <span className="text-[10px] text-pink-400/85 font-sans">Live Auto-Sync</span>
       </div>
 
       {/* Elegant Tab Selector */}
@@ -83,15 +83,15 @@ export default function EditorSidebar({
               onClick={() => handleTabClick(tab.id)}
               className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl text-[10px] tracking-wide transition-all cursor-pointer relative group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#140516] ${
                 isActive
-                  ? 'bg-gradient-to-b from-[#3a133d] to-[#270b29] text-pink-100 border border-pink-400/60 shadow-[0_4px_16px_rgba(244,63,94,0.25)]'
-                  : 'text-pink-300/60 hover:text-pink-100 hover:bg-pink-950/30 border border-transparent'
+                  ? 'bg-gradient-to-b from-[#3a133d] to-[#270b29] text-pink-100 border border-pink-400/70 shadow-[0_4px_16px_rgba(244,63,94,0.25)]'
+                  : 'text-pink-300/70 hover:text-pink-100 hover:bg-pink-950/30 border border-transparent'
               }`}
             >
               <div className="flex items-center gap-1 mb-1">
                 <Icon
                   size={14}
                   aria-hidden="true"
-                  className={isActive ? 'text-rose-300' : 'text-pink-400/50 group-hover:text-pink-300'}
+                  className={isActive ? 'text-rose-300' : 'text-pink-400/85 group-hover:text-pink-300'}
                 />
               </div>
               <span className="truncate w-full text-center font-semibold text-[10px]">{tab.label}</span>

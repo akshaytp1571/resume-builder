@@ -31,8 +31,30 @@ import {
   exportStoreJson,
   importStoreJson,
   normalizeResume,
+  hasRecoveryCopy,
+  listRecoveryKeys,
 } from './utils/resumeStore.js';
-import { CheckCircle2, AlertCircle } from 'lucide-react';
+import { CheckCircle2, AlertCircle, ShieldAlert, Download, X } from 'lucide-react';
+
+/** Set when the user dismisses the recovery banner so it stops nagging. */
+const RECOVERY_BANNER_DISMISSED_KEY = 'precision_resume_banner_dismissed';
+const BANNER_FOCUS_RING =
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#18071c]';
+
+/**
+ * Recovery keys to show a banner for, newest first — or [] when the user has
+ * dismissed it or nothing was ever quarantined. Called as a lazy state
+ * initialiser so it runs once per load, not on every render.
+ */
+function readRecoveryKeys() {
+  try {
+    if (localStorage.getItem(RECOVERY_BANNER_DISMISSED_KEY)) return [];
+  } catch (e) {
+    // Storage is blocked, so there is nothing quarantined to rescue either.
+    return [];
+  }
+  return hasRecoveryCopy() ? listRecoveryKeys() : [];
+}
 
 /** Apply either a value or an updater function. */
 function resolveValue(updater, previous) {
@@ -193,6 +215,61 @@ export default function App() {
     }
   };
 
+  // --- recovery banner -----------------------------------------------------
+  const dismissRecoveryBanner = () => {
+    try {
+      localStorage.setItem(RECOVERY_BANNER_DISMISSED_KEY, '1');
+    } catch (e) {
+      // If storage is blocked the flag cannot persist, but hiding it for this
+      // session still beats a banner the user cannot get rid of.
+    }
+    setRecoveryKeys([]);
+    sound.playAction();
+  };
+
+  /**
+   * Save the newest quarantined value to a file.
+   *
+   * The RAW string goes straight into the Blob — never JSON.parse'd and never
+   * round-tripped — because this button exists precisely for data that does
+   * not parse. Re-serialising would either throw or quietly drop the bytes the
+   * user is trying to recover.
+   */
+  const downloadRecoveryCopy = () => {
+    const key = recoveryKeys[0];
+    if (!key) return;
+
+    let raw = null;
+    try {
+      raw = localStorage.getItem(key);
+    } catch (e) {
+      console.error('Could not read the recovery copy:', e);
+    }
+
+    if (raw == null) {
+      setToast({ type: 'error', message: 'RECOVERY COPY IS NO LONGER IN THIS BROWSER' });
+      return;
+    }
+
+    try {
+      const blob = new Blob([raw], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      // The timestamp in the key is what makes this file identifiable later.
+      a.download = `resume-recovery-${key.split('__recovery_')[1] || Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      sound.playSuccess();
+      setToast({ type: 'success', message: 'RECOVERY COPY DOWNLOADED — KEEP IT SAFE' });
+    } catch (err) {
+      console.error(err);
+      setToast({ type: 'error', message: 'COULD NOT DOWNLOAD THE RECOVERY COPY' });
+    }
+  };
+
   // --- AI state & modals ---------------------------------------------------
   const [aiConfig, setAiConfig] = useState(getSavedAiConfig);
   const [isAiConfigOpen, setIsAiConfigOpen] = useState(false);
@@ -214,6 +291,10 @@ export default function App() {
   const [isAtsOpen, setIsAtsOpen] = useState(false);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [toast, setToast] = useState(null);
+
+  // Quarantined copies from a store that could not be parsed. Read once per
+  // load; dismissing clears it for this session and persists the flag.
+  const [recoveryKeys, setRecoveryKeys] = useState(readRecoveryKeys);
 
   // Toast auto-dismiss
   useEffect(() => {
@@ -347,6 +428,61 @@ export default function App() {
           });
         }}
       />
+
+      {/* Recovery banner — a quarantined copy of an unreadable store exists.
+          Deliberately in normal flow (not fixed) so it never covers the
+          editor/preview split; it scrolls away with the page. */}
+      {recoveryKeys.length > 0 && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="no-print select-none border-b border-amber-500/30 bg-[#18071c]"
+        >
+          {/* Stacks on narrow screens: a single flex row squeezes the message
+              column to ~60px and turns the banner into a 700px-tall strip. */}
+          <div className="max-w-7xl mx-auto px-3 sm:px-6 py-2.5 flex flex-col sm:flex-row sm:items-center gap-x-3 gap-y-2 text-xs font-sans">
+            <div className="flex items-center gap-2.5 min-w-0 sm:flex-1">
+              <div className="w-7 h-7 rounded-xl bg-[#2e0d34] border border-amber-500/40 flex items-center justify-center text-amber-300 shrink-0">
+                <ShieldAlert size={15} aria-hidden="true" />
+              </div>
+              <p className="text-pink-200 leading-relaxed min-w-0">
+                <span className="font-semibold text-amber-200">
+                  Your saved resume could not be read.
+                </span>{' '}
+                A copy was kept in this browser, so nothing is lost yet. Download it
+                before clearing site data or switching browsers — you are seeing
+                sample data in the meantime.
+                {recoveryKeys.length > 1 && (
+                  <span className="text-pink-300/70">
+                    {' '}
+                    ({recoveryKeys.length} copies kept; the newest is downloaded.)
+                  </span>
+                )}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0 flex-wrap">
+              <button
+                type="button"
+                onClick={downloadRecoveryCopy}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-xl bg-gradient-to-r from-rose-500 via-pink-600 to-amber-500 hover:opacity-95 text-white shadow-[0_2px_15px_rgba(244,63,94,0.35)] transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 ${BANNER_FOCUS_RING}`}
+              >
+                <Download size={13} aria-hidden="true" />
+                <span>Download recovery copy</span>
+              </button>
+              <button
+                type="button"
+                onClick={dismissRecoveryBanner}
+                aria-label="Dismiss the recovery notice"
+                className={`px-3 py-1.5 text-xs font-semibold rounded-xl bg-[#250d2b] hover:bg-[#32113a] text-pink-200 border border-pink-500/30 transition-colors cursor-pointer flex items-center gap-1.5 ${BANNER_FOCUS_RING}`}
+              >
+                <X size={13} aria-hidden="true" />
+                <span>Dismiss</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Resume variant bar */}
       <VariantSwitcher

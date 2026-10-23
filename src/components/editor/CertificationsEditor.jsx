@@ -76,7 +76,7 @@ export default function CertificationsEditor({ certifications = [], onChange }) 
           {certifications.map((cert, index) => (
             <div
               key={cert.id || index}
-              className="p-3.5 rounded-2xl canvas-card space-y-2.5 hover:border-pink-400/50 transition-all"
+              className="p-3.5 rounded-2xl canvas-card space-y-2.5 hover:border-pink-400/70 transition-all"
             >
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-semibold text-rose-300 flex items-center gap-1.5">
@@ -86,7 +86,7 @@ export default function CertificationsEditor({ certifications = [], onChange }) 
                 <button
                   type="button"
                   onClick={() => handleDeleteCert(index)}
-                  className="p-1.5 rounded-lg text-pink-400/60 hover:text-rose-300 hover:bg-rose-950/50 transition-colors cursor-pointer"
+                  className="p-1.5 rounded-lg text-pink-400/85 hover:text-rose-300 hover:bg-rose-950/50 transition-colors cursor-pointer"
                   title="Delete certification"
                 >
                   <Trash2 size={13} />
@@ -103,7 +103,7 @@ export default function CertificationsEditor({ certifications = [], onChange }) 
                     value={cert.name || ''}
                     onChange={(e) => handleFieldChange(index, 'name', e.target.value)}
                     placeholder="e.g. ISTQB Certified Tester Foundation Level"
-                    className="w-full bg-[#18071c] border border-pink-500/25 rounded-xl px-2.5 py-1.5 text-xs text-pink-100 placeholder:text-pink-300/30 focus:outline-none focus:border-rose-400"
+                    className="w-full bg-[#18071c] border border-pink-500/25 rounded-xl px-2.5 py-1.5 text-xs text-pink-100 placeholder:text-pink-300/70 focus:outline-none focus:border-rose-400"
                   />
                 </div>
 
@@ -117,7 +117,7 @@ export default function CertificationsEditor({ certifications = [], onChange }) 
                       value={cert.issuer || ''}
                       onChange={(e) => handleFieldChange(index, 'issuer', e.target.value)}
                       placeholder="e.g. ISTQB, AWS, Scrum Alliance"
-                      className="w-full bg-[#18071c] border border-pink-500/25 rounded-xl px-2.5 py-1.5 text-xs text-pink-100 placeholder:text-pink-300/30 focus:outline-none focus:border-rose-400"
+                      className="w-full bg-[#18071c] border border-pink-500/25 rounded-xl px-2.5 py-1.5 text-xs text-pink-100 placeholder:text-pink-300/70 focus:outline-none focus:border-rose-400"
                     />
                   </div>
 
@@ -130,7 +130,7 @@ export default function CertificationsEditor({ certifications = [], onChange }) 
                       value={cert.year || ''}
                       onChange={(e) => handleFieldChange(index, 'year', e.target.value)}
                       placeholder="e.g. 2023"
-                      className="w-full bg-[#18071c] border border-pink-500/25 rounded-xl px-2.5 py-1.5 text-xs text-pink-100 placeholder:text-pink-300/30 focus:outline-none focus:border-rose-400"
+                      className="w-full bg-[#18071c] border border-pink-500/25 rounded-xl px-2.5 py-1.5 text-xs text-pink-100 placeholder:text-pink-300/70 focus:outline-none focus:border-rose-400"
                     />
                   </div>
                 </div>

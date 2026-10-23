@@ -111,7 +111,7 @@ export default function AtsScoreModal({ atsResult, onClose, resumeData }) {
               sound.playAction();
               onClose();
             }}
-            className="p-1.5 rounded-xl text-pink-400/60 hover:text-pink-100 hover:bg-pink-900/30 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#18071c]"
+            className="p-1.5 rounded-xl text-pink-400/85 hover:text-pink-100 hover:bg-pink-900/30 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#18071c]"
           >
             <X size={18} />
           </button>
@@ -129,7 +129,7 @@ export default function AtsScoreModal({ atsResult, onClose, resumeData }) {
                 <span className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-rose-300 via-pink-200 to-amber-200">
                   {score}%
                 </span>
-                <span className="text-pink-300/60 font-sans text-sm">/ 100</span>
+                <span className="text-pink-300/70 font-sans text-sm">/ 100</span>
               </div>
               <p className="text-xs font-semibold mt-1 text-emerald-300">
                 Status: {rating}
@@ -206,7 +206,7 @@ export default function AtsScoreModal({ atsResult, onClose, resumeData }) {
                 <span className="flex items-center gap-1.5">
                   <Target size={13} className="text-rose-400" />
                   <span>Match Against a Job Description</span>
-                  <span className="text-[10px] font-normal text-pink-300/50">offline</span>
+                  <span className="text-[10px] font-normal text-pink-300/70">offline</span>
                 </span>
                 <ChevronDown
                   size={14}
@@ -230,7 +230,7 @@ export default function AtsScoreModal({ atsResult, onClose, resumeData }) {
                   onChange={(e) => setJobDescription(e.target.value)}
                   aria-label="Job description to match against this resume"
                   placeholder="Paste the requirements and responsibilities from LinkedIn, Indeed, or a company careers page..."
-                  className="w-full bg-[#120414] border border-pink-500/25 rounded-xl p-3 text-xs text-pink-100 placeholder:text-pink-300/30 focus:outline-none focus:border-rose-400 focus-visible:ring-2 focus-visible:ring-rose-400 font-sans leading-relaxed transition-colors resize-y select-text"
+                  className="w-full bg-[#120414] border border-pink-500/25 rounded-xl p-3 text-xs text-pink-100 placeholder:text-pink-300/70 focus:outline-none focus:border-rose-400 focus-visible:ring-2 focus-visible:ring-rose-400 font-sans leading-relaxed transition-colors resize-y select-text"
                 />
 
                 <div className="flex flex-wrap items-center gap-2">
@@ -273,7 +273,7 @@ export default function AtsScoreModal({ atsResult, onClose, resumeData }) {
                         <span className="text-[10.5px] font-semibold tracking-wide text-rose-300">
                           ✦ Keyword Match
                         </span>
-                        <span className="text-[10.5px] text-pink-300/60 font-mono">
+                        <span className="text-[10.5px] text-pink-300/70 font-mono">
                           {match.matchedWeight}/{match.totalWeight} weighted
                         </span>
                       </div>
@@ -281,7 +281,7 @@ export default function AtsScoreModal({ atsResult, onClose, resumeData }) {
                         <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-rose-300 via-pink-200 to-amber-200">
                           {match.matchScore}%
                         </span>
-                        <span className="text-pink-300/60 font-sans text-xs">
+                        <span className="text-pink-300/70 font-sans text-xs">
                           {match.matched.length} of{' '}
                           {match.matched.length + match.missing.length} keywords
                         </span>
@@ -305,7 +305,7 @@ export default function AtsScoreModal({ atsResult, onClose, resumeData }) {
                           style={{ width: `${match.matchScore}%` }}
                         />
                       </div>
-                      <p className="text-[10.5px] text-pink-300/60 mt-2 font-sans">
+                      <p className="text-[10.5px] text-pink-300/70 mt-2 font-sans">
                         {Object.keys(match.sections)
                           .filter((key) => match.sections[key] > 0)
                           .map((key) => `${SECTION_LABELS[key] || key} ${match.sections[key]}`)

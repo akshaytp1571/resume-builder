@@ -247,6 +247,134 @@ function containsTerm(flatText, term) {
   return testRe(term).test(flatText);
 }
 
+// --- stemming ---------------------------------------------------------------
+//
+// Deliberately NOT a Porter stemmer. A handful of suffix rules fix the one
+// false negative that matters: "testing" in a JD must find "test" in a resume
+// and vice versa. Stems are used for COMPARISON only — every user-visible
+// label keeps the original surface form.
+//
+// Single-word terms only. Multi-word phrases are compared component by
+// component, so they are never stemmed as a unit.
+
+/**
+ * Strip a small set of English suffixes so inflections of one word collide.
+ *
+ * Plain string checks, no regex, memoised: this runs per token on every
+ * analysis and tokens repeat heavily ("the", "and", "testing" ...).
+ *
+ *   testing -> test      strategies -> strategy    classes -> class
+ *   automated -> automat analysis -> analysis      business -> business
+ *   javascript -> javascript   aws/sql/api/ci/led -> unchanged
+ *
+ * ponytail: no derivational stemming ("automation" stays distinct from
+ * "automated") and no irregular verbs. Add Porter only if users report the
+ * gap; the suffix list below covers plurals and the -ing/-ed forms that
+ * actually differ between a JD and a resume.
+ */
+const stemCache = new Map();
+
+function computeStem(word) {
+  const n = word.length;
+  // Short tokens are almost always acronyms (ci, sql, aws, api, js, ts, go) or
+  // words whose stem would be meaningless (led -> l). Leave them alone.
+  if (n <= 3) return word;
+
+  // Anything with a digit or symbol is an identifier, not an English word:
+  // node.js, c++, c#, .net, next.js. Suffix rules would corrupt them.
+  for (let i = 0; i < n; i += 1) {
+    const code = word.charCodeAt(i);
+    if (code < 97 || code > 122) return word;
+  }
+
+  let w = word;
+
+  // strategies -> strategy
+  if (w.endsWith('ies')) return w.slice(0, -3) + 'y';
+
+  if (w.endsWith('ing')) {
+    const cut = w.slice(0, -3);
+    // "ring" -> "r" is not a stem; keep the word when the cut leaves < 3 chars.
+    if (cut.length >= 3) w = cut;
+  } else if (w.endsWith('ed')) {
+    const cut = w.slice(0, -2);
+    if (cut.length >= 3) w = cut;
+  } else if (w.endsWith('sses')) {
+    // classes -> class
+    w = w.slice(0, -2);
+  } else if (w.endsWith('es')) {
+    // Only drop the "s" here: cases -> case, databases -> database,
+    // releases -> release. Stripping the full "es" would give "cas" and miss
+    // the singular, which is exactly the asymmetry stemming is meant to fix.
+    w = w.slice(0, -1);
+  } else if (
+    // skills -> skill. Keep "analysis" (-is), "business" (-ss), "bonus" (-us).
+    w.endsWith('s') &&
+    !w.endsWith('ss') &&
+    !w.endsWith('us') &&
+    !w.endsWith('is')
+  ) {
+    w = w.slice(0, -1);
+  }
+
+  return w;
+}
+
+/** Memoised stem. The cache is bounded so a hostile JD cannot grow it forever. */
+function stem(word) {
+  if (!word) return '';
+  const hit = stemCache.get(word);
+  if (hit !== undefined) return hit;
+  const result = computeStem(word);
+  if (stemCache.size > 5000) stemCache.clear();
+  stemCache.set(word, result);
+  return result;
+}
+
+/**
+ * Stemmed token set for a flattened section. Built once per section per
+ * analysis, then every keyword lookup is an O(1) Set hit instead of a regex
+ * scan over the whole corpus.
+ *
+ * Trailing dots are stripped before stemming: flatten() keeps "." so that
+ * node.js survives, but that also leaves sentence-final "testing." behind, and
+ * a bare Set lookup would then miss it. Interior dots (node.js, next.js) are
+ * left alone.
+ */
+function tokenSet(flatText) {
+  const set = new Set();
+  if (!flatText) return set;
+  const tokens = flatText.split(' ');
+  for (let i = 0; i < tokens.length; i += 1) {
+    let token = tokens[i];
+    if (!token) continue;
+    while (token.charCodeAt(token.length - 1) === 46) token = token.slice(0, -1);
+    if (token) set.add(stem(token));
+  }
+  return set;
+}
+
+/**
+ * Does a stemmed token set contain this keyword?
+ *
+ * Single tokens compare stem-to-stem, so "testing" and "test" are one word.
+ * Multi-word phrases require every component stem to be present in the same
+ * section — order-insensitive on purpose, so a JD's "test automation" finds a
+ * resume's "automation testing". Phrases are never stemmed as a whole.
+ */
+function setHasTerm(set, term) {
+  if (!set || !term) return false;
+  const space = term.indexOf(' ');
+  if (space === -1) return set.has(stem(term));
+
+  const parts = term.split(' ');
+  for (let i = 0; i < parts.length; i += 1) {
+    if (!parts[i]) continue;
+    if (!set.has(stem(parts[i]))) return false;
+  }
+  return true;
+}
+
 function countOccurrences(flatText, term) {
   if (!flatText || !term) return 0;
   const hits = flatText.match(countRe(term));
@@ -453,6 +581,14 @@ export function matchKeywords(resumeData, jobDescription) {
   }
 
   const corpus = buildSections(resumeData);
+  // Stemmed token sets, one per section, built once. Every keyword lookup below
+  // is then a Set hit rather than a regex sweep of the whole corpus.
+  const sets = {};
+  for (let s = 0; s < SECTION_KEYS.length; s += 1) {
+    const key = SECTION_KEYS[s];
+    sets[key] = tokenSet(corpus[key]);
+  }
+
   const matched = [];
   const missing = [];
   const sectionHits = {
@@ -473,8 +609,9 @@ export function matchKeywords(resumeData, jobDescription) {
 
     let where = null;
     for (let s = 0; s < SECTION_KEYS.length; s += 1) {
-      if (containsTerm(corpus[SECTION_KEYS[s]], term)) {
-        where = SECTION_KEYS[s];
+      const key = SECTION_KEYS[s];
+      if (setHasTerm(sets[key], term)) {
+        where = key;
         break;
       }
     }

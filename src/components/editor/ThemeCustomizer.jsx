@@ -63,7 +63,7 @@ export default function ThemeCustomizer({ theme, onChange, resumeData }) {
             <Layout size={13} className="text-rose-400" />
             ✦ Resume Template Design ({TEMPLATES_CONFIG.length})
           </span>
-          <span className="text-[10px] text-pink-400/60 font-sans">Instant Preview</span>
+          <span className="text-[10px] text-pink-400/85 font-sans">Instant Preview</span>
         </label>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -98,7 +98,7 @@ export default function ThemeCustomizer({ theme, onChange, resumeData }) {
                     {tpl.badge}
                   </span>
                 </div>
-                <p className="text-[11px] text-pink-300/60 line-clamp-2 leading-relaxed">
+                <p className="text-[11px] text-pink-300/70 line-clamp-2 leading-relaxed">
                   {tpl.description}
                 </p>
                 {!isSelected && dropped.length > 0 && (
@@ -220,10 +220,10 @@ export default function ThemeCustomizer({ theme, onChange, resumeData }) {
             }`}
           >
             <div className="flex items-center gap-1.5 font-bold text-xs mb-0.5">
-              <Sparkles size={12} className={theme.singlePage !== false ? 'text-emerald-400 animate-pulse' : 'text-slate-500'} />
+              <Sparkles size={12} className={theme.singlePage !== false ? 'text-emerald-400 animate-pulse' : 'text-slate-400'} />
               <span>1-PAGE STRICT</span>
             </div>
-            <p className="text-[10.5px] text-pink-300/60">
+            <p className="text-[10.5px] text-pink-300/70">
               Auto-compresses margins so Languages & Education fit on Page 1.
             </p>
           </button>
@@ -245,10 +245,10 @@ export default function ThemeCustomizer({ theme, onChange, resumeData }) {
             }`}
           >
             <div className="flex items-center gap-1.5 font-bold text-xs mb-0.5">
-              <Layers size={12} className={theme.singlePage === false ? 'text-rose-400' : 'text-slate-500'} />
+              <Layers size={12} className={theme.singlePage === false ? 'text-rose-400' : 'text-slate-400'} />
               <span>MULTI-PAGE</span>
             </div>
-            <p className="text-[10.5px] text-pink-300/60">
+            <p className="text-[10.5px] text-pink-300/70">
               Relaxed spacing for multi-page documents and extensive CVs.
             </p>
           </button>

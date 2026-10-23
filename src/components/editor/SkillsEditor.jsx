@@ -143,7 +143,7 @@ export default function SkillsEditor({
                 >
                   <div className="truncate">
                     <span className="font-semibold text-pink-100 truncate">{sug.item}</span>
-                    <span className="text-pink-300/60 text-[10px] block">[{sug.category}]</span>
+                    <span className="text-pink-300/70 text-[10px] block">[{sug.category}]</span>
                   </div>
                   <button
                     type="button"
@@ -176,7 +176,7 @@ export default function SkillsEditor({
         {skills?.map((skill, index) => (
           <div
             key={skill.id || index}
-            className="p-3.5 rounded-2xl canvas-card space-y-2.5 hover:border-pink-400/50 transition-all"
+            className="p-3.5 rounded-2xl canvas-card space-y-2.5 hover:border-pink-400/70 transition-all"
           >
             <div className="flex items-center justify-between gap-2">
               <div className="flex-1">
@@ -185,13 +185,13 @@ export default function SkillsEditor({
                   value={skill.category}
                   onChange={(e) => handleCategoryChange(index, 'category', e.target.value)}
                   placeholder="Domain Name (e.g. Automation, Cloud)"
-                  className="w-full bg-[#160619] border border-pink-500/25 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-pink-100 placeholder:text-pink-300/30 focus:outline-none focus:border-rose-400 transition-colors"
+                  className="w-full bg-[#160619] border border-pink-500/25 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-pink-100 placeholder:text-pink-300/70 focus:outline-none focus:border-rose-400 transition-colors"
                 />
               </div>
               <button
                 type="button"
                 onClick={() => handleDeleteCategory(index)}
-                className="p-1.5 rounded-lg text-pink-400/60 hover:text-rose-300 hover:bg-rose-950/50 transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg text-pink-400/85 hover:text-rose-300 hover:bg-rose-950/50 transition-colors cursor-pointer"
                 title="Delete category"
               >
                 <Trash2 size={13} />
@@ -203,7 +203,7 @@ export default function SkillsEditor({
               value={skill.items}
               onChange={(e) => handleCategoryChange(index, 'items', e.target.value)}
               placeholder="Skills, separated by commas (e.g. Selenium WebDriver, Java, TestNG)"
-              className="w-full bg-[#160619] border border-pink-500/25 rounded-xl p-2.5 text-xs text-pink-100 placeholder:text-pink-300/30 focus:outline-none focus:border-rose-400 transition-colors leading-relaxed font-sans"
+              className="w-full bg-[#160619] border border-pink-500/25 rounded-xl p-2.5 text-xs text-pink-100 placeholder:text-pink-300/70 focus:outline-none focus:border-rose-400 transition-colors leading-relaxed font-sans"
             />
           </div>
         ))}

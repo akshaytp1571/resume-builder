@@ -143,7 +143,7 @@ export default function ApplyModal({
               sound.playAction();
               onClose();
             }}
-            className="p-1.5 rounded-xl text-pink-400/60 hover:text-pink-100 hover:bg-pink-900/30 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#18071c]"
+            className="p-1.5 rounded-xl text-pink-400/85 hover:text-pink-100 hover:bg-pink-900/30 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#18071c]"
           >
             <X size={18} />
           </button>
@@ -207,7 +207,7 @@ export default function ApplyModal({
                   value={coverLetter}
                   onChange={(e) => setCoverLetter(e.target.value)}
                   placeholder="Optional. The agent will paste this into a cover-letter or 'why do you want to work here' field if it finds one."
-                  className="w-full bg-[#100410] border border-pink-500/25 rounded-xl p-2.5 text-xs text-pink-100 placeholder:text-pink-300/25 focus:outline-none focus:border-rose-400 leading-relaxed"
+                  className="w-full bg-[#100410] border border-pink-500/25 rounded-xl p-2.5 text-xs text-pink-100 placeholder:text-pink-300/70 focus:outline-none focus:border-rose-400 leading-relaxed"
                 />
               </div>
 
@@ -244,7 +244,7 @@ export default function ApplyModal({
             <div className="py-10 flex flex-col items-center gap-3">
               <Loader2 size={28} className="text-rose-300 animate-spin" />
               <p className="text-pink-200 font-semibold">Opening the application...</p>
-              <p className="text-pink-300/60 text-[11px]">
+              <p className="text-pink-300/70 text-[11px]">
                 Filling fields, attaching your resume, reading what is left
               </p>
             </div>
@@ -268,7 +268,7 @@ export default function ApplyModal({
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-[10px] text-pink-300/60">ATS</div>
+                  <div className="text-[10px] text-pink-300/70">ATS</div>
                   <div className="text-xs font-bold text-pink-100 uppercase">
                     {result.ats || 'unknown'}
                   </div>
@@ -309,7 +309,7 @@ export default function ApplyModal({
                   <ul className="mt-2 space-y-1 text-[11px]">
                     {result.filled.map((f, i) => (
                       <li key={i} className="flex gap-2">
-                        <span className="text-pink-300/60 shrink-0 w-36 truncate">
+                        <span className="text-pink-300/70 shrink-0 w-36 truncate">
                           {f.field}
                         </span>
                         <span className="text-emerald-200/90 truncate">{f.value}</span>
@@ -336,7 +336,7 @@ export default function ApplyModal({
               )}
 
               {result.screenshot && (
-                <p className="text-[10.5px] text-pink-300/60">
+                <p className="text-[10.5px] text-pink-300/70">
                   Screenshot saved next to the agent service:{' '}
                   <span className="font-mono">{result.screenshot}</span>
                 </p>

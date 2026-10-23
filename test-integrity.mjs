@@ -8,6 +8,8 @@
  * the real modules and assert real outcomes.
  */
 
+import { fileURLToPath } from 'node:url';
+
 const mem = new Map();
 globalThis.localStorage = {
   getItem: (k) => (mem.has(k) ? mem.get(k) : null),
@@ -424,6 +426,121 @@ console.log('\n== P1: calculateAtsScore is defensive without normalizeResume =='
     const result = calculateAtsScore();
     if (!Number.isInteger(result.score)) throw new Error('score not an integer');
   });
+}
+
+console.log('\n== v1.2: matcher stemming ==');
+{
+  const { extractKeywords, matchKeywords } = await import('./src/utils/keywordMatcher.js');
+
+  // Display terms must keep their surface form — stemming is for comparison only.
+  const surface = extractKeywords(
+    'We need test automation and automated regression testing with analysis of business strategy'
+  ).map((k) => k.term);
+
+  const overStemmed = surface.filter((t) =>
+    /^(automat|testin|analysi|busines|strategi|te)$/.test(t)
+  );
+  if (overStemmed.length) fail(`stemmed display terms leaked: ${overStemmed.join(', ')}`);
+  else ok('display terms keep their surface form');
+
+  // Symmetry: inflection on either side must match.
+  const jdTesting = matchKeywords({ summary: 'automation test and unit test' }, 'test automation and unit testing');
+  if (jdTesting.matched.length === 0) fail('JD "testing" did not match resume "test"');
+  else ok('JD "testing" matches resume "test"');
+
+  const resumeTesting = matchKeywords({ summary: 'test automation and unit testing' }, 'automation test and unit test');
+  if (resumeTesting.matched.length === 0) fail('JD "test" did not match resume "testing"');
+  else ok('JD "test" matches resume "testing"');
+
+  // Over-stem guards: a wrong stem in the resume must not match the real word.
+  for (const [real, wrong] of [
+    ['analysis', 'analysi'],
+    ['business', 'busines'],
+    ['javascript', 'javascrip'],
+    ['aws', 'aw'],
+    ['sql', 'sq'],
+  ]) {
+    const r = matchKeywords({ summary: `I know ${wrong}` }, `We need ${real}`);
+    if (r.matched.length > 0) fail(`"${wrong}" wrongly matched "${real}"`);
+  }
+  ok('over-stem guards hold (analysis, business, javascript, aws, sql)');
+
+  // Acronyms must survive stemming intact.
+  for (const acronym of ['aws', 'sql', 'api', 'ci', 'cd', 'gcp', 'js', 'ts', 'go']) {
+    const r = matchKeywords({ summary: `experience with ${acronym}` }, `must know ${acronym}`);
+    if (r.matched.length === 0) fail(`acronym "${acronym}" failed to match itself`);
+  }
+  ok('acronyms survive stemming');
+}
+
+console.log('\n== v1.2: recovery copy is discoverable ==');
+{
+  mem.clear();
+  // Seed a corrupt store, then confirm the recovery helpers can find it.
+  mem.set('precision_resume_store_v2', '{"variants":[ BROKEN');
+  store.loadStore();
+
+  if (!store.hasRecoveryCopy()) fail('hasRecoveryCopy() false after a corrupt load');
+  else ok('hasRecoveryCopy() detects the quarantined value');
+
+  const keys = store.listRecoveryKeys();
+  if (!Array.isArray(keys) || keys.length === 0) {
+    fail('listRecoveryKeys() returned no keys');
+  } else {
+    ok(`listRecoveryKeys() returns ${keys.length} key(s)`);
+    const raw = mem.get(keys[0]);
+    if (raw !== '{"variants":[ BROKEN') fail('recovery key does not hold the original raw bytes');
+    else ok('recovery key holds the original raw bytes verbatim');
+  }
+
+  // Newest-first ordering matters: the UI downloads keys[0].
+  mem.clear();
+  mem.set('precision_resume_store_v2__recovery_1000', 'old');
+  mem.set('precision_resume_store_v2__recovery_2000', 'new');
+  const ordered = store.listRecoveryKeys();
+  if (ordered[0] !== 'precision_resume_store_v2__recovery_2000') {
+    fail(`listRecoveryKeys() is not newest-first: ${ordered[0]}`);
+  } else {
+    ok('listRecoveryKeys() returns newest first');
+  }
+}
+
+console.log('\n== v1.2: no sub-AA muted text tokens remain ==');
+{
+  // Guards the contrast sweep: these exact low-opacity tokens measured under
+  // 4.5:1 (body) or 3:1 (UI) and must not come back.
+  const fsMod = await import('node:fs');
+  const pathMod = await import('node:path');
+  const bad = [
+    'placeholder:text-pink-300/30',
+    'placeholder:text-pink-300/25',
+    'text-pink-400/60',
+    'text-pink-400/50',
+  ];
+
+  const walk = (dir) => {
+    const out = [];
+    for (const entry of fsMod.readdirSync(dir, { withFileTypes: true })) {
+      const full = pathMod.join(dir, entry.name);
+      if (entry.isDirectory()) out.push(...walk(full));
+      else if (/\.(jsx|js)$/.test(entry.name)) out.push(full);
+    }
+    return out;
+  };
+
+  const offenders = [];
+  // `__dirname` is unavailable in an ESM module with top-level await, so derive
+  // the source directory from import.meta.url.
+  const srcDir = fileURLToPath(new URL('./src', import.meta.url));
+  for (const file of walk(srcDir)) {
+    const text = fsMod.readFileSync(file, 'utf8');
+    for (const token of bad) {
+      if (text.includes(token)) offenders.push(`${pathMod.basename(file)}: ${token}`);
+    }
+  }
+
+  if (offenders.length) fail(`sub-AA tokens reintroduced: ${offenders.slice(0, 5).join(', ')}`);
+  else ok('no sub-AA muted text tokens remain');
 }
 
 console.log(bad === 0 ? '\nINTEGRITY OK\n' : `\nINTEGRITY FAILED (${bad})\n`);

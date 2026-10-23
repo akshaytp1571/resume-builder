@@ -94,7 +94,7 @@ export default function SummaryEditor({
           value={summary || ''}
           onChange={(e) => onChange(e.target.value)}
           placeholder="Enter career synopsis, leadership directives, and architectural accomplishments..."
-          className="w-full bg-[#18071a] border border-pink-500/25 rounded-2xl p-3.5 text-xs text-pink-50 placeholder:text-pink-300/30 focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-400/40 transition-colors leading-relaxed font-sans"
+          className="w-full bg-[#18071a] border border-pink-500/25 rounded-2xl p-3.5 text-xs text-pink-50 placeholder:text-pink-300/70 focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-400/40 transition-colors leading-relaxed font-sans"
         />
       </div>
 
@@ -160,12 +160,12 @@ export default function SummaryEditor({
                 sound.playAction();
                 onChange(preset.text);
               }}
-              className="text-left p-2.5 rounded-xl bg-[#140516] hover:bg-[#220925] border border-pink-500/20 hover:border-pink-400/50 text-xs transition-all cursor-pointer group"
+              className="text-left p-2.5 rounded-xl bg-[#140516] hover:bg-[#220925] border border-pink-500/20 hover:border-pink-400/70 text-xs transition-all cursor-pointer group"
             >
               <div className="font-semibold text-pink-100 group-hover:text-rose-300 transition-colors">
                 ✦ {preset.title}
               </div>
-              <p className="text-pink-300/60 text-[11px] line-clamp-2 mt-0.5">
+              <p className="text-pink-300/70 text-[11px] line-clamp-2 mt-0.5">
                 {preset.text}
               </p>
             </button>

@@ -106,7 +106,7 @@ export default function AiRefineModal({
               sound.playAction();
               onClose();
             }}
-            className="p-1.5 rounded-xl text-pink-400/60 hover:text-pink-100 hover:bg-pink-900/30 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#18071c]"
+            className="p-1.5 rounded-xl text-pink-400/85 hover:text-pink-100 hover:bg-pink-900/30 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#18071c]"
           >
             <X size={18} />
           </button>
@@ -119,7 +119,7 @@ export default function AiRefineModal({
             <div className="p-4 rounded-2xl bg-[#1a071c] border border-pink-500/20 space-y-2">
               <div className="flex items-center justify-between text-xs font-semibold text-pink-300/80">
                 <span>Original Draft</span>
-                <span className="text-pink-300/50">{originalWords} words</span>
+                <span className="text-pink-300/70">{originalWords} words</span>
               </div>
               <p className="text-pink-100 leading-relaxed font-sans text-xs whitespace-pre-wrap bg-[#140416] p-3 rounded-xl border border-pink-500/20">
                 {originalText}
@@ -215,7 +215,7 @@ export default function AiRefineModal({
                 }}
                 placeholder="Or type your own instruction and press Enter..."
                 disabled={busy}
-                className="flex-1 bg-[#150518] border border-pink-500/25 rounded-xl px-3 py-1.5 text-[11px] text-pink-100 placeholder:text-pink-300/30 focus:outline-none focus:border-rose-400 disabled:opacity-50"
+                className="flex-1 bg-[#150518] border border-pink-500/25 rounded-xl px-3 py-1.5 text-[11px] text-pink-100 placeholder:text-pink-300/70 focus:outline-none focus:border-rose-400 disabled:opacity-50"
               />
               <button
                 type="button"
@@ -225,7 +225,7 @@ export default function AiRefineModal({
                   setCustomPrompt('');
                 }}
                 disabled={busy || !customPrompt.trim()}
-                className="px-3 py-1.5 text-[11px] font-semibold rounded-xl bg-[#2a0c30] hover:bg-[#381040] border border-pink-400/50 text-rose-200 cursor-pointer flex items-center gap-1 disabled:opacity-50 shrink-0"
+                className="px-3 py-1.5 text-[11px] font-semibold rounded-xl bg-[#2a0c30] hover:bg-[#381040] border border-pink-400/70 text-rose-200 cursor-pointer flex items-center gap-1 disabled:opacity-50 shrink-0"
                 title="Re-run the AI with this instruction"
               >
                 <RotateCcw size={11} className={isRegenerating ? 'animate-spin' : ''} />

@@ -77,7 +77,7 @@ export default function PersonalInfoEditor({ data, onChange }) {
               {data.photo ? (
                 <img src={data.photo} alt="Avatar" className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-pink-400/50">
+                <div className="w-full h-full flex items-center justify-center text-pink-400/85">
                   <User size={30} />
                 </div>
               )}
@@ -190,7 +190,7 @@ export default function PersonalInfoEditor({ data, onChange }) {
                     className={`px-2 py-0.5 rounded-lg cursor-pointer capitalize ${
                       data.photoStyle === style
                         ? 'bg-rose-500 text-white font-bold'
-                        : 'text-pink-300/60 hover:text-pink-100'
+                        : 'text-pink-300/70 hover:text-pink-100'
                     }`}
                   >
                     {style.replace('-', ' ')}
@@ -209,13 +209,13 @@ export default function PersonalInfoEditor({ data, onChange }) {
             Candidate Full Name <span className="text-rose-400">*</span>
           </label>
           <div className="relative">
-            <User size={14} className="absolute left-3 top-2.5 text-pink-400/60" />
+            <User size={14} className="absolute left-3 top-2.5 text-pink-400/85" />
             <input
               type="text"
               value={data.fullName || ''}
               onChange={(e) => handleChange('fullName', e.target.value)}
               placeholder="e.g. Alex Morgan"
-              className="w-full bg-[#18071a] border border-pink-500/25 rounded-xl pl-9 pr-3 py-2 text-xs text-pink-50 placeholder:text-pink-300/30 focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-400/40 transition-colors"
+              className="w-full bg-[#18071a] border border-pink-500/25 rounded-xl pl-9 pr-3 py-2 text-xs text-pink-50 placeholder:text-pink-300/70 focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-400/40 transition-colors"
             />
           </div>
         </div>
@@ -225,13 +225,13 @@ export default function PersonalInfoEditor({ data, onChange }) {
             Professional Title <span className="text-rose-400">*</span>
           </label>
           <div className="relative">
-            <Briefcase size={14} className="absolute left-3 top-2.5 text-pink-400/60" />
+            <Briefcase size={14} className="absolute left-3 top-2.5 text-pink-400/85" />
             <input
               type="text"
               value={data.title || ''}
               onChange={(e) => handleChange('title', e.target.value)}
               placeholder="e.g. QA Lead | Functional, API & Performance Testing"
-              className="w-full bg-[#18071a] border border-pink-500/25 rounded-xl pl-9 pr-3 py-2 text-xs text-pink-50 placeholder:text-pink-300/30 focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-400/40 transition-colors"
+              className="w-full bg-[#18071a] border border-pink-500/25 rounded-xl pl-9 pr-3 py-2 text-xs text-pink-50 placeholder:text-pink-300/70 focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-400/40 transition-colors"
             />
           </div>
         </div>
@@ -241,13 +241,13 @@ export default function PersonalInfoEditor({ data, onChange }) {
             Email Address
           </label>
           <div className="relative">
-            <Mail size={14} className="absolute left-3 top-2.5 text-pink-400/60" />
+            <Mail size={14} className="absolute left-3 top-2.5 text-pink-400/85" />
             <input
               type="email"
               value={data.email || ''}
               onChange={(e) => handleChange('email', e.target.value)}
               placeholder="alex.morgan@example.com"
-              className="w-full bg-[#18071a] border border-pink-500/25 rounded-xl pl-9 pr-3 py-2 text-xs text-pink-50 placeholder:text-pink-300/30 focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-400/40 transition-colors"
+              className="w-full bg-[#18071a] border border-pink-500/25 rounded-xl pl-9 pr-3 py-2 text-xs text-pink-50 placeholder:text-pink-300/70 focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-400/40 transition-colors"
             />
           </div>
         </div>
@@ -257,13 +257,13 @@ export default function PersonalInfoEditor({ data, onChange }) {
             Phone Number
           </label>
           <div className="relative">
-            <Phone size={14} className="absolute left-3 top-2.5 text-pink-400/60" />
+            <Phone size={14} className="absolute left-3 top-2.5 text-pink-400/85" />
             <input
               type="tel"
               value={data.phone || ''}
               onChange={(e) => handleChange('phone', e.target.value)}
               placeholder="+1 555 0100"
-              className="w-full bg-[#18071a] border border-pink-500/25 rounded-xl pl-9 pr-3 py-2 text-xs text-pink-50 placeholder:text-pink-300/30 focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-400/40 transition-colors"
+              className="w-full bg-[#18071a] border border-pink-500/25 rounded-xl pl-9 pr-3 py-2 text-xs text-pink-50 placeholder:text-pink-300/70 focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-400/40 transition-colors"
             />
           </div>
         </div>
@@ -273,13 +273,13 @@ export default function PersonalInfoEditor({ data, onChange }) {
             Location
           </label>
           <div className="relative">
-            <MapPin size={14} className="absolute left-3 top-2.5 text-pink-400/60" />
+            <MapPin size={14} className="absolute left-3 top-2.5 text-pink-400/85" />
             <input
               type="text"
               value={data.location || ''}
               onChange={(e) => handleChange('location', e.target.value)}
               placeholder="Springfield, USA"
-              className="w-full bg-[#18071a] border border-pink-500/25 rounded-xl pl-9 pr-3 py-2 text-xs text-pink-50 placeholder:text-pink-300/30 focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-400/40 transition-colors"
+              className="w-full bg-[#18071a] border border-pink-500/25 rounded-xl pl-9 pr-3 py-2 text-xs text-pink-50 placeholder:text-pink-300/70 focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-400/40 transition-colors"
             />
           </div>
         </div>
@@ -289,13 +289,13 @@ export default function PersonalInfoEditor({ data, onChange }) {
             Relocation Preference
           </label>
           <div className="relative">
-            <Plane size={14} className="absolute left-3 top-2.5 text-pink-400/60" />
+            <Plane size={14} className="absolute left-3 top-2.5 text-pink-400/85" />
             <input
               type="text"
               value={data.relocation || ''}
               onChange={(e) => handleChange('relocation', e.target.value)}
               placeholder="Relocating to UAE"
-              className="w-full bg-[#18071a] border border-pink-500/25 rounded-xl pl-9 pr-3 py-2 text-xs text-pink-50 placeholder:text-pink-300/30 focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-400/40 transition-colors"
+              className="w-full bg-[#18071a] border border-pink-500/25 rounded-xl pl-9 pr-3 py-2 text-xs text-pink-50 placeholder:text-pink-300/70 focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-400/40 transition-colors"
             />
           </div>
         </div>
@@ -305,13 +305,13 @@ export default function PersonalInfoEditor({ data, onChange }) {
             LinkedIn Profile
           </label>
           <div className="relative">
-            <LinkedinIcon size={14} className="absolute left-3 top-2.5 text-pink-400/60" />
+            <LinkedinIcon size={14} className="absolute left-3 top-2.5 text-pink-400/85" />
             <input
               type="text"
               value={data.linkedin || ''}
               onChange={(e) => handleChange('linkedin', e.target.value)}
               placeholder="linkedin.com/in/example-profile"
-              className="w-full bg-[#18071a] border border-pink-500/25 rounded-xl pl-9 pr-3 py-2 text-xs text-pink-50 placeholder:text-pink-300/30 focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-400/40 transition-colors"
+              className="w-full bg-[#18071a] border border-pink-500/25 rounded-xl pl-9 pr-3 py-2 text-xs text-pink-50 placeholder:text-pink-300/70 focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-400/40 transition-colors"
             />
           </div>
         </div>
@@ -321,13 +321,13 @@ export default function PersonalInfoEditor({ data, onChange }) {
             GitHub / Portfolio
           </label>
           <div className="relative">
-            <GithubIcon size={14} className="absolute left-3 top-2.5 text-pink-400/60" />
+            <GithubIcon size={14} className="absolute left-3 top-2.5 text-pink-400/85" />
             <input
               type="text"
               value={data.github || ''}
               onChange={(e) => handleChange('github', e.target.value)}
               placeholder="github.com/example-user"
-              className="w-full bg-[#18071a] border border-pink-500/25 rounded-xl pl-9 pr-3 py-2 text-xs text-pink-50 placeholder:text-pink-300/30 focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-400/40 transition-colors"
+              className="w-full bg-[#18071a] border border-pink-500/25 rounded-xl pl-9 pr-3 py-2 text-xs text-pink-50 placeholder:text-pink-300/70 focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-400/40 transition-colors"
             />
           </div>
         </div>

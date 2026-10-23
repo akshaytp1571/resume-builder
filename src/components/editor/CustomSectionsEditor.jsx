@@ -82,7 +82,7 @@ export default function CustomSectionsEditor({ customSections = [], onChange }) 
           {customSections.map((section, index) => (
             <div
               key={section.id || index}
-              className="p-3.5 rounded-2xl canvas-card space-y-2.5 hover:border-pink-400/50 transition-all"
+              className="p-3.5 rounded-2xl canvas-card space-y-2.5 hover:border-pink-400/70 transition-all"
             >
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-semibold text-rose-300 flex items-center gap-1.5">
@@ -92,7 +92,7 @@ export default function CustomSectionsEditor({ customSections = [], onChange }) 
                 <button
                   type="button"
                   onClick={() => handleDeleteSection(index)}
-                  className="p-1.5 rounded-lg text-pink-400/60 hover:text-rose-300 hover:bg-rose-950/50 transition-colors cursor-pointer"
+                  className="p-1.5 rounded-lg text-pink-400/85 hover:text-rose-300 hover:bg-rose-950/50 transition-colors cursor-pointer"
                   title="Delete section"
                 >
                   <Trash2 size={13} />
@@ -108,7 +108,7 @@ export default function CustomSectionsEditor({ customSections = [], onChange }) 
                   value={section.title || ''}
                   onChange={(e) => handleFieldChange(index, 'title', e.target.value)}
                   placeholder="e.g. Publications, Volunteering, Awards"
-                  className="w-full bg-[#18071c] border border-pink-500/25 rounded-xl px-2.5 py-1.5 text-xs text-pink-100 placeholder:text-pink-300/30 focus:outline-none focus:border-rose-400"
+                  className="w-full bg-[#18071c] border border-pink-500/25 rounded-xl px-2.5 py-1.5 text-xs text-pink-100 placeholder:text-pink-300/70 focus:outline-none focus:border-rose-400"
                 />
               </div>
 
@@ -137,12 +137,12 @@ export default function CustomSectionsEditor({ customSections = [], onChange }) 
                         value={item}
                         onChange={(e) => handleItemChange(index, itemIndex, e.target.value)}
                         placeholder="One line per entry..."
-                        className="flex-1 bg-[#230a28] border border-pink-500/25 rounded-xl p-2.5 text-xs text-pink-50 placeholder:text-pink-300/30 focus:outline-none focus:border-rose-400 transition-colors leading-relaxed font-sans"
+                        className="flex-1 bg-[#230a28] border border-pink-500/25 rounded-xl p-2.5 text-xs text-pink-50 placeholder:text-pink-300/70 focus:outline-none focus:border-rose-400 transition-colors leading-relaxed font-sans"
                       />
                       <button
                         type="button"
                         onClick={() => handleDeleteItem(index, itemIndex)}
-                        className="p-1 mt-1 text-pink-400/60 hover:text-rose-300 cursor-pointer"
+                        className="p-1 mt-1 text-pink-400/85 hover:text-rose-300 cursor-pointer"
                         title="Remove entry"
                       >
                         <Trash2 size={13} />

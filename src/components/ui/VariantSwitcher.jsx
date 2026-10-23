@@ -189,7 +189,7 @@ export default function VariantSwitcher({
                 sound.playAction();
                 close();
               }}
-              className={`p-1 rounded-lg text-pink-400/60 hover:text-pink-100 hover:bg-pink-900/30 transition-colors cursor-pointer ${RING}`}
+              className={`p-1 rounded-lg text-pink-400/85 hover:text-pink-100 hover:bg-pink-900/30 transition-colors cursor-pointer ${RING}`}
               title="Close"
             >
               <X size={14} />
@@ -242,7 +242,7 @@ export default function VariantSwitcher({
                       >
                         {variant.name || 'Untitled resume'}
                       </span>
-                      <span className="block text-[10px] text-pink-300/50">
+                      <span className="block text-[10px] text-pink-300/70">
                         {isActive ? 'Active' : `Updated ${formatDate(variant.updatedAt)}`}
                       </span>
                     </button>
@@ -253,7 +253,7 @@ export default function VariantSwitcher({
                     onClick={() => startRename(variant)}
                     title="Rename"
                     aria-label={`Rename ${variant.name || 'resume'}`}
-                    className={`p-1 rounded-lg text-pink-400/60 hover:text-pink-100 hover:bg-pink-900/30 transition-colors cursor-pointer shrink-0 ${RING}`}
+                    className={`p-1 rounded-lg text-pink-400/85 hover:text-pink-100 hover:bg-pink-900/30 transition-colors cursor-pointer shrink-0 ${RING}`}
                   >
                     <Pencil size={12} />
                   </button>
@@ -266,7 +266,7 @@ export default function VariantSwitcher({
                     }}
                     title="Duplicate"
                     aria-label={`Duplicate ${variant.name || 'resume'}`}
-                    className={`p-1 rounded-lg text-pink-400/60 hover:text-pink-100 hover:bg-pink-900/30 transition-colors cursor-pointer shrink-0 ${RING}`}
+                    className={`p-1 rounded-lg text-pink-400/85 hover:text-pink-100 hover:bg-pink-900/30 transition-colors cursor-pointer shrink-0 ${RING}`}
                   >
                     <Copy size={12} />
                   </button>
@@ -286,8 +286,8 @@ export default function VariantSwitcher({
                     aria-label={`Delete ${variant.name || 'resume'}`}
                     className={`p-1 rounded-lg transition-colors shrink-0 ${
                       canDelete
-                        ? 'text-pink-400/60 hover:text-rose-300 hover:bg-rose-900/30 cursor-pointer'
-                        : 'text-pink-400/20 cursor-not-allowed'
+                        ? 'text-pink-400/85 hover:text-rose-300 hover:bg-rose-900/30 cursor-pointer'
+                        : 'text-pink-400/85 cursor-not-allowed'
                     } ${RING}`}
                   >
                     <Trash2 size={12} />
@@ -297,7 +297,7 @@ export default function VariantSwitcher({
             })}
 
             {list.length === 0 && (
-              <li className="px-2 py-3 text-[11px] text-pink-300/60 text-center">
+              <li className="px-2 py-3 text-[11px] text-pink-300/70 text-center">
                 No resumes yet.
               </li>
             )}
