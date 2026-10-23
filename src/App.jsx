@@ -837,6 +837,9 @@ export default function App() {
         resumeData={resumeData}
         resumePath={resumePath}
         aiConfig={aiConfig}
+        activeVariantId={activeVariant?.id || ''}
+        activeVariantName={activeVariant?.name || ''}
+        onApplicationRecorded={refreshApplicationCount}
         onSubmitted={() => {
           // ApplyModal has already written the record; re-read the count so the
           // Navbar badge reflects it without a reload.

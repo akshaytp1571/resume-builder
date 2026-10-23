@@ -17,6 +17,7 @@ import CompactTemplate from '../templates/CompactTemplate';
 import TechTemplate from '../templates/TechTemplate';
 import AcademicTemplate from '../templates/AcademicTemplate';
 import StartupTemplate from '../templates/StartupTemplate';
+import { safeTheme } from '../templates/templateData';
 
 /** A4 at 96dpi — the budget the page-budget badge has always used. */
 const PAGE_BUDGET_PX = 1123;
@@ -95,7 +96,10 @@ export default function ResumePreview({
   };
 
   const renderActiveTemplate = () => {
-    switch (theme.templateId) {
+    // Guard the theme: a null theme used to throw here for all nine templates,
+    // because `theme.templateId` was read without a check. safeTheme() also
+    // supplies the default palette, so a partial theme still renders.
+    switch (safeTheme(theme).templateId) {
       case 'modern':
         return <ModernTemplate data={resumeData} theme={theme} />;
       case 'minimal':
