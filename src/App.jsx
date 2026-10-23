@@ -22,7 +22,13 @@ import { calculateAtsScore } from './utils/atsScorer.js';
 import { getSavedAiConfig } from './utils/aiService.js';
 import { getResumePath } from './utils/resumePath.js';
 import { sound } from './utils/soundEffects.js';
-import { normalizeResume, hasRecoveryCopy, listRecoveryKeys } from './utils/resumeStore.js';
+import {
+  normalizeResume,
+  hasRecoveryCopy,
+  listRecoveryKeys,
+  saveStore,
+  importStoreJson,
+} from './utils/resumeStore.js';
 import { CheckCircle2, AlertCircle } from 'lucide-react';
 import useToasts from './hooks/useToasts.js';
 import useResumeStore from './hooks/useResumeStore.js';
@@ -31,7 +37,10 @@ import useApplications from './hooks/useApplications.js';
 import useLayoutMeasurement from './hooks/useLayoutMeasurement.js';
 import useKeyboardShortcuts from './hooks/useKeyboardShortcuts.js';
 import useCommandBar, { buildCommands } from './hooks/useCommandBar.js';
+import useSaveStatus from './hooks/useSaveStatus.js';
 import CommandBar from './components/ui/CommandBar.jsx';
+import SaveStatus from './components/ui/SaveStatus.jsx';
+import GoogleDriveModal from './components/ui/GoogleDriveModal.jsx';
 
 /** Set when the user dismisses the recovery banner so it stops nagging. */
 const RECOVERY_BANNER_DISMISSED_KEY = 'precision_resume_banner_dismissed';
@@ -94,6 +103,16 @@ export default function App() {
   // before it existed.
   resetHistoryRef.current = resetHistory;
 
+  // --- save status + "set as default" --------------------------------------
+  // Autosave already runs inside useResumeStore. This adds the observable half:
+  // a status the user can see, an explicit Save, and a way to pin the current
+  // version as the one to come back to.
+  const saveStatus = useSaveStatus({
+    save: () => saveStore(store),
+    variantId: activeVariant?.id,
+    signature: store,
+  });
+
   // --- applications --------------------------------------------------------
   const {
     applications,
@@ -115,6 +134,7 @@ export default function App() {
   const [applyJob, setApplyJob] = useState(null);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [isJsonResumeOpen, setIsJsonResumeOpen] = useState(false);
+  const [isDriveOpen, setIsDriveOpen] = useState(false);
   // Absolute path to the resume file the apply agent should attach.
   const [resumePath, setResumePathState] = useState(() => getResumePath());
   const [aiRefineState, setAiRefineState] = useState({
@@ -464,6 +484,8 @@ export default function App() {
           letter={activeVariant?.letter}
           onUpdateLetter={setLetter}
           onExportCoverLetter={handleDownloadCoverLetter}
+          saveStatus={saveStatus}
+          onOpenDrive={() => setIsDriveOpen(true)}
         />
 
         {/* Right Live Holo-Dock Preview */}
@@ -563,6 +585,24 @@ export default function App() {
         onClose={() => setIsJsonResumeOpen(false)}
         resumeData={resumeData}
         onImport={setResumeData}
+      />
+
+      {/* Google Drive backup / restore */}
+      <GoogleDriveModal
+        isOpen={isDriveOpen}
+        onClose={() => setIsDriveOpen(false)}
+        store={store}
+        resumeData={resumeData}
+        onImportStore={(parsed, filename) => {
+          try {
+            const next = importStoreJson(JSON.stringify(parsed));
+            setStore(next);
+            resetHistory(next);
+            showToast('success', `RESTORED FROM ${filename}`);
+          } catch (err) {
+            showToast('error', err?.message || 'That backup could not be read.');
+          }
+        }}
       />
 
       {/* Keyboard shortcuts reference (also opened with ?) */}
