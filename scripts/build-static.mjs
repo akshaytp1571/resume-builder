@@ -70,7 +70,47 @@ for (const extra of extras) {
   console.log(`copied ${extra.to}`);
 }
 
-// 2. Inventory with digests, so an interrupted upload is detectable.
+// 2. PWA artifacts. Vite copies public/ into dist/ itself, and the service
+// worker is emitted by the plugin in vite.config.js — but a static build that
+// silently loses either one would ship an app that is not installable, so
+// assert them rather than assume.
+//
+// Neither is fatal: the app runs perfectly well online without a manifest or a
+// worker. A hard failure here would block a deploy for a bonus feature.
+const pwaArtifacts = [
+  { path: 'manifest.webmanifest', why: 'app is not installable' },
+  { path: 'sw.js', why: 'offline support disabled' },
+  { path: 'icons/icon-192.png', why: 'manifest icon missing' },
+  { path: 'icons/icon-512.png', why: 'manifest icon missing' },
+];
+
+for (const artifact of pwaArtifacts) {
+  const full = join(distDir, artifact.path);
+  if (statSync(full, { throwIfNoEntry: false })) {
+    console.log(`pwa  ${artifact.path.padEnd(24)} ${fmtBytes(statSync(full).size)}`);
+  } else {
+    console.warn(`pwa  MISSING ${artifact.path} - ${artifact.why}`);
+  }
+}
+
+// The worker's precache list is baked in at build time. If it disagrees with
+// what actually landed in dist/, an offline load would 404 on a missing asset.
+const swPath = join(distDir, 'sw.js');
+if (statSync(swPath, { throwIfNoEntry: false })) {
+  const sw = readFileSync(swPath, 'utf8');
+  // [^\S\n] rather than \s: \s matches newlines, which makes each list entry
+  // match twice and reports a doubled count.
+  const listed = [...sw.matchAll(/^[^\S\n]*"(\/[^"]*)"[,]?$/gm)].map((m) => m[1]);
+  const unique = [...new Set(listed)];
+  const missing = unique.filter((url) => !statSync(join(distDir, url.slice(1)), { throwIfNoEntry: false }));
+  if (missing.length) {
+    console.warn(`pwa  worker precaches ${missing.length} URL(s) not in dist/: ${missing.slice(0, 3).join(', ')}`);
+  } else {
+    console.log(`pwa  worker precache verified (${unique.length} URLs present)`);
+  }
+}
+
+// 3. Inventory with digests, so an interrupted upload is detectable.
 const files = walk(distDir)
   .map((f) => relative(distDir, f).split(sep).join('/'))
   .sort();

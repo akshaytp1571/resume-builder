@@ -13,6 +13,7 @@ import ApplyModal from './components/ui/ApplyModal';
 import ApplicationTracker from './components/ui/ApplicationTracker';
 import ResumeUploadModal from './components/ui/ResumeUploadModal';
 import RecoveryBanner from './components/ui/RecoveryBanner';
+import ShortcutHelp from './components/ui/ShortcutHelp';
 import { TEMPLATES_CONFIG } from './data/initialData.js';
 import { exportToDocx, exportCoverLetterToDocx } from './utils/docxExporter.js';
 import { exportToPdf, exportToVectorPdf, triggerPrint } from './utils/pdfExporter.js';
@@ -27,6 +28,7 @@ import useResumeStore from './hooks/useResumeStore.js';
 import useUndoRedo from './hooks/useUndoRedo.js';
 import useApplications from './hooks/useApplications.js';
 import useLayoutMeasurement from './hooks/useLayoutMeasurement.js';
+import useKeyboardShortcuts from './hooks/useKeyboardShortcuts.js';
 
 /** Set when the user dismisses the recovery banner so it stops nagging. */
 const RECOVERY_BANNER_DISMISSED_KEY = 'precision_resume_banner_dismissed';
@@ -108,6 +110,7 @@ export default function App() {
   const [isJobMatchOpen, setIsJobMatchOpen] = useState(false);
   const [isJobCredentialsOpen, setIsJobCredentialsOpen] = useState(false);
   const [applyJob, setApplyJob] = useState(null);
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   // Absolute path to the resume file the apply agent should attach.
   const [resumePath, setResumePathState] = useState(() => getResumePath());
   const [aiRefineState, setAiRefineState] = useState({
@@ -274,6 +277,17 @@ export default function App() {
     triggerPrint(resumeData);
   };
 
+  // --- keyboard shortcuts ---------------------------------------------------
+  // Ctrl/Cmd+S -> DOCX, Ctrl/Cmd+Shift+S -> PDF, ? -> this panel.
+  // Undo/redo stay owned by useUndoRedo's own listener; the hook returns early
+  // on z/y so the two can never act on the same press.
+  useKeyboardShortcuts({
+    onExportDocx: handleDownloadDocx,
+    onExportPdf: handleDownloadPdf,
+    onOpenHelp: () => setIsShortcutsOpen(true),
+    helpOpen: isShortcutsOpen,
+  });
+
   // Trigger Refine Modal
   const handleTriggerAiRefine = ({ title, originalText, refinedText, onApply, onRegenerate }) => {
     setAiRefineState({
@@ -309,6 +323,7 @@ export default function App() {
         onOpenAiConfig={() => setIsAiConfigOpen(true)}
         onOpenJobMatch={() => setIsJobMatchOpen(true)}
         onOpenApplications={() => setIsTrackerOpen(true)}
+        onOpenShortcuts={() => setIsShortcutsOpen(true)}
         applicationCount={applicationCount}
         aiConfig={aiConfig}
         atsScore={atsResult}
@@ -468,6 +483,12 @@ export default function App() {
         onClose={() => setIsTrackerOpen(false)}
         applications={applications}
         onListChange={updateApplications}
+      />
+
+      {/* Keyboard shortcuts reference (also opened with ?) */}
+      <ShortcutHelp
+        isOpen={isShortcutsOpen}
+        onClose={() => setIsShortcutsOpen(false)}
       />
 
       {/* Job Board Credentials Modal */}

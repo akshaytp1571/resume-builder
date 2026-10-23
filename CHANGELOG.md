@@ -4,6 +4,99 @@ All notable changes to this project. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning is
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2026-10-23
+
+Maintainability and accessibility. `App.jsx` split from 907 to 477 lines, a skip
+link, and a vector PDF export that is finally reachable.
+
+### Changed
+- **`App.jsx` split into five hooks** plus a presentational `RecoveryBanner`
+  component. It had grown to hold the variant store, undo/redo, debounced save
+  with two-tab merge, recovery banner, layout measurement, applications, cover
+  letter, toasts and eleven modal flags.
+  - `useToasts`, `useResumeStore`, `useUndoRedo`, `useApplications`,
+    `useLayoutMeasurement`
+  - The circular dependency between the store (needs `resetHistory` on variant
+    switch) and history (needs `setStore`) is broken with a ref handshake, so the
+    import graph stays one-way and no hook imports another.
+  - **Proven, not asserted:** pre- and post-refactor builds were both rendered and
+    their `document.body.innerHTML` compared with ids and timestamps normalised —
+    byte-for-byte identical, 69,875 characters, 609 elements.
+
+### Added
+- **Skip-to-content link** — the first focusable element in the DOM, hidden by
+  clip until focused (not `display: none`, which would drop it from the tab
+  order), excluded from print. A keyboard user previously tabbed through 12
+  navbar buttons on every load before reaching the editor.
+- **Vector PDF export is reachable.** `exportToVectorPdf()` existed since v1.1
+  with no caller. A split button adds a caret segment; the toast says "PRINT
+  DIALOG OPENED — SAVE AS PDF" rather than claiming a download, because it opens
+  a dialog.
+
+### Fixed
+- **The navbar overflowed at 320px** — the centre capsule measured 436px in a
+  320px viewport. Pre-existing. `flex-wrap` on the capsule plus collapsing the
+  `ATS:` and `1_PAGE` labels below `sm`. Measured in real Chrome: 320/320 and
+  1440/1440.
+- **The Print button's aria-label was ambiguous** — it mentioned "vector PDF",
+  so screen-reader users would have heard two buttons say it. Renamed to "Open
+  the print dialog".
+
+## [2.2.1] - 2026-10-23
+
+### Fixed
+- **Every tracked application recorded an empty variant.** The `ApplyModal` call
+  was missing `activeVariantId`, `activeVariantName` and `onApplicationRecorded`,
+  so the tracker showed "Resume: unknown" — defeating the point of the feature.
+- **`ResumePreview` read `theme.templateId` without a guard**, so a null theme
+  threw for all nine templates. QA reported this in the v1.1 audit as
+  "mitigated, not fixed"; the templates were hardened in v2.0 but this wrapper
+  layer above them was not. It now uses `safeTheme()`, which had been dead code
+  since v2.0 — the fix was to finally call it.
+
+## [2.2.0] - 2026-10-23
+
+The application tracker.
+
+### Added
+- **Application tracker** — every submission through the apply agent is recorded
+  with company, title, URL, date, status and the resume variant used. A Navbar
+  badge opens a panel with inline status editing across six states, a stats strip
+  (total, active, response rate), a status filter, and delete with confirmation.
+- Stored under its own key, deliberately outside the variant store: applications
+  outlive the resume that was sent.
+- **`pruneOrphanedVariants()`** marks applications whose resume variant was
+  deleted rather than deleting them. The application still happened.
+
+### Notes
+- `responseRate` returns `0` with no applications, never `NaN`.
+- The record is written at the exact point the agent **confirms** submission.
+  A failed or skipped application is never recorded — five tests cover each path.
+
+## [2.1.0] - 2026-10-23
+
+### Added
+- **Layout & Fit in the ATS score.** `calculateAtsScore(data, layout)` takes an
+  optional measurement from the preview. A one-page resume scores 92; the same
+  content spilling to 200% scores 81. Layout gets 13 of the 100 points — the
+  largest non-Contact allocation, because a second page filters more candidates
+  than a weak Education section. With no layout argument the legacy
+  `25/15/15/25/10/10` table is returned verbatim, so the one-argument contract is
+  exact rather than approximate.
+- **Cover letter builder** — a matching letter per variant with a draft
+  generator that writes real prose from your own summary, skills and most recent
+  role. No AI call, no network, no `[Company]` placeholders. Exports to DOCX as a
+  business letter, not a resume.
+
+### Fixed
+- **A blank resume scored 16 with a layout** (was 4) — "fits one page" paid 13
+  points on an empty page. Fit is now withheld below a content score of 25.
+- **Merely measuring a page could lower the score** — rescaling rounded 4/15 down
+  to 3/12. Now uses `Math.ceil`; measuring never costs points the content earned.
+- **Three prose bugs in the draft generator** — a naive comma split broke
+  parenthetical skill lists, acronyms were lowercased mid-sentence, and the
+  opening clause assembled into "a QA Lead , where I am currently QA Lead at…".
+
 ## [2.0.0] - 2026-10-23
 
 A component test suite, undo/redo, and photo upload guards. The test suite is

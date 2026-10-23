@@ -16,9 +16,11 @@ import {
   Redo2,
   Briefcase,
   FileText,
+  Keyboard,
 } from 'lucide-react';
 import { sound } from '../../utils/soundEffects';
 import { isAiConfigReady } from '../../utils/aiService';
+import { ariaKeyshortcuts } from '../../hooks/useKeyboardShortcuts.js';
 
 const FOCUS_RING =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#18071c]';
@@ -34,6 +36,7 @@ export default function Navbar({
   onOpenAiConfig,
   onOpenJobMatch,
   onOpenApplications,
+  onOpenShortcuts,
   applicationCount = 0,
   aiConfig,
   atsScore,
@@ -149,6 +152,7 @@ export default function Navbar({
               } ${FOCUS_RING}`}
               title="Undo (Ctrl+Z)"
               aria-label="Undo last edit"
+              aria-keyshortcuts={ariaKeyshortcuts('undo')}
             >
               <Undo2 size={13} />
             </button>
@@ -168,6 +172,7 @@ export default function Navbar({
               } ${FOCUS_RING}`}
               title="Redo (Ctrl+Shift+Z or Ctrl+Y)"
               aria-label="Redo last undone edit"
+              aria-keyshortcuts={ariaKeyshortcuts('redo')}
             >
               <Redo2 size={13} />
             </button>
@@ -289,6 +294,23 @@ export default function Navbar({
             <Sparkles size={13} className={singlePage ? 'text-emerald-400 animate-pulse' : 'text-slate-400'} />
             <span className="hidden sm:inline">{singlePage ? '1_PAGE: ON' : '1_PAGE: OFF'}</span>
           </button>
+
+          {/* Keyboard shortcuts help. Lives in the centre capsule rather than
+              the action row: it is a reference control, not an action, and the
+              action row is the one that runs out of width first. */}
+          <button
+            type="button"
+            onClick={() => {
+              sound.playAction();
+              onOpenShortcuts?.();
+            }}
+            className={`p-2 rounded-xl bg-[#220e26] border border-pink-500/20 hover:border-pink-400 text-pink-300/85 hover:text-pink-100 transition-all cursor-pointer ${FOCUS_RING}`}
+            title="Keyboard shortcuts (?)"
+            aria-label="Show keyboard shortcuts"
+            aria-keyshortcuts={ariaKeyshortcuts('help')}
+          >
+            <Keyboard size={13} aria-hidden="true" />
+          </button>
         </div>
 
         {/* Studio Action Buttons */}
@@ -344,8 +366,9 @@ export default function Navbar({
             }}
             disabled={isExporting}
             className={`px-3.5 py-2 font-bold tracking-wider rounded-xl bg-gradient-to-r from-purple-800 via-pink-700 to-rose-700 hover:from-purple-700 hover:to-rose-600 text-white shadow-[0_4px_16px_rgba(168,85,247,0.3)] transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-95 ${FOCUS_RING}`}
-            title="Generate native Word DOCX"
+            title="Generate native Word DOCX (Ctrl+S)"
             aria-label="Download resume as DOCX"
+            aria-keyshortcuts={ariaKeyshortcuts('export-docx')}
           >
             <FileSpreadsheet size={14} />
             <span>.DOCX</span>
@@ -375,8 +398,9 @@ export default function Navbar({
               }}
               disabled={isExporting}
               className={`pl-4 pr-2 py-2 font-bold tracking-wider text-white rounded-l-xl bg-gradient-to-r from-rose-500 via-pink-500 to-amber-500 hover:from-rose-400 hover:to-amber-400 shadow-[0_4px_25px_rgba(244,63,94,0.45)] transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-95 ${FOCUS_RING}`}
-              title="Export high-res PDF (image-based)"
+              title="Export high-res PDF (image-based) (Ctrl+Shift+S)"
               aria-label="Export resume as PDF"
+              aria-keyshortcuts={ariaKeyshortcuts('export-pdf')}
             >
               <Download size={14} className="stroke-[2.5]" aria-hidden="true" />
               <span className="hidden md:inline">EXPORT_PDF</span>
