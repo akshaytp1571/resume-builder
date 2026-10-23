@@ -2,9 +2,10 @@ import React from 'react';
 import { LinkedinIcon, GithubIcon } from '../ui/Icons';
 import PhotoFrame from './PhotoFrame';
 import ExtraSections from './ExtraSections';
+import { safeResume } from './templateData';
 
 export default function DefaultTemplate({ data, theme }) {
-  const { personalInfo, summary, skills, experience, education, languages, certifications, projects, customSections } = data;
+  const { personalInfo, summary, skills, experience, education, languages, certifications, projects, customSections } = safeResume(data);
   const primaryColor = theme?.primaryColor || '#3E5566';
   const secondaryColor = theme?.secondaryColor || '#56707F';
 

@@ -2,9 +2,10 @@ import React from 'react';
 import { Mail, Phone, MapPin, Sparkles } from 'lucide-react';
 import PhotoFrame from './PhotoFrame';
 import ExtraSections from './ExtraSections';
+import { safeResume } from './templateData';
 
 export default function CreativeTemplate({ data, theme }) {
-  const { personalInfo, summary, skills, experience, education, languages, certifications, projects, customSections } = data;
+  const { personalInfo, summary, skills, experience, education, languages, certifications, projects, customSections } = safeResume(data);
   const primaryColor = theme?.primaryColor || '#059669';
 
   return (

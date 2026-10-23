@@ -1,7 +1,7 @@
 {
   "name": "resume-builder",
   "private": true,
-  "version": "1.2.0",
+  "version": "2.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -13,7 +13,10 @@
     "preview": "vite preview",
     "jobs:api": "node src/agents/api-server.cjs",
     "jobs:test": "node test-engine.cjs",
-    "test": "node test-fixes.cjs",
+    "test": "node test-fixes.cjs && node smoke-test.mjs && node test-integrity.mjs && vitest run",
+    "test:unit": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "test:smoke": "node smoke-test.mjs",
     "test:integrity": "node test-integrity.mjs",
     "test:all": "node test-fixes.cjs && node smoke-test.mjs && node test-integrity.mjs"
@@ -34,11 +37,17 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.8",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
+    "@vitest/coverage-v8": "^5.0.5",
+    "jsdom": "^29.1.1",
     "oxlint": "^1.81.0",
     "tailwindcss": "^4.3.3",
-    "vite": "^8.3.0"
+    "vite": "^8.3.0",
+    "vitest": "^5.0.5"
   }
 }

@@ -2,6 +2,7 @@ import React from 'react';
 import { LinkedinIcon, GithubIcon } from '../ui/Icons';
 import PhotoFrame from './PhotoFrame';
 import ExtraSections from './ExtraSections';
+import { safeResume } from './templateData';
 
 /**
  * TechTemplate — "Developer Console".
@@ -31,7 +32,7 @@ export default function TechTemplate({ data, theme }) {
     certifications,
     projects,
     customSections,
-  } = data || {};
+  } = safeResume(data);
 
   const primaryColor = theme?.primaryColor || '#0f766e';
   const secondaryColor = theme?.secondaryColor || '#334155';

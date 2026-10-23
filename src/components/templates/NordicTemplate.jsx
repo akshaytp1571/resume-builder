@@ -1,16 +1,23 @@
 import React from 'react';
 import PhotoFrame from './PhotoFrame';
 import ExtraSections from './ExtraSections';
+import { safeResume } from './templateData';
 
 export default function NordicTemplate({ data, theme }) {
-  const { personalInfo, summary, skills, experience, education, languages, certifications, projects, customSections } = data;
+  // Honour a custom palette; fall back to the slate the design uses.
+  const primaryColor = theme?.primaryColor || '#0f172a';
+  const secondaryColor = theme?.secondaryColor || '#e2e8f0';
+  const { personalInfo, summary, skills, experience, education, languages, certifications, projects, customSections } = safeResume(data);
 
   return (
     <div
       className="p-8 sm:p-12 font-serif text-slate-800 bg-[#fdfdfd]"
       style={{
-        fontFamily: theme?.fontFamily?.includes('Merriweather')
-          ? "'Merriweather', Georgia, serif"
+        // Honour whatever family the theme customiser set. The old ternary only
+        // accepted a family containing "Merriweather" and silently discarded
+        // every other choice, so font selection appeared to do nothing here.
+        fontFamily: theme?.fontFamily
+          ? `'${theme.fontFamily}', 'Playfair Display', Georgia, serif`
           : "'Playfair Display', Georgia, serif",
       }}
     >
@@ -28,7 +35,7 @@ export default function NordicTemplate({ data, theme }) {
           </div>
         )}
 
-        <h1 className="text-3xl font-bold tracking-wider uppercase text-slate-900">
+        <h1 className="text-3xl font-bold tracking-wider uppercase" style={{ color: primaryColor }}>
           {personalInfo?.fullName || 'YOUR NAME'}
         </h1>
         <p className="font-sans text-sm tracking-widest uppercase font-semibold text-slate-600 mt-1">
@@ -61,7 +68,7 @@ export default function NordicTemplate({ data, theme }) {
       {/* Summary */}
       {summary && (
         <div className="mb-6">
-          <h2 className="text-xs font-sans font-bold tracking-widest uppercase text-slate-900 border-b border-slate-200 pb-1 mb-2">
+          <h2 className="text-xs font-sans font-bold tracking-widest uppercase border-b pb-1 mb-2" style={{ color: primaryColor, borderColor: secondaryColor }}>
             Executive Summary
           </h2>
           <p className="text-xs sm:text-[13px] text-slate-700 leading-relaxed text-justify font-sans">
@@ -73,7 +80,7 @@ export default function NordicTemplate({ data, theme }) {
       {/* Skills Grid */}
       {skills && skills.length > 0 && (
         <div className="mb-6">
-          <h2 className="text-xs font-sans font-bold tracking-widest uppercase text-slate-900 border-b border-slate-200 pb-1 mb-2">
+          <h2 className="text-xs font-sans font-bold tracking-widest uppercase border-b pb-1 mb-2" style={{ color: primaryColor, borderColor: secondaryColor }}>
             Areas of Expertise
           </h2>
           <div className="font-sans grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
@@ -121,7 +128,7 @@ export default function NordicTemplate({ data, theme }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         {education && education.length > 0 && (
           <div>
-            <h2 className="text-xs font-sans font-bold tracking-widest uppercase text-slate-900 border-b border-slate-200 pb-1 mb-2">
+            <h2 className="text-xs font-sans font-bold tracking-widest uppercase border-b pb-1 mb-2" style={{ color: primaryColor, borderColor: secondaryColor }}>
               Academic History
             </h2>
             <div className="font-sans space-y-2 text-xs">
@@ -138,7 +145,7 @@ export default function NordicTemplate({ data, theme }) {
 
         {languages && languages.length > 0 && (
           <div>
-            <h2 className="text-xs font-sans font-bold tracking-widest uppercase text-slate-900 border-b border-slate-200 pb-1 mb-2">
+            <h2 className="text-xs font-sans font-bold tracking-widest uppercase border-b pb-1 mb-2" style={{ color: primaryColor, borderColor: secondaryColor }}>
               Linguistic Fluency
             </h2>
             <div className="font-sans space-y-1.5 text-xs">
@@ -156,7 +163,7 @@ export default function NordicTemplate({ data, theme }) {
       {/* Certifications */}
       {certifications && certifications.length > 0 && (
         <div className="mt-6">
-          <h2 className="text-xs font-sans font-bold tracking-widest uppercase text-slate-900 border-b border-slate-200 pb-1 mb-2">
+          <h2 className="text-xs font-sans font-bold tracking-widest uppercase border-b pb-1 mb-2" style={{ color: primaryColor, borderColor: secondaryColor }}>
             Professional Certifications
           </h2>
           <div className="font-sans grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
@@ -176,7 +183,7 @@ export default function NordicTemplate({ data, theme }) {
         customSections={customSections}
         className="mt-6"
         renderHeading={(label) => (
-          <h2 className="text-xs font-sans font-bold tracking-widest uppercase text-slate-900 border-b border-slate-200 pb-1 mb-2">
+          <h2 className="text-xs font-sans font-bold tracking-widest uppercase border-b pb-1 mb-2" style={{ color: primaryColor, borderColor: secondaryColor }}>
             {label}
           </h2>
         )}

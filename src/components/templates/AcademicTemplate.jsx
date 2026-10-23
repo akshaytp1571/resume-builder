@@ -2,6 +2,7 @@ import React from 'react';
 import { LinkedinIcon, GithubIcon } from '../ui/Icons';
 import PhotoFrame from './PhotoFrame';
 import ExtraSections from './ExtraSections';
+import { safeResume } from './templateData';
 
 /**
  * AcademicTemplate — "Academic CV".
@@ -28,7 +29,7 @@ export default function AcademicTemplate({ data, theme }) {
     certifications,
     projects,
     customSections,
-  } = data || {};
+  } = safeResume(data);
 
   const primaryColor = theme?.primaryColor || '#7c2d12';
   const secondaryColor = theme?.secondaryColor || '#4b5563';

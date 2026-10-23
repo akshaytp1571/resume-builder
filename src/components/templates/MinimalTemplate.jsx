@@ -1,9 +1,15 @@
 import React from 'react';
 import ExtraSections from './ExtraSections';
+import PhotoFrame from './PhotoFrame';
+import { safeResume } from './templateData';
 
 export default function MinimalTemplate({ data, theme }) {
-  const { personalInfo, summary, skills, experience, education, languages, certifications, projects, customSections } = data;
+  const { personalInfo, summary, skills, experience, education, languages, certifications, projects, customSections } = safeResume(data);
   const isCompact = theme?.singlePage !== false || theme?.fontSize === 'compact';
+  // Minimal is an ATS-first layout: grey text and no rules by default, but it
+  // must still honour a custom palette rather than silently ignoring it.
+  const primaryColor = theme?.primaryColor || '#111827';
+  const secondaryColor = theme?.secondaryColor || '#d1d5db';
 
   return (
     <div
@@ -15,7 +21,18 @@ export default function MinimalTemplate({ data, theme }) {
     >
       {/* Clean ATS Header */}
       <div className="text-center border-b pb-4 mb-5">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight uppercase text-gray-950">
+        {personalInfo?.showPhoto && personalInfo?.photo && (
+          <div className="flex justify-center mb-3">
+            <PhotoFrame
+              personalInfo={personalInfo}
+              size={72}
+              borderColor={secondaryColor}
+              borderWidth="2px"
+              shadow=""
+            />
+          </div>
+        )}
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight uppercase" style={{ color: primaryColor }}>
           {personalInfo?.fullName || 'YOUR NAME'}
         </h1>
         <p className="text-sm font-medium text-gray-700 mt-1">
@@ -48,7 +65,7 @@ export default function MinimalTemplate({ data, theme }) {
       {/* SUMMARY */}
       {summary && (
         <div className="mb-4">
-          <h2 className="text-xs font-bold tracking-widest uppercase text-gray-950 border-b border-gray-300 pb-1 mb-2">
+          <h2 className="text-xs font-bold tracking-widest uppercase border-b pb-1 mb-2" style={{ color: primaryColor, borderColor: secondaryColor }}>
             Professional Summary
           </h2>
           <p className="text-gray-700 leading-relaxed text-justify">
@@ -60,7 +77,7 @@ export default function MinimalTemplate({ data, theme }) {
       {/* SKILLS */}
       {skills && skills.length > 0 && (
         <div className="mb-4">
-          <h2 className="text-xs font-bold tracking-widest uppercase text-gray-950 border-b border-gray-300 pb-1 mb-2">
+          <h2 className="text-xs font-bold tracking-widest uppercase border-b pb-1 mb-2" style={{ color: primaryColor, borderColor: secondaryColor }}>
             Technical & Domain Competencies
           </h2>
           <div className="space-y-1">
@@ -77,7 +94,7 @@ export default function MinimalTemplate({ data, theme }) {
       {/* EXPERIENCE */}
       {experience && experience.length > 0 && (
         <div className="mb-4">
-          <h2 className="text-xs font-bold tracking-widest uppercase text-gray-950 border-b border-gray-300 pb-1 mb-2">
+          <h2 className="text-xs font-bold tracking-widest uppercase border-b pb-1 mb-2" style={{ color: primaryColor, borderColor: secondaryColor }}>
             Professional Experience
           </h2>
           <div className="space-y-4">
@@ -106,7 +123,7 @@ export default function MinimalTemplate({ data, theme }) {
       {/* EDUCATION */}
       {education && education.length > 0 && (
         <div className="mb-4">
-          <h2 className="text-xs font-bold tracking-widest uppercase text-gray-950 border-b border-gray-300 pb-1 mb-2">
+          <h2 className="text-xs font-bold tracking-widest uppercase border-b pb-1 mb-2" style={{ color: primaryColor, borderColor: secondaryColor }}>
             Education
           </h2>
           <div className="space-y-2">
@@ -126,7 +143,7 @@ export default function MinimalTemplate({ data, theme }) {
       {/* LANGUAGES */}
       {languages && languages.length > 0 && (
         <div className="mb-4">
-          <h2 className="text-xs font-bold tracking-widest uppercase text-gray-950 border-b border-gray-300 pb-1 mb-2">
+          <h2 className="text-xs font-bold tracking-widest uppercase border-b pb-1 mb-2" style={{ color: primaryColor, borderColor: secondaryColor }}>
             Languages
           </h2>
           <p className="text-xs text-gray-800">
@@ -138,7 +155,7 @@ export default function MinimalTemplate({ data, theme }) {
       {/* CERTIFICATIONS */}
       {certifications && certifications.length > 0 && (
         <div className="mb-4">
-          <h2 className="text-xs font-bold tracking-widest uppercase text-gray-950 border-b border-gray-300 pb-1 mb-2">
+          <h2 className="text-xs font-bold tracking-widest uppercase border-b pb-1 mb-2" style={{ color: primaryColor, borderColor: secondaryColor }}>
             Certifications & Credentials
           </h2>
           <div className="space-y-1 text-xs text-gray-800">
@@ -157,7 +174,7 @@ export default function MinimalTemplate({ data, theme }) {
         projects={projects}
         customSections={customSections}
         renderHeading={(label) => (
-          <h2 className="text-xs font-bold tracking-widest uppercase text-gray-950 border-b border-gray-300 pb-1 mb-2">
+          <h2 className="text-xs font-bold tracking-widest uppercase border-b pb-1 mb-2" style={{ color: primaryColor, borderColor: secondaryColor }}>
             {label}
           </h2>
         )}

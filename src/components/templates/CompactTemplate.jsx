@@ -1,9 +1,10 @@
 import React from 'react';
 import PhotoFrame from './PhotoFrame';
 import ExtraSections from './ExtraSections';
+import { safeResume } from './templateData';
 
 export default function CompactTemplate({ data, theme }) {
-  const { personalInfo, summary, skills, experience, education, languages, certifications, projects, customSections } = data;
+  const { personalInfo, summary, skills, experience, education, languages, certifications, projects, customSections } = safeResume(data);
   const primaryColor = theme?.primaryColor || '#4f46e5';
 
   return (

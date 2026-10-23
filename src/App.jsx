@@ -35,6 +35,17 @@ import {
   listRecoveryKeys,
 } from './utils/resumeStore.js';
 import { CheckCircle2, AlertCircle, ShieldAlert, Download, X } from 'lucide-react';
+import { createHistory, isEditableTarget } from './utils/history.js';
+
+/** Undo history depth. Bounded so a long editing session cannot grow forever. */
+const HISTORY_LIMIT = 50;
+/**
+ * Longer than the 400ms save debounce on purpose: the save timer marks "the
+ * browser has the latest data", this one marks "the user paused". A pause is
+ * the natural boundary between one undo step and the next, and reusing the
+ * save timer's 400ms would split a burst of typing into several steps.
+ */
+const HISTORY_DEBOUNCE_MS = 600;
 
 /** Set when the user dismisses the recovery banner so it stops nagging. */
 const RECOVERY_BANNER_DISMISSED_KEY = 'precision_resume_banner_dismissed';
@@ -59,6 +70,18 @@ function readRecoveryKeys() {
 /** Apply either a value or an updater function. */
 function resolveValue(updater, previous) {
   return typeof updater === 'function' ? updater(previous) : updater;
+}
+
+/**
+ * The part of a variant that undo restores: data and theme, nothing else.
+ *
+ * Identity fields (id, name, timestamps) are deliberately excluded — undoing an
+ * edit must not rename the resume back.
+ */
+function snapshotOfStore(store) {
+  const active = getActiveVariant(store);
+  if (!active) return null;
+  return { id: active.id, data: active.data, theme: active.theme };
 }
 
 export default function App() {
@@ -93,6 +116,12 @@ export default function App() {
       }
       // Another tab created a variant while this one was open. Adopt it rather
       // than losing it, and say so once.
+      //
+      // Deliberately does NOT reset the undo history: a merge only appends
+      // variants this tab does not have, so the active variant's data and theme
+      // are untouched and the user's own edit history is still valid. Undo
+      // applies through a functional update, so it lands on top of the merged
+      // store rather than overwriting it.
       if (merged && !mergeNotifiedRef.current) {
         mergeNotifiedRef.current = true;
         setStore(merged);
@@ -137,30 +166,173 @@ export default function App() {
     });
   }, []);
 
+  // --- undo / redo ---------------------------------------------------------
+  // The history object lives in a ref: it is mutable state that must survive
+  // re-renders without causing them. `historyVersion` is the only React state,
+  // and it exists purely to re-render the toolbar when availability flips.
+  const historyRef = useRef(null);
+  if (historyRef.current === null) {
+    historyRef.current = createHistory(HISTORY_LIMIT);
+  }
+  const [historyVersion, setHistoryVersion] = useState(0);
+  const historyTimer = useRef(null);
+  // Set while an undo/redo is being applied. The store change that results is
+  // not a user edit, so it must not be recorded as a new history entry — doing
+  // so would push the restored state on top of the redo branch and clear it,
+  // making redo impossible after a single undo.
+  const restoringRef = useRef(false);
+
+  // Seed the baseline so the first edit has something to undo back to.
+  useEffect(() => {
+    if (historyRef.current.size() === 0) {
+      const snap = snapshotOfStore(store);
+      if (snap) historyRef.current.reset(snap);
+    }
+    // Intentionally mount-only: seeding again would wipe real history.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Record a snapshot 600ms after the store settles.
+  useEffect(() => {
+    if (historyTimer.current) clearTimeout(historyTimer.current);
+    if (restoringRef.current) {
+      // This render is the result of an undo/redo, not an edit. Release the
+      // guard so the user's *next* edit is recorded normally.
+      restoringRef.current = false;
+      return undefined;
+    }
+    historyTimer.current = setTimeout(() => {
+      const snap = snapshotOfStore(store);
+      if (snap && historyRef.current.push(snap)) {
+        setHistoryVersion((v) => v + 1);
+      }
+    }, HISTORY_DEBOUNCE_MS);
+    return () => {
+      if (historyTimer.current) clearTimeout(historyTimer.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store]);
+
+  /**
+   * Restore a snapshot into the store.
+   *
+   * Written as a targeted patch of one variant rather than a whole-store
+   * replacement, for two reasons: a whole-store write would clobber variants
+   * another tab has added since (the merge logic in saveStore would then have to
+   * clean up after us), and the recovery banner keys off storage that undo has
+   * no business touching. Only `data` and `theme` move.
+   */
+  const applySnapshot = useCallback((snap) => {
+    if (!snap) return;
+    // Any queued push would record the pre-undo state as a new edit, and the
+    // store change below must not re-arm the timer at all.
+    if (historyTimer.current) clearTimeout(historyTimer.current);
+    restoringRef.current = true;
+    setStore((prev) => {
+      // The variant may have been deleted since the snapshot was taken. Fall
+      // back to the active one rather than resurrecting a dead id.
+      const target = prev.variants.some((v) => v.id === snap.id)
+        ? snap.id
+        : getActiveVariant(prev)?.id;
+      if (!target) return prev;
+      return updateVariant(prev, target, {
+        data: normalizeResume(snap.data),
+        theme: snap.theme,
+      });
+    });
+    setHistoryVersion((v) => v + 1);
+  }, []);
+
+  const handleUndo = useCallback(() => {
+    const snap = historyRef.current.undo();
+    if (!snap) return false;
+    applySnapshot(snap);
+    sound.playAction();
+    setToast({ type: 'info', message: 'UNDO' });
+    return true;
+  }, [applySnapshot]);
+
+  const handleRedo = useCallback(() => {
+    const snap = historyRef.current.redo();
+    if (!snap) return false;
+    applySnapshot(snap);
+    sound.playAction();
+    setToast({ type: 'info', message: 'REDO' });
+    return true;
+  }, [applySnapshot]);
+
+  // Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z, Ctrl/Cmd+Y.
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      const mod = event.metaKey || event.ctrlKey;
+      if (!mod) return;
+      const key = event.key.toLowerCase();
+      if (key !== 'z' && key !== 'y') return;
+
+      // Let the browser undo text while the user is typing. Hijacking this is
+      // worse than having no undo at all.
+      if (isEditableTarget(event.target)) return;
+
+      const isRedo = key === 'y' || (key === 'z' && event.shiftKey);
+      const handled = isRedo ? handleRedo() : handleUndo();
+      // Only swallow the shortcut when we actually moved through history, so an
+      // empty stack leaves the browser's own behaviour alone.
+      if (handled) event.preventDefault();
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [handleUndo, handleRedo]);
+
+  /**
+   * History belongs to one document. Switching, creating, duplicating,
+   * deleting or importing a variant changes what is on screen without the user
+   * editing it — so the stack is reset to the new state rather than left
+   * pointing at the old one.
+   */
+  const resetHistory = useCallback((nextStore) => {
+    const snap = snapshotOfStore(nextStore);
+    if (historyTimer.current) clearTimeout(historyTimer.current);
+    historyRef.current.reset(snap || undefined);
+    setHistoryVersion((v) => v + 1);
+  }, []);
+
+  // Read during render so the buttons reflect the stack; `historyVersion` is
+  // what makes this re-run after every mutation of the ref.
+  const canUndo = historyRef.current.canUndo();
+  const canRedo = historyRef.current.canRedo();
+
   // --- variant actions -----------------------------------------------------
+  // Each of these swaps the document out from under the editor, so history is
+  // reset to the new state. Without this, Ctrl+Z after switching variants would
+  // paste the previous variant's resume into this one.
   const handleSelectVariant = (id) => {
     sound.playTab();
-    setStore((prev) => setActiveVariant(prev, id));
+    const next = setActiveVariant(store, id);
+    setStore(next);
+    resetHistory(next);
   };
 
   const handleCreateVariant = () => {
     sound.playSuccess();
-    setStore((prev) =>
-      addVariant(
-        prev,
-        createVariant({
-          name: `Resume ${prev.variants.length + 1}`,
-          data: INITIAL_RESUME_DATA,
-          theme: DEFAULT_THEME,
-        })
-      )
+    const next = addVariant(
+      store,
+      createVariant({
+        name: `Resume ${store.variants.length + 1}`,
+        data: INITIAL_RESUME_DATA,
+        theme: DEFAULT_THEME,
+      })
     );
+    setStore(next);
+    resetHistory(next);
     setToast({ type: 'success', message: 'NEW RESUME VARIANT CREATED' });
   };
 
   const handleDuplicateVariant = (id) => {
     sound.playAction();
-    setStore((prev) => duplicateVariant(prev, id));
+    const next = duplicateVariant(store, id);
+    setStore(next);
+    resetHistory(next);
     setToast({ type: 'success', message: 'VARIANT DUPLICATED' });
   };
 
@@ -176,7 +348,9 @@ export default function App() {
       return;
     }
     sound.playAction();
-    setStore((prev) => removeVariant(prev, id));
+    const next = removeVariant(store, id);
+    setStore(next);
+    resetHistory(next);
     setToast({ type: 'success', message: 'VARIANT DELETED' });
   };
 
@@ -206,6 +380,7 @@ export default function App() {
       const imported = importStoreJson(text);
       sound.playSuccess();
       setStore(imported);
+      resetHistory(imported);
       setToast({
         type: 'success',
         message: `IMPORTED ${imported.variants.length} VARIANT(S)`,
@@ -413,6 +588,10 @@ export default function App() {
         isExporting={isExporting}
         templateName={activeTemplateObj.name}
         singlePage={theme.singlePage !== false}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
+        canUndo={canUndo}
+        canRedo={canRedo}
         onToggleSinglePage={() => {
           setTheme((prev) => {
             const nextVal = prev.singlePage === false;

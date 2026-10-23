@@ -12,6 +12,8 @@ import {
   Target,
   Settings,
   Upload,
+  Undo2,
+  Redo2,
 } from 'lucide-react';
 import { sound } from '../../utils/soundEffects';
 import { isAiConfigReady } from '../../utils/aiService';
@@ -34,6 +36,10 @@ export default function Navbar({
   templateName,
   singlePage = true,
   onToggleSinglePage,
+  onUndo,
+  onRedo,
+  canUndo = false,
+  canRedo = false,
 }) {
   const [soundEnabled, setSoundEnabled] = useState(sound.enabled);
 
@@ -117,6 +123,47 @@ export default function Navbar({
 
         {/* Center / AI Tools & ATS Radar Capsule */}
         <div className="flex items-center gap-2">
+          {/* Undo / Redo */}
+          <div className="flex items-center rounded-xl border border-pink-500/20 bg-[#200b24] overflow-hidden">
+            <button
+              type="button"
+              onClick={() => {
+                if (!canUndo) return;
+                sound.playAction();
+                onUndo?.();
+              }}
+              disabled={!canUndo}
+              className={`px-2 py-2 text-pink-300/70 transition-all ${
+                canUndo
+                  ? 'hover:bg-[#2c1031] hover:text-pink-100 cursor-pointer'
+                  : 'opacity-35 cursor-not-allowed'
+              } ${FOCUS_RING}`}
+              title="Undo (Ctrl+Z)"
+              aria-label="Undo last edit"
+            >
+              <Undo2 size={13} />
+            </button>
+            <span className="w-px self-stretch bg-pink-500/20" aria-hidden="true" />
+            <button
+              type="button"
+              onClick={() => {
+                if (!canRedo) return;
+                sound.playAction();
+                onRedo?.();
+              }}
+              disabled={!canRedo}
+              className={`px-2 py-2 text-pink-300/70 transition-all ${
+                canRedo
+                  ? 'hover:bg-[#2c1031] hover:text-pink-100 cursor-pointer'
+                  : 'opacity-35 cursor-not-allowed'
+              } ${FOCUS_RING}`}
+              title="Redo (Ctrl+Shift+Z or Ctrl+Y)"
+              aria-label="Redo last undone edit"
+            >
+              <Redo2 size={13} />
+            </button>
+          </div>
+
           {/* AI Settings Config Button */}
           <button
             type="button"

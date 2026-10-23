@@ -3,9 +3,10 @@ import { Mail, Phone, MapPin, Briefcase, Award } from 'lucide-react';
 import { LinkedinIcon, GithubIcon } from '../ui/Icons';
 import PhotoFrame from './PhotoFrame';
 import ExtraSections from './ExtraSections';
+import { safeResume } from './templateData';
 
 export default function ModernTemplate({ data, theme }) {
-  const { personalInfo, summary, skills, experience, education, languages, certifications, projects, customSections } = data;
+  const { personalInfo, summary, skills, experience, education, languages, certifications, projects, customSections } = safeResume(data);
   const primaryColor = theme?.primaryColor || '#0f766e';
   const secondaryColor = theme?.secondaryColor || '#0d9488';
 

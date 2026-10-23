@@ -2,6 +2,7 @@ import React from 'react';
 import { LinkedinIcon, GithubIcon } from '../ui/Icons';
 import PhotoFrame from './PhotoFrame';
 import ExtraSections from './ExtraSections';
+import { safeResume } from './templateData';
 
 /**
  * StartupTemplate — "Startup One-Pager".
@@ -28,7 +29,7 @@ export default function StartupTemplate({ data, theme }) {
     certifications,
     projects,
     customSections,
-  } = data || {};
+  } = safeResume(data);
 
   const primaryColor = theme?.primaryColor || '#ea580c';
   const secondaryColor = theme?.secondaryColor || '#1f2937';

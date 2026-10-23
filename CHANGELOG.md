@@ -4,6 +4,64 @@ All notable changes to this project. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning is
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-10-23
+
+A component test suite, undo/redo, and photo upload guards. The test suite is
+the headline: it is the first thing in this project that can catch a render
+crash, and it immediately found three real bugs that three previous audit
+passes had missed.
+
+### Added
+
+- **Component test suite** — Vitest + React Testing Library, 518 tests across
+  6 files, running in jsdom. Every one of the nine templates is mounted against
+  a 14-case hostile-data matrix and a 6-case hostile-theme matrix; every modal
+  is mounted and checked for dialog semantics, Escape handling and accessible
+  names; `ModalShell` is tested directly for focus-trap wrapping in both
+  directions, focus restore, and scroll lock. HTML-injection containment is
+  verified with 5 payloads across 9 templates, and the assertions were proven
+  non-vacuous by running them against a component that genuinely injects.
+- **`npm test` is now a hard gate** — chains `test-fixes`, `smoke`,
+  `test-integrity` and `vitest run` with `&&`. Verified to exit non-zero on
+  failure by deliberately breaking an assertion.
+- **Undo/redo.** Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z (or Ctrl+Y), plus Navbar
+  buttons. Bounded 50-snapshot history, coalesced so a pause in typing is the
+  boundary rather than every keystroke. Restores both resume data and theme.
+  Deliberately does **not** fire while focus is in a field, so the browser's
+  native text undo keeps working.
+- **Photo upload guards.** `validateImageFile()` rejects non-images, empty files
+  and anything over 10 MB *before* the file is decoded, with the actual size in
+  the message. `downscaleImage()` shrinks the source to 1024 px before the crop
+  modal sees it, and returns the original untouched when it is already small
+  enough. A 12 MP phone photo previously base64-decoded in full and could freeze
+  the tab.
+- **`safeResume()` / `safeTheme()`** in `src/components/templates/templateData.js`
+  — a shared guard so no template can throw on bad input.
+
+### Fixed
+
+- **All nine templates crashed on null or undefined data** — `const {
+  personalInfo } = data` throws, and `highlights: "one string"` throws on
+  `.map`. Found by the new suite, not by any of the three earlier audits.
+- **`MinimalTemplate` rendered no photo at all** and painted from a hardcoded
+  palette, so colour customisation silently did nothing.
+- **`NordicTemplate` (Executive) ignored theme colours entirely** and accepted
+  only a font family containing "Merriweather", silently discarding every other
+  choice.
+- **Redo was impossible after a single undo** — the restore retriggered the save
+  debounce, which pushed the restored state and wiped the redo branch.
+- **Variant switching left stale history**, so undo could paste one resume's
+  content into another.
+- **The test harness's canvas stub was dead code.** jsdom *defines*
+  `getContext` (it returns `null`), so an `if (!getContext)` guard never fires.
+
+### Changed
+
+- Test count went from 87 source checks + smoke + integrity to **518 component
+  tests** on top of those. The debt-ledger mechanism (`it.fails` for known-broken
+  combinations) started at 30 entries and is now empty — each template fix
+  flipped its entry red and forced the deletion.
+
 ## [1.2.0] - 2026-10-22
 
 Closes the four gaps left open after v1.1.0: recovery is now visible to the user,

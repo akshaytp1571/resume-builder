@@ -1,14 +1,16 @@
 import React, { useState, useRef } from 'react';
-import { Camera, Trash2, RotateCcw, User, Briefcase, Mail, Phone, MapPin, Plane, Crop } from 'lucide-react';
+import { Camera, Trash2, RotateCcw, User, Briefcase, Mail, Phone, MapPin, Plane, Crop, AlertCircle } from 'lucide-react';
 import { LinkedinIcon, GithubIcon } from '../ui/Icons';
 import { DEFAULT_PHOTO_URL } from '../../assets/defaultPhoto.js';
 import { sound } from '../../utils/soundEffects';
+import { validateImageFile, readFileAsDataUrl, downscaleImage, CROP_SOURCE_MAX_EDGE } from '../../utils/imageUtils';
 import ImageCropModal from '../ui/ImageCropModal';
 
 export default function PersonalInfoEditor({ data, onChange }) {
   const fileInputRef = useRef(null);
   const [isCropOpen, setIsCropOpen] = useState(false);
   const [cropSourceImage, setCropSourceImage] = useState(null);
+  const [photoError, setPhotoError] = useState(null);
 
   const handleChange = (field, value) => {
     onChange({
@@ -17,20 +19,36 @@ export default function PersonalInfoEditor({ data, onChange }) {
     });
   };
 
-  const handlePhotoUpload = (e) => {
+  const handlePhotoUpload = async (e) => {
     const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        sound.playAction();
-        // Automatically open the crop & positioning modal upon upload
-        setCropSourceImage(reader.result);
-        setIsCropOpen(true);
-      };
-      reader.readAsDataURL(file);
-    }
-    // Reset file input value so re-selecting the same file works
+
+    // Reset immediately so re-selecting the same file still fires onChange.
+    // Done before the awaits below, while the event is still live.
     e.target.value = '';
+
+    if (!file) return;
+
+    // Check the file BEFORE reading it. Reading a 50 MB HEIC into a data URL
+    // decodes the whole thing into memory and freezes the tab.
+    const check = validateImageFile(file);
+    if (!check.ok) {
+      setPhotoError(check.error);
+      return;
+    }
+
+    setPhotoError(null);
+
+    try {
+      const rawDataUrl = await readFileAsDataUrl(file);
+      // Shrink before the crop modal sees it, so a 12 MP phone photo arrives
+      // manageable. Already-small images come back untouched.
+      const source = await downscaleImage(rawDataUrl, CROP_SOURCE_MAX_EDGE);
+      sound.playAction();
+      setCropSourceImage(source);
+      setIsCropOpen(true);
+    } catch (err) {
+      setPhotoError(err?.message || 'That image could not be opened. Please try a different file.');
+    }
   };
 
   const handleOpenCrop = () => {
@@ -163,6 +181,19 @@ export default function PersonalInfoEditor({ data, onChange }) {
                 >
                   <Trash2 size={13} />
                 </button>
+              )}
+            </div>
+
+            {/* Upload error. aria-live so screen readers hear the size/type
+                rejection without the user having to find it. The region is
+                always mounted - a live region added at the same moment as its
+                text is often not announced. */}
+            <div aria-live="polite" role="status" className="min-h-0">
+              {photoError && (
+                <p className="mt-1.5 flex items-start gap-1.5 text-[11px] leading-relaxed text-rose-300">
+                  <AlertCircle size={12} className="shrink-0 mt-0.5" aria-hidden="true" />
+                  <span>{photoError}</span>
+                </p>
               )}
             </div>
 
