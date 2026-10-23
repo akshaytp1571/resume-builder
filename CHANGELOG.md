@@ -4,6 +4,82 @@ All notable changes to this project. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning is
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-10-22
+
+Nine templates, PDF import, offline job-description matching, vector PDF export,
+and a full adversarial QA pass that found and fixed six data-integrity defects.
+
+### Added
+
+- **Three new templates** — Developer Console (monospace two-column with a skill
+  rail), Academic CV (serif, numbered sections, publication-friendly), and
+  Startup One-Pager (bold header band, pill skills). Nine templates total.
+- **PDF resume import.** `pdfjs-dist` extracts text, reconstructing lines from
+  the baseline of each text item. Handles password-protected PDFs and
+  image-only scans with readable errors, and caps at 30 pages so a huge file
+  cannot freeze the modal. The worker is bundled as a Vite asset.
+- **Offline job-description matcher.** Paste a JD and see weighted keyword
+  coverage against your resume — no AI call, no network. Detects 50 multi-word
+  technical phrases, weights terms mentioned repeatedly or inside a
+  requirements block, and reports matched and missing keywords by category.
+  Lives in the ATS modal behind a collapsible panel.
+- **Vector PDF export.** `exportToVectorPdf()` hands the page to the browser's
+  own print-to-PDF so the text is selectable and ATS-readable rather than a
+  JPEG. The raster path remains the default for `exportToPdf(el, data)` so
+  existing behaviour is unchanged; pass `{ mode: 'print' }` to opt in.
+- **`ErrorBoundary`** wrapping the app. A render throw now shows a readable
+  recovery screen with a "Download my data" button that serialises the raw
+  `localStorage` value, instead of a blank page.
+- **`test-integrity.mjs`** (`npm run test:integrity`) — behavioural regression
+  tests for every defect found in the QA audit. Unlike `test-fixes.cjs`, which
+  greps source text, these import the real modules and assert real outcomes.
+- **`QA-REPORT.md`** — the full adversarial audit, including what held up.
+
+### Changed
+
+- **ATS weighting** gained a Projects category (10 points); Summary and Skills
+  reduced to 15 each. Maximums still sum to exactly 100.
+- **`saveStore()` now returns `{ ok, merged }`** instead of a boolean, and
+  merges before writing. Two open tabs no longer destroy each other's variants:
+  variants the other tab created are adopted rather than overwritten, and the
+  caller is told a merge happened so it can notify the user.
+- **`normalizeResume()` is now a real trust boundary.** It validates item
+  shapes, not just that each collection is an array, and coerces scalars.
+  Numbers in bullet lists are dropped rather than stringified.
+- **Print CSS** resets every form of scaling on the preview, forces
+  `print-color-adjust: exact` so photos and accents survive, and keeps a job
+  title with its bullets across a page break.
+
+### Fixed
+
+- **CreativeTemplate silently dropped certifications** — it was the only
+  template that did.
+- **A corrupt resume store was silently overwritten with sample data.** The
+  unreadable value is now quarantined under `…__recovery_<timestamp>` first.
+- **`skills: [null]` and other wrong-typed items crashed the ATS scorer and
+  every template** — reachable through a JSON resume import. 108 template
+  crashes and 14 scorer crashes were reproducible; all now pass.
+- **Duplicate variant ids crashed delete** and could empty the store.
+- **A quota-exceeded save was completely silent.** It now warns the user once:
+  "COULD NOT SAVE — BROWSER STORAGE IS FULL. EXPORT A BACKUP NOW."
+- **A JSON resume with object-valued fields white-screened the entire app.**
+  The upload preview rendered raw parsed data; it now normalises first.
+- **A 50,000-character token threw "Regular expression too large"** from inside
+  the keyword matcher.
+- **Action verbs matched as substrings.** Bullets containing no verb scored
+  18/25 because "led" hides inside "enabled", "saddled" and "cancelled". Word
+  boundaries fix it; no legitimate resume loses a point.
+- **A 10-word summary scored 0/15** while 11 words scored 9/15.
+- **`ImageCropModal` panning froze** when the cursor left the panel.
+- **Non-Latin names produced `_Resume.docx`** instead of falling back to
+  `Resume.docx`.
+- **`calculateAtsScore` no longer throws on any input**, including `null`.
+
+### Upgrade notes
+
+No migration is required. The store key is unchanged and `saveStore`'s new
+return shape only affects callers, both of which are in this repository.
+
 ## [1.0.0] - 2026-10-22
 
 First release with a complete feature set. Adds multiple resume variants,

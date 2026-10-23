@@ -52,10 +52,36 @@ export default function App() {
 
   // Persist, debounced so typing does not hammer localStorage on every keypress.
   const saveTimer = useRef(null);
+  // Warn once per failure, not once per keystroke.
+  const saveFailedRef = useRef(false);
+  // Debounce the "merged from another tab" notice too.
+  const mergeNotifiedRef = useRef(false);
   useEffect(() => {
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
-      saveStore(store);
+      const { ok, merged } = saveStore(store);
+      if (!ok && !saveFailedRef.current) {
+        saveFailedRef.current = true;
+        setToast({
+          type: 'error',
+          message: 'COULD NOT SAVE — BROWSER STORAGE IS FULL. EXPORT A BACKUP NOW.',
+        });
+      } else if (ok) {
+        saveFailedRef.current = false;
+      }
+      // Another tab created a variant while this one was open. Adopt it rather
+      // than losing it, and say so once.
+      if (merged && !mergeNotifiedRef.current) {
+        mergeNotifiedRef.current = true;
+        setStore(merged);
+        setToast({
+          type: 'info',
+          message: 'MERGED CHANGES FROM ANOTHER TAB',
+        });
+        setTimeout(() => {
+          mergeNotifiedRef.current = false;
+        }, 5000);
+      }
     }, 400);
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
@@ -360,6 +386,7 @@ export default function App() {
       {isAtsOpen && (
         <AtsScoreModal
           atsResult={atsResult}
+          resumeData={resumeData}
           onClose={() => setIsAtsOpen(false)}
         />
       )}

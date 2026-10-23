@@ -104,7 +104,8 @@ body {
 }
 
 @media print {
-  /* Remove browser headers and footers (date, time, URL, title, page numbers) */
+  /* margin:0 is what suppresses Chrome's reserved header/footer strip; the
+     resume templates carry their own padding, so no page margin is needed. */
   @page {
     size: A4 portrait;
     margin: 0mm !important;
@@ -124,15 +125,28 @@ body {
     print-color-adjust: exact !important;
   }
 
-  /* Completely hide all UI elements, navigation, bars, sidebars, scanlines, and buttons */
+  /* Completely hide all UI elements, navigation, bars, sidebars, scanlines, and buttons.
+     Every chrome element carries .no-print; the tag selectors and the dialog
+     rule are belt-and-braces for anything added later. */
   .no-print,
   header,
   nav,
   aside,
   footer,
-  button {
+  button,
+  [role='dialog'],
+  [aria-modal='true'] {
     display: none !important;
     visibility: hidden !important;
+  }
+
+  /* Photos, template sidebars and accent colours are background/image driven,
+     so every node needs the opt-in or the browser drops them. */
+  *,
+  *::before,
+  *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   /* Reset main layout */
@@ -145,8 +159,15 @@ body {
     background: #ffffff !important;
   }
 
+  /* ResumePreview.jsx scales this node inline (`transform: scale(zoom)`).
+     Print has no clone step — html2pdf's onclone trick is raster-only — so the
+     LIVE node has to be neutralised here or the page prints at whatever zoom
+     the user happens to be at. Reset every form of scaling, not just transform. */
   #resume-print-wrapper {
     transform: none !important;
+    transform-origin: top center !important;
+    scale: none !important;
+    zoom: 1 !important;
     padding: 0 !important;
     margin: 0 !important;
     border: none !important;
@@ -154,10 +175,13 @@ body {
     background: transparent !important;
     display: block !important;
     width: 100% !important;
+    max-width: none !important;
   }
 
   .resume-paper {
+    /* True A4, independent of the on-screen zoom scale. */
     width: 210mm !important;
+    max-width: 210mm !important;
     min-height: 297mm !important;
     margin: 0 auto !important;
     padding: 0 !important;
@@ -166,6 +190,8 @@ body {
     border-radius: 0 !important;
     background: #ffffff !important;
     transform: none !important;
+    scale: none !important;
+    zoom: 1 !important;
     overflow: visible !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
@@ -178,6 +204,16 @@ body {
   }
 
   p, li, tr, blockquote {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Keep a job title with its bullets. Every template wraps one experience
+     entry as `<div>…<ul>bullets</ul></div>`, and ExtraSections does the same
+     per project, so the direct parent of any bullet list is the entry
+     container. :has() is unsupported on old engines — they keep today's
+     behaviour. */
+  #resume-preview div:has(> ul) {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
   }

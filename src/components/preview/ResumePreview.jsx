@@ -14,6 +14,9 @@ import MinimalTemplate from '../templates/MinimalTemplate';
 import CreativeTemplate from '../templates/CreativeTemplate';
 import NordicTemplate from '../templates/NordicTemplate';
 import CompactTemplate from '../templates/CompactTemplate';
+import TechTemplate from '../templates/TechTemplate';
+import AcademicTemplate from '../templates/AcademicTemplate';
+import StartupTemplate from '../templates/StartupTemplate';
 
 export default function ResumePreview({
   resumeData,
@@ -63,6 +66,12 @@ export default function ResumePreview({
         return <NordicTemplate data={resumeData} theme={theme} />;
       case 'compact':
         return <CompactTemplate data={resumeData} theme={theme} />;
+      case 'tech':
+        return <TechTemplate data={resumeData} theme={theme} />;
+      case 'academic':
+        return <AcademicTemplate data={resumeData} theme={theme} />;
+      case 'startup':
+        return <StartupTemplate data={resumeData} theme={theme} />;
       case 'classic':
       default:
         return <DefaultTemplate data={resumeData} theme={theme} />;

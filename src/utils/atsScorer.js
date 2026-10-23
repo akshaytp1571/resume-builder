@@ -5,20 +5,57 @@ const ACTION_VERBS = [
   'engineered', 'collaborated', 'scaled', 'verified', 'drove'
 ];
 
+// Word-boundary matching. A bare `includes` let "enabled" satisfy "led" and
+// "saddled" satisfy "led", handing action-verb points to bullets with no verb
+// at all. Compiled once at module load — this runs on every keystroke.
+const VERB_PATTERNS = new Map(
+  ACTION_VERBS.map((verb) => [verb, new RegExp(`\\b${verb}\\b`, 'i')])
+);
+
+/** A string, or '' for anything else. Keeps every .trim()/.toLowerCase() safe. */
+function toText(value) {
+  return typeof value === 'string' ? value : '';
+}
+
+/** An array, or [] for anything else. */
+function listOf(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+function isObject(value) {
+  return typeof value === 'object' && value !== null;
+}
+
+/** True when the text contains a real action verb as a whole word. */
+function hasActionVerb(text) {
+  const value = toText(text);
+  if (!value) return false;
+  for (const pattern of VERB_PATTERNS.values()) {
+    if (pattern.test(value)) return true;
+  }
+  return false;
+}
+
 export function calculateAtsScore(resumeData) {
+  // Callers are supposed to hand us a normalized resume, but this function is
+  // exported and a future caller may not. Guard here so it can never throw;
+  // normalizeResume still owns the real sanitising.
+  const data = isObject(resumeData) ? resumeData : {};
+  const personalInfo = isObject(data.personalInfo) ? data.personalInfo : {};
+
   let score = 0;
   const breakdown = [];
   const suggestions = [];
 
   // 1. Personal Info Check (25 pts)
   let contactScore = 0;
-  const emailValue = (resumeData.personalInfo?.email || '').trim();
+  const emailValue = toText(personalInfo.email).trim();
   const hasValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(emailValue);
-  if (resumeData.personalInfo?.fullName?.trim()) contactScore += 7;
-  if (resumeData.personalInfo?.title?.trim()) contactScore += 6;
+  if (toText(personalInfo.fullName).trim()) contactScore += 7;
+  if (toText(personalInfo.title).trim()) contactScore += 6;
   if (hasValidEmail) contactScore += 4;
-  if (resumeData.personalInfo?.phone?.trim()) contactScore += 4;
-  if (resumeData.personalInfo?.location?.trim()) contactScore += 4;
+  if (toText(personalInfo.phone).trim()) contactScore += 4;
+  if (toText(personalInfo.location).trim()) contactScore += 4;
 
   score += contactScore;
   breakdown.push({
@@ -28,21 +65,23 @@ export function calculateAtsScore(resumeData) {
     status: contactScore >= 20 ? 'good' : 'warning',
   });
 
-  if (!resumeData.personalInfo?.title) {
+  if (!toText(personalInfo.title).trim()) {
     suggestions.push('Add a targeted professional headline / title (e.g. "QA Lead | Automation Specialist").');
   }
-  if (!resumeData.personalInfo?.phone?.trim() || !hasValidEmail) {
+  if (!toText(personalInfo.phone).trim() || !hasValidEmail) {
     suggestions.push('Ensure both a valid phone number and professional email are included.');
   }
 
   // 2. Professional Summary (15 pts)
   let summaryScore = 0;
-  const summaryText = resumeData.summary?.trim() || '';
+  const summaryText = toText(data.summary).trim();
   const wordCount = summaryText ? summaryText.split(/\s+/).length : 0;
 
   if (wordCount >= 30 && wordCount <= 120) {
     summaryScore = 15;
-  } else if (wordCount > 10 && wordCount < 30) {
+  } else if (wordCount >= 10 && wordCount < 30) {
+    // >= 10, not > 10: exactly 10 words used to fall through every branch and
+    // score 0 while 11 words scored 9.
     summaryScore = 9;
     suggestions.push('Expand your summary slightly (target 40-80 words) to highlight leadership and core achievements.');
   } else if (wordCount > 120) {
@@ -62,19 +101,21 @@ export function calculateAtsScore(resumeData) {
 
   // 3. Technical Skills & Keyword Coverage (15 pts)
   let skillsScore = 0;
-  const totalCategories = resumeData.skills?.length || 0;
+  const skillGroups = listOf(data.skills);
+  const totalCategories = skillGroups.length;
   let totalSkillCount = 0;
-  resumeData.skills?.forEach(s => {
-    if (s.items) {
-      totalSkillCount += s.items.split(/[,|;]/).length;
+  skillGroups.forEach(s => {
+    const items = toText(isObject(s) ? s.items : '');
+    if (items) {
+      totalSkillCount += items.split(/[,|;]/).length;
     }
   });
 
   // Custom sections are free-text keywords too, so they count toward coverage.
-  const customSections = Array.isArray(resumeData.customSections) ? resumeData.customSections : [];
+  const customSections = listOf(data.customSections);
   customSections.forEach(section => {
-    (section?.items || []).forEach(item => {
-      if (typeof item === 'string' && item.trim()) totalSkillCount += 1;
+    listOf(isObject(section) ? section.items : []).forEach(item => {
+      if (toText(item).trim()) totalSkillCount += 1;
     });
   });
 
@@ -98,21 +139,22 @@ export function calculateAtsScore(resumeData) {
 
   // 4. Work Experience & Impact Metrics (25 pts)
   let expScore = 0;
-  const experiences = resumeData.experience || [];
+  const experiences = listOf(data.experience).filter(isObject);
   if (experiences.length > 0) {
     expScore += 10;
-    
+
     // Check for strong action verbs and quantified numbers
     let actionVerbCount = 0;
     let numberCount = 0;
-    
+
     experiences.forEach(exp => {
-      (exp.highlights || []).forEach(hl => {
-        const lower = hl.toLowerCase();
-        if (ACTION_VERBS.some(v => lower.includes(v))) {
+      listOf(exp.highlights).forEach(hl => {
+        const text = toText(hl);
+        if (!text) return;
+        if (hasActionVerb(text)) {
           actionVerbCount++;
         }
-        if (/\d+/.test(hl)) {
+        if (/\d+/.test(text)) {
           numberCount++;
         }
       });
@@ -137,9 +179,10 @@ export function calculateAtsScore(resumeData) {
 
   // 5. Education & Credentials (10 pts)
   let eduScore = 0;
-  if (resumeData.education && resumeData.education.length > 0) {
+  const education = listOf(data.education).filter(isObject);
+  if (education.length > 0) {
     eduScore += 7;
-    if (resumeData.education.some(e => e.degree && e.school)) {
+    if (education.some(e => toText(e.degree).trim() && toText(e.school).trim())) {
       eduScore += 3;
     }
   } else {
@@ -156,16 +199,17 @@ export function calculateAtsScore(resumeData) {
 
   // 6. Projects & Portfolio (10 pts)
   let projectScore = 0;
-  const projects = Array.isArray(resumeData.projects) ? resumeData.projects : [];
+  const projects = listOf(data.projects).filter(isObject);
   if (projects.length > 0) {
     projectScore += 5;
 
     let projectVerbCount = 0;
     let projectNumberCount = 0;
     projects.forEach(proj => {
-      (proj?.highlights || []).forEach(hl => {
-        const text = String(hl || '');
-        if (ACTION_VERBS.some(v => text.toLowerCase().includes(v))) projectVerbCount++;
+      listOf(proj.highlights).forEach(hl => {
+        const text = toText(hl);
+        if (!text) return;
+        if (hasActionVerb(text)) projectVerbCount++;
         if (/\d+/.test(text)) projectNumberCount++;
       });
     });
@@ -188,7 +232,7 @@ export function calculateAtsScore(resumeData) {
     status: projectScore >= 8 ? 'good' : 'warning',
   });
 
-  const finalScore = Math.min(100, Math.round(score));
+  const finalScore = Math.min(100, Math.max(0, Math.round(score)));
   let rating = 'Good';
   let ratingColor = 'text-blue-400';
 

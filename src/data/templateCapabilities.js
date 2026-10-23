@@ -83,6 +83,36 @@ export const TEMPLATE_CAPABILITIES = {
     'projects',
     'customSections',
   ],
+  tech: [
+    'summary',
+    'skills',
+    'experience',
+    'education',
+    'languages',
+    'certifications',
+    'projects',
+    'customSections',
+  ],
+  academic: [
+    'summary',
+    'skills',
+    'experience',
+    'education',
+    'languages',
+    'certifications',
+    'projects',
+    'customSections',
+  ],
+  startup: [
+    'summary',
+    'skills',
+    'experience',
+    'education',
+    'languages',
+    'certifications',
+    'projects',
+    'customSections',
+  ],
 };
 
 /**

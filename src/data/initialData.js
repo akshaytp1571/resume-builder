@@ -201,4 +201,28 @@ export const TEMPLATES_CONFIG = [
     previewColor: "#4f46e5",
     tag: "Dense Layout",
   },
+  {
+    id: "tech",
+    name: "Developer Console",
+    badge: "Engineering",
+    description: "Monospace accents with a left rail of skills and tools, terminal-style section labels, and a wide experience column.",
+    previewColor: "#0f766e",
+    tag: "Tech & SDET",
+  },
+  {
+    id: "academic",
+    name: "Academic CV",
+    badge: "Research",
+    description: "Dense serif single column with numbered section headings and generous line height for publications and postgrad work.",
+    previewColor: "#7c2d12",
+    tag: "Research",
+  },
+  {
+    id: "startup",
+    name: "Startup One-Pager",
+    badge: "Compact",
+    description: "Bold two-column header band with a large name, accent underline, and pill-style skills for maximum density on one page.",
+    previewColor: "#ea580c",
+    tag: "Startup",
+  },
 ];

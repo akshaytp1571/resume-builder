@@ -1,11 +1,79 @@
-import React from 'react';
-import { X, CheckCircle2, AlertCircle, Award, Sparkles } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import {
+  X,
+  CheckCircle2,
+  AlertCircle,
+  Award,
+  Sparkles,
+  Target,
+  ChevronDown,
+  Copy,
+  Check,
+} from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { sound } from '../../utils/soundEffects';
+import { matchKeywords } from '../../utils/keywordMatcher';
+import { loadStore, getActiveVariant } from '../../utils/resumeStore';
 import ModalShell from './ModalShell';
 
-export default function AtsScoreModal({ atsResult, onClose }) {
+/** The active variant's data, read fresh when the parent did not pass it. */
+function activeResumeData() {
+  try {
+    return getActiveVariant(loadStore())?.data || null;
+  } catch (err) {
+    return null;
+  }
+}
+
+const SECTION_LABELS = {
+  summary: 'Summary',
+  skills: 'Skills',
+  experience: 'Experience',
+  education: 'Education',
+  projects: 'Projects',
+  customSections: 'Custom',
+};
+
+export default function AtsScoreModal({ atsResult, onClose, resumeData }) {
   const { score, rating, breakdown, suggestions } = atsResult;
+
+  // --- local job-description matcher (no AI, no network) --------------------
+  const [jdOpen, setJdOpen] = useState(false);
+  const [jobDescription, setJobDescription] = useState('');
+  const [analyzedJd, setAnalyzedJd] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  // Keyed on analyzedJd, not jobDescription, so typing never re-runs the match.
+  const match = useMemo(() => {
+    if (!analyzedJd) return null;
+    return matchKeywords(resumeData || activeResumeData(), analyzedJd);
+  }, [analyzedJd, resumeData]);
+
+  const handleAnalyze = () => {
+    if (!jobDescription.trim()) return;
+    sound.playAction();
+    setCopied(false);
+    setAnalyzedJd(jobDescription);
+  };
+
+  const handleClear = () => {
+    sound.playAction();
+    setJobDescription('');
+    setAnalyzedJd('');
+    setCopied(false);
+  };
+
+  const handleCopyMissing = async () => {
+    if (!match?.missing?.length) return;
+    const text = match.missing.map((m) => m.term).join(', ');
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      sound.playSuccess();
+    } catch (err) {
+      setCopied(false);
+    }
+  };
 
   const triggerCelebration = () => {
     sound.playSuccess();
@@ -120,6 +188,193 @@ export default function AtsScoreModal({ atsResult, onClose }) {
                 );
               })}
             </div>
+          </div>
+
+          {/* Job Description Keyword Match — local, offline, no AI */}
+          <div className="rounded-2xl bg-[#1b071e] border border-pink-500/20 overflow-hidden">
+            <h3 className="text-xs font-semibold text-rose-300 tracking-wide">
+              <button
+                type="button"
+                onClick={() => {
+                  sound.playTab();
+                  setJdOpen((open) => !open);
+                }}
+                aria-expanded={jdOpen}
+                aria-controls="jd-match-panel"
+                className="w-full flex items-center justify-between gap-2 px-3 py-3 text-left cursor-pointer hover:bg-pink-900/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#18071c]"
+              >
+                <span className="flex items-center gap-1.5">
+                  <Target size={13} className="text-rose-400" />
+                  <span>Match Against a Job Description</span>
+                  <span className="text-[10px] font-normal text-pink-300/50">offline</span>
+                </span>
+                <ChevronDown
+                  size={14}
+                  className={`shrink-0 text-pink-300/70 transition-transform ${jdOpen ? 'rotate-180' : ''}`}
+                />
+              </button>
+            </h3>
+
+            {jdOpen && (
+              <div id="jd-match-panel" className="px-3 pb-3 space-y-2.5">
+                <label
+                  htmlFor="jd-match-input"
+                  className="block text-[11px] font-semibold text-pink-200 tracking-wide"
+                >
+                  Paste the job description:
+                </label>
+                <textarea
+                  id="jd-match-input"
+                  rows={6}
+                  value={jobDescription}
+                  onChange={(e) => setJobDescription(e.target.value)}
+                  aria-label="Job description to match against this resume"
+                  placeholder="Paste the requirements and responsibilities from LinkedIn, Indeed, or a company careers page..."
+                  className="w-full bg-[#120414] border border-pink-500/25 rounded-xl p-3 text-xs text-pink-100 placeholder:text-pink-300/30 focus:outline-none focus:border-rose-400 focus-visible:ring-2 focus-visible:ring-rose-400 font-sans leading-relaxed transition-colors resize-y select-text"
+                />
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleAnalyze}
+                    disabled={!jobDescription.trim()}
+                    aria-label="Analyze job description match"
+                    className="px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-gradient-to-r from-rose-500 via-pink-600 to-amber-500 hover:opacity-95 text-white flex items-center gap-1.5 shadow-[0_2px_15px_rgba(244,63,94,0.35)] cursor-pointer transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#18071c]"
+                  >
+                    <Target size={13} />
+                    <span>Analyze Match</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleClear}
+                    disabled={!jobDescription && !analyzedJd}
+                    aria-label="Clear job description and match results"
+                    className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-[#250d2b] hover:bg-[#32113a] text-pink-200 transition-colors cursor-pointer border border-pink-500/20 disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#18071c]"
+                  >
+                    Clear
+                  </button>
+                </div>
+
+                {match?.error && (
+                  <div className="p-3 rounded-xl bg-amber-950/30 border border-amber-500/35 text-xs text-amber-100/90 flex items-start gap-2 font-sans">
+                    <AlertCircle size={14} className="text-amber-400 shrink-0 mt-0.5" />
+                    <span>{match.error}</span>
+                  </div>
+                )}
+
+                {match && !match.error && (
+                  <>
+                    <div
+                      aria-live="polite"
+                      className="p-3 rounded-xl bg-gradient-to-r from-[#2e0e33] via-[#220a26] to-[#18071c] border border-pink-500/40"
+                    >
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="text-[10.5px] font-semibold tracking-wide text-rose-300">
+                          ✦ Keyword Match
+                        </span>
+                        <span className="text-[10.5px] text-pink-300/60 font-mono">
+                          {match.matchedWeight}/{match.totalWeight} weighted
+                        </span>
+                      </div>
+                      <div className="flex items-baseline gap-2 mt-1">
+                        <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-rose-300 via-pink-200 to-amber-200">
+                          {match.matchScore}%
+                        </span>
+                        <span className="text-pink-300/60 font-sans text-xs">
+                          {match.matched.length} of{' '}
+                          {match.matched.length + match.missing.length} keywords
+                        </span>
+                      </div>
+                      <div
+                        role="progressbar"
+                        aria-valuenow={match.matchScore}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-label="Job description keyword match score"
+                        className="w-full bg-[#120414] rounded-full h-2 overflow-hidden border border-pink-500/20 mt-2"
+                      >
+                        <div
+                          className={`h-full rounded-full transition-all ${
+                            match.matchScore >= 70
+                              ? 'bg-emerald-400 shadow-[0_0_8px_#34d399]'
+                              : match.matchScore >= 40
+                                ? 'bg-amber-400 shadow-[0_0_8px_#fbbf24]'
+                                : 'bg-rose-500 shadow-[0_0_8px_#f43f5e]'
+                          }`}
+                          style={{ width: `${match.matchScore}%` }}
+                        />
+                      </div>
+                      <p className="text-[10.5px] text-pink-300/60 mt-2 font-sans">
+                        {Object.keys(match.sections)
+                          .filter((key) => match.sections[key] > 0)
+                          .map((key) => `${SECTION_LABELS[key] || key} ${match.sections[key]}`)
+                          .join(' · ') || 'No resume sections matched yet.'}
+                      </p>
+                    </div>
+
+                    {match.matched.length > 0 && (
+                      <div className="p-3 rounded-xl bg-emerald-950/30 border border-emerald-500/40 space-y-1.5">
+                        <span className="text-xs font-semibold text-emerald-200 flex items-center gap-1.5">
+                          <CheckCircle2 size={13} className="text-emerald-400" />
+                          <span>Matched keywords ({match.matched.length})</span>
+                        </span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {match.matched.map((kw) => (
+                            <span
+                              key={kw.term}
+                              title={`Found in ${SECTION_LABELS[kw.where] || kw.where}`}
+                              className="px-2 py-0.5 rounded-lg bg-emerald-950/80 border border-emerald-500/40 text-emerald-100 text-[11px]"
+                            >
+                              {kw.term}
+                              <span className="text-emerald-300/60"> · {kw.category}</span>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {match.missing.length > 0 && (
+                      <div className="p-3 rounded-xl bg-amber-950/30 border border-amber-500/40 space-y-1.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs font-semibold text-amber-200 flex items-center gap-1.5">
+                            <AlertCircle size={13} className="text-amber-400" />
+                            <span>Missing keywords ({match.missing.length})</span>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={handleCopyMissing}
+                            aria-label="Copy missing keywords to clipboard"
+                            className="px-2.5 py-1 rounded-lg bg-[#2a1a12] border border-amber-500/40 hover:border-amber-400 text-amber-200 text-[10.5px] font-semibold transition-colors cursor-pointer flex items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#18071c]"
+                          >
+                            {copied ? <Check size={11} /> : <Copy size={11} />}
+                            <span>{copied ? 'Copied' : 'Copy missing keywords'}</span>
+                          </button>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {match.missing.map((kw) => (
+                            <span
+                              key={kw.term}
+                              title={`Weight ${kw.weight}`}
+                              className="px-2 py-0.5 rounded-lg bg-amber-950/80 border border-amber-500/40 text-amber-100 text-[11px]"
+                            >
+                              + {kw.term}
+                              <span className="text-amber-300/60"> · {kw.category}</span>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {match.matched.length === 0 && match.missing.length === 0 && (
+                      <div className="p-3 rounded-xl bg-[#120414] border border-pink-500/20 text-xs text-pink-300/70 font-sans">
+                        No keywords could be extracted from that text.
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Actionable Recommendations */}

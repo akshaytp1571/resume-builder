@@ -699,8 +699,12 @@ export async function exportToDocx(resumeData, themeSettings) {
   });
 
   const blob = await Packer.toBlob(doc);
-  const cleanName = (personalInfo.fullName || 'Resume')
-    .replace(/\s+/g, '_')
-    .replace(/[^a-zA-Z0-9_]/g, '');
+  // Strip everything that is not a safe filename character. A name written
+  // entirely in a non-Latin script sanitises to an empty string, so fall back
+  // to "Resume" rather than emitting a file called "_Resume.docx".
+  const cleanName =
+    (personalInfo.fullName || '')
+      .replace(/\s+/g, '_')
+      .replace(/[^a-zA-Z0-9_]/g, '') || 'Resume';
   saveAs(blob, `${cleanName}_Resume.docx`);
 }

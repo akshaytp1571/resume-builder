@@ -39,3 +39,9 @@ DEPLOY.txt
 .env
 .env.local
 .env.*.local
+
+# QA scratch space — throwaway probe scripts and their raw output.
+# The findings live in QA-REPORT.md, which IS committed.
+qa-probes/
+probe-*.mjs
+

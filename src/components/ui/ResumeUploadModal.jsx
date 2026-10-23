@@ -11,8 +11,10 @@ import {
   Clipboard,
 } from 'lucide-react';
 import { extractTextFromFile, parseResumeHeuristically, parseResumeWithAi } from '../../utils/resumeParser';
+import { extractTextFromPdf } from '../../utils/pdfImporter';
 import { getSavedAiConfig, isAiConfigReady } from '../../utils/aiService';
 import { sound } from '../../utils/soundEffects';
+import { normalizeResume } from '../../utils/resumeStore';
 import ModalShell from './ModalShell';
 
 export default function ResumeUploadModal({
@@ -60,7 +62,10 @@ export default function ResumeUploadModal({
           throw new Error('Please select a file to upload first.');
         }
 
-        const extractResult = await extractTextFromFile(selectedFile);
+        const isPdf = /\.pdf$/i.test(selectedFile.name);
+        const extractResult = isPdf
+          ? await extractTextFromPdf(selectedFile)
+          : await extractTextFromFile(selectedFile);
         if (extractResult.type === 'json') {
           directJsonData = extractResult.data;
         } else {
@@ -69,8 +74,11 @@ export default function ResumeUploadModal({
       }
 
       if (directJsonData) {
+        // Normalise before previewing: a JSON profile is untrusted input and
+        // can carry objects where the renderer expects strings (a
+        // personalInfo.fullName of {first, last} used to blank the whole app).
         sound.playSuccess();
-        setParsedPreview(directJsonData);
+        setParsedPreview(normalizeResume(directJsonData));
         setIsParsing(false);
         return;
       }
@@ -91,24 +99,23 @@ export default function ResumeUploadModal({
         result = parseResumeHeuristically(extractedText);
       }
 
+      // Normalise before previewing. Both the heuristic and the AI parser can
+      // hand back objects where the renderer expects strings, and the preview
+      // renders these values directly.
+      const normalized = normalizeResume(result);
+
       // Preserve the existing photo and its crop when the uploaded document
       // does not carry one (it never will - documents have no photo data).
-      result.personalInfo = {
-        showPhoto: true,
-        photoStyle: 'square-frame',
-        ...(result.personalInfo || {}),
-      };
-      if (currentResumeData?.personalInfo?.photo && !result.personalInfo.photo) {
-        result.personalInfo.photo = currentResumeData.personalInfo.photo;
-        result.personalInfo.rawPhoto = currentResumeData.personalInfo.rawPhoto;
-        result.personalInfo.photoCrop = currentResumeData.personalInfo.photoCrop;
+      // Done after normalising because rawPhoto/photoCrop are not part of the
+      // normalised shape and would otherwise be stripped.
+      if (currentResumeData?.personalInfo?.photo && !normalized.personalInfo.photo) {
+        normalized.personalInfo.photo = currentResumeData.personalInfo.photo;
+        normalized.personalInfo.rawPhoto = currentResumeData.personalInfo.rawPhoto;
+        normalized.personalInfo.photoCrop = currentResumeData.personalInfo.photoCrop;
       }
-      result.summary = result.summary || '';
-      result.projects = Array.isArray(result.projects) ? result.projects : [];
-      result.customSections = Array.isArray(result.customSections) ? result.customSections : [];
 
       sound.playSuccess();
-      setParsedPreview(result);
+      setParsedPreview(normalized);
     } catch (err) {
       setErrorMsg(err.message || 'Failed to parse resume document.');
     } finally {
@@ -151,7 +158,7 @@ export default function ResumeUploadModal({
                 Resume Document Ingestion
               </h2>
               <p className="text-[11px] text-pink-300/70">
-                Upload Word (.docx), JSON backup (.json), or paste text to populate the studio
+                Upload PDF (.pdf), Word (.docx), JSON backup (.json), or paste text to populate the studio
               </p>
             </div>
           </div>
@@ -186,7 +193,7 @@ export default function ResumeUploadModal({
               }`}
             >
               <FileSpreadsheet size={13} />
-              <span>Upload .DOCX or .JSON</span>
+              <span>Upload .PDF, .DOCX or .JSON</span>
             </button>
 
             <button
@@ -222,12 +229,14 @@ export default function ResumeUploadModal({
                     {selectedFile ? selectedFile.name : 'Click to Select or Drag & Drop Resume File'}
                   </p>
                   <p className="text-[11px] text-pink-300/70 mt-1">
-                    Supports Microsoft Word (.docx), JSON Profile (.json), and Text (.txt)
+                    {isParsing && selectedFile && /\.pdf$/i.test(selectedFile.name)
+                      ? 'Extracting text from PDF… this can take a few seconds'
+                      : 'Supports PDF (.pdf), Microsoft Word (.docx), JSON Profile (.json), and Text (.txt)'}
                   </p>
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept=".docx,.json,.txt,.md"
+                    accept=".pdf,.docx,.json,.txt,.md"
                     onChange={handleFileChange}
                     className="hidden"
                   />

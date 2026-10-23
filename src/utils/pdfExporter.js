@@ -1,6 +1,95 @@
 import html2pdf from 'html2pdf.js';
 
 /**
+ * PDF export.
+ *
+ * Two paths:
+ *   'print'  — the browser's own print-to-PDF. Real vector text: selectable,
+ *              small file, readable by ATS parsers.
+ *   'raster' — html2pdf (html2canvas + jsPDF), a JPEG of the page.
+ *
+ * THE DEFAULT IS 'raster'. `exportToPdf(el, data)` is the existing public
+ * signature and must keep producing exactly the file it always has, so vector
+ * output is opt-in:
+ *     exportToPdf('resume-preview', resumeData, { mode: 'print' })
+ */
+
+/** A4 at 96dpi. */
+const A4_WIDTH_PX = 794;
+
+/**
+ * `Jane Doe` -> `Jane_Doe`.
+ *
+ * A name written entirely in a non-Latin script sanitises to an empty string,
+ * so fall back to `fallback` rather than emitting "_Resume.pdf".
+ */
+function resumeFileName(resumeData, fallback = '') {
+  return (
+    (resumeData?.personalInfo?.fullName || '')
+      .replace(/\s+/g, '_')
+      .replace(/[^a-zA-Z0-9_]/g, '') || fallback
+  );
+}
+
+/**
+ * Neutralise the preview zoom, run `fn` against the live DOM, then put every
+ * touched node back — in a finally, so a throwing print engine cannot leave
+ * the preview stuck at 100% or the tab titled `_Resume`.
+ *
+ * The zoom is an inline transform on #resume-print-wrapper (ResumePreview.jsx).
+ * html2pdf neutralises it on its *clone* via onclone; window.print() has no
+ * clone, so the live node has to be neutralised instead. The @media print
+ * block in index.css is the hard guarantee; this inline reset covers engines
+ * that snapshot before the stylesheet cascade is applied.
+ */
+function withPrintLayout(resumeData, fn) {
+  const wrapper = document.getElementById('resume-print-wrapper');
+  const previousTransform = wrapper?.style.transform || '';
+  const previousTransition = wrapper?.style.transition || '';
+  const previousTitle = document.title;
+
+  if (wrapper) {
+    wrapper.style.transition = 'none';
+    wrapper.style.transform = 'none';
+  }
+
+  // The browser derives the PDF filename from document.title. Restored on a
+  // timer because print() may return before the engine has read the title.
+  const cleanName = resumeFileName(resumeData);
+  document.title = cleanName ? `${cleanName}_Resume` : ' ';
+
+  try {
+    return fn();
+  } finally {
+    if (wrapper) {
+      wrapper.style.transform = previousTransform;
+      wrapper.style.transition = previousTransition;
+    }
+    setTimeout(() => {
+      document.title = previousTitle;
+    }, 1500);
+  }
+}
+
+/**
+ * Vector path: hand the page to the browser's print-to-PDF.
+ * Returns true on success, false if the print engine threw.
+ */
+export function exportToVectorPdf(elementId, resumeData) {
+  if (!document.getElementById(elementId)) {
+    throw new Error('Resume element not found');
+  }
+
+  try {
+    withPrintLayout(resumeData, () => window.print());
+    return true;
+  } catch (error) {
+    console.error('Vector PDF export error:', error);
+    return false;
+  }
+}
+
+/**
  * Export the live resume preview to PDF.
  *
  * The preview is rendered inside a wrapper that is CSS-scaled for zoom. If we
@@ -9,15 +98,18 @@ import html2pdf from 'html2pdf.js';
  * neutralise the zoom, capture at the element's real layout size, then put
  * the transform back.
  */
-export async function exportToPdf(elementId, resumeData) {
+export async function exportToPdf(elementId, resumeData, options) {
   const element = document.getElementById(elementId);
   if (!element) {
     throw new Error('Resume element not found');
   }
 
-  const cleanName = (resumeData?.personalInfo?.fullName || 'Resume')
-    .replace(/\s+/g, '_')
-    .replace(/[^a-zA-Z0-9_]/g, '');
+  const mode = options?.mode || 'raster';
+  if (mode === 'print') {
+    return exportToVectorPdf(elementId, resumeData);
+  }
+
+  const cleanName = resumeFileName(resumeData, 'Resume');
 
   const wrapper = document.getElementById('resume-print-wrapper');
   const previousTransform = wrapper?.style.transform || '';
@@ -31,7 +123,7 @@ export async function exportToPdf(elementId, resumeData) {
 
   // A4 at 96dpi is ~794x1123 CSS px. Capturing at that width keeps text
   // vector-crisp instead of upsampling a scaled-down snapshot.
-  const captureWidth = 794;
+  const captureWidth = A4_WIDTH_PX;
 
   const opt = {
     margin: 0,
@@ -89,18 +181,5 @@ export async function exportToPdf(elementId, resumeData) {
 }
 
 export function triggerPrint(resumeData = null) {
-  const originalTitle = document.title;
-  const cleanName = (resumeData?.personalInfo?.fullName || '')
-    .replace(/\s+/g, '_')
-    .replace(/[^a-zA-Z0-9_]/g, '');
-
-  // Set clean title during print
-  document.title = cleanName ? `${cleanName}_Resume` : ' ';
-  window.print();
-  // Restore after the print dialog closes. The 1500ms guess is short enough
-  // to feel instant and long enough for the synchronous print() call to have
-  // already read the title.
-  setTimeout(() => {
-    document.title = originalTitle;
-  }, 1500);
+  withPrintLayout(resumeData, () => window.print());
 }
