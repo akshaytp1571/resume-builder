@@ -9,6 +9,7 @@ import {
   Award,
   FolderKanban,
   LayoutList,
+  Mail,
 } from 'lucide-react';
 import { sound } from '../../utils/soundEffects';
 import PersonalInfoEditor from './PersonalInfoEditor';
@@ -20,6 +21,7 @@ import CertificationsEditor from './CertificationsEditor';
 import LanguagesEditor from './LanguagesEditor';
 import ProjectsEditor from './ProjectsEditor';
 import CustomSectionsEditor from './CustomSectionsEditor';
+import CoverLetterEditor from './CoverLetterEditor';
 import ThemeCustomizer from './ThemeCustomizer';
 
 const TABS = [
@@ -32,13 +34,17 @@ const TABS = [
   { id: 'education', label: 'Education', icon: GraduationCap },
   { id: 'certifications', label: 'Certs', icon: Award },
   { id: 'custom', label: 'Custom', icon: LayoutList },
+  { id: 'letter', label: 'Letter', icon: Mail },
 ];
 
 export default function EditorSidebar({
   resumeData,
   theme,
+  letter,
   onUpdateResume,
   onUpdateTheme,
+  onUpdateLetter,
+  onExportCoverLetter,
   onTriggerAiRefine,
   onOpenAiConfig,
 }) {
@@ -63,11 +69,14 @@ export default function EditorSidebar({
         <span className="text-[10px] text-pink-400/85 font-sans">Live Auto-Sync</span>
       </div>
 
-      {/* Elegant Tab Selector */}
+      {/* Elegant Tab Selector
+          Ten tabs now, so the column count is chosen to divide 10 evenly:
+          2 on mobile (5 rows), 5 from sm up (2 rows). The old 3-column mobile
+          grid would leave a ragged single tab on the last row. */}
       <div
         role="tablist"
         aria-label="Editor sections"
-        className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-5 gap-1 p-2 bg-[#140516] border-b border-pink-500/15"
+        className="grid grid-cols-2 sm:grid-cols-5 gap-1 p-2 bg-[#140516] border-b border-pink-500/15"
       >
         {TABS.map((tab) => {
           const Icon = tab.icon;
@@ -208,6 +217,15 @@ export default function EditorSidebar({
             onChange={(customSections) =>
               onUpdateResume({ ...resumeData, customSections })
             }
+          />
+        )}
+
+        {activeTab === 'letter' && (
+          <CoverLetterEditor
+            letter={letter}
+            resumeData={resumeData}
+            onChange={onUpdateLetter}
+            onExportDocx={onExportCoverLetter}
           />
         )}
       </div>

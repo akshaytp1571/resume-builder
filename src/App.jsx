@@ -12,7 +12,7 @@ import JobCredentialsModal from './components/ui/JobCredentialsModal';
 import ApplyModal from './components/ui/ApplyModal';
 import ResumeUploadModal from './components/ui/ResumeUploadModal';
 import { INITIAL_RESUME_DATA, DEFAULT_THEME, TEMPLATES_CONFIG } from './data/initialData.js';
-import { exportToDocx } from './utils/docxExporter.js';
+import { exportToDocx, exportCoverLetterToDocx } from './utils/docxExporter.js';
 import { exportToPdf, triggerPrint } from './utils/pdfExporter.js';
 import { calculateAtsScore } from './utils/atsScorer.js';
 import { getSavedAiConfig } from './utils/aiService.js';
@@ -162,6 +162,19 @@ export default function App() {
       if (!active) return prev;
       return updateVariant(prev, active.id, {
         theme: resolveValue(updater, active.theme),
+      });
+    });
+  }, []);
+
+  // The cover letter lives on the variant next to `data` and `theme`. Undo/redo
+  // deliberately does not snapshot it (it tracks { id, data, theme } only), so
+  // undoing a resume edit cannot silently revert the letter.
+  const setLetter = useCallback((updater) => {
+    setStore((prev) => {
+      const active = getActiveVariant(prev);
+      if (!active) return prev;
+      return updateVariant(prev, active.id, {
+        letter: resolveValue(updater, active.letter),
       });
     });
   }, []);
@@ -354,6 +367,30 @@ export default function App() {
     setToast({ type: 'success', message: 'VARIANT DELETED' });
   };
 
+  // Download the cover letter as DOCX. A letter is not a resume, so it goes
+  // through its own exporter rather than reusing exportToDocx.
+  const handleDownloadCoverLetter = async () => {
+    const letter = activeVariant?.letter;
+    if (!letter || !String(letter.body || '').trim()) {
+      setToast({ type: 'error', message: 'WRITE A COVER LETTER FIRST' });
+      return;
+    }
+
+    setIsExporting(true);
+    setToast({ type: 'info', message: 'GENERATING COVER LETTER DOCX...' });
+
+    try {
+      await exportCoverLetterToDocx(letter, resumeData, theme);
+      fireCelebration();
+      setToast({ type: 'success', message: 'COVER LETTER GENERATED!' });
+    } catch (err) {
+      console.error(err);
+      setToast({ type: 'error', message: 'Failed to generate the cover letter.' });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const handleExportAllVariants = () => {
     try {
       const json = exportStoreJson(store);
@@ -479,8 +516,32 @@ export default function App() {
     }
   }, [toast]);
 
-  // Live ATS score
-  const atsResult = useMemo(() => calculateAtsScore(resumeData), [resumeData]);
+  // Measured page height, reported by ResumePreview. Null until the first
+  // measurement, which keeps the ATS score on its legacy path until then.
+  const [layout, setLayout] = useState(null);
+
+  // Live ATS score. `layout` is a second argument only; a null measurement
+  // means the scorer behaves exactly as it did before layout existed.
+  const atsResult = useMemo(
+    () => calculateAtsScore(resumeData, layout),
+    [resumeData, layout]
+  );
+
+  // Stable identity so ResumePreview's observer effect is not rebuilt on every
+  // render, and so an identical measurement cannot re-trigger a state update
+  // (which would loop: score -> render -> measure -> score).
+  const handleLayoutMeasured = useCallback((measurement) => {
+    setLayout((previous) => {
+      if (
+        previous &&
+        previous.pageHeightPx === measurement.pageHeightPx &&
+        previous.pageBudgetPx === measurement.pageBudgetPx
+      ) {
+        return previous;
+      }
+      return measurement;
+    });
+  }, []);
 
   const activeTemplateObj = useMemo(() => {
     return (
@@ -686,6 +747,9 @@ export default function App() {
           onUpdateTheme={setTheme}
           onTriggerAiRefine={handleTriggerAiRefine}
           onOpenAiConfig={() => setIsAiConfigOpen(true)}
+          letter={activeVariant?.letter}
+          onUpdateLetter={setLetter}
+          onExportCoverLetter={handleDownloadCoverLetter}
         />
 
         {/* Right Live Holo-Dock Preview */}
@@ -694,6 +758,7 @@ export default function App() {
           theme={theme}
           onDownloadPdf={handleDownloadPdf}
           onDownloadDocx={handleDownloadDocx}
+          onLayoutMeasured={handleLayoutMeasured}
         />
       </main>
 

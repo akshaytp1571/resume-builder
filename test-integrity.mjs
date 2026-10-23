@@ -543,5 +543,93 @@ console.log('\n== v1.2: no sub-AA muted text tokens remain ==');
   else ok('no sub-AA muted text tokens remain');
 }
 
+console.log('\n== v2.1: the ATS score can see the rendered page ==');
+{
+  const PAGE = 1123; // A4 at 96dpi, same constant ResumePreview reports with
+  const at = (ratio) => ({ pageHeightPx: Math.round(PAGE * ratio), pageBudgetPx: PAGE });
+  const sample = (await import('./src/data/initialData.js')).INITIAL_RESUME_DATA;
+  const layoutOf = (r) => r.breakdown.find((b) => /layout/i.test(b.category));
+  const maxes = (r) => r.breakdown.reduce((s, b) => s + b.maxScore, 0);
+
+  // The hard contract: one argument must still produce exactly the old score.
+  const legacy = calculateAtsScore(sample);
+  if (legacy.score !== 90) fail(`one-argument score drifted: expected 90, got ${legacy.score}`);
+  else ok('one-argument score is unchanged (90)');
+
+  if (legacy.breakdown.length !== 6) fail(`legacy breakdown has ${legacy.breakdown.length} categories, expected 6`);
+  else ok('one-argument breakdown keeps its 6 legacy categories');
+
+  const withLayout = calculateAtsScore(sample, at(1));
+  if (!layoutOf(withLayout)) fail('a measured layout did not add a Layout category');
+  else ok(`measured layout adds Layout & Fit (${layoutOf(withLayout).score}/${layoutOf(withLayout).maxScore})`);
+
+  for (const [label, r] of [
+    ['no layout', legacy],
+    ['one page', withLayout],
+    ['200% spill', calculateAtsScore(sample, at(2))],
+  ]) {
+    if (maxes(r) !== 100) fail(`${label}: breakdown maxes sum to ${maxes(r)}, expected 100`);
+  }
+  ok('breakdown maximums still sum to 100 with and without a layout');
+
+  const onePage = calculateAtsScore(sample, at(1)).score;
+  const spill = calculateAtsScore(sample, at(2)).score;
+  if (!(onePage > spill)) fail(`a one-pager (${onePage}) did not beat a 200% spill (${spill})`);
+  else ok(`one page ${onePage} > 200% spill ${spill}`);
+
+  const thin = calculateAtsScore(sample, at(0.3)).score;
+  if (!(thin < onePage)) fail(`a 30%-full page (${thin}) was rewarded over a full one (${onePage})`);
+  else ok(`thin 30% page ${thin} is not rewarded over a filled page ${onePage}`);
+
+  // Content is worth 87 of the new 100 (Layout takes 13), so raw content points
+  // legitimately shrink. What must NOT shrink is the PROPORTION of the content
+  // budget earned: measuring a page must not make the same resume look worse at
+  // the things it already did well. A rounding-down rescale would do exactly
+  // that, so compare ratios rather than raw points.
+  const legacyRatio =
+    legacy.breakdown.reduce((s, b) => s + b.score, 0) /
+    legacy.breakdown.reduce((s, b) => s + b.maxScore, 0);
+  for (const ratio of [0.2, 0.3, 0.5, 1, 1.5, 3]) {
+    const scored = calculateAtsScore(sample, at(ratio));
+    const content = scored.breakdown.filter((b) => !/layout/i.test(b.category));
+    const earned = content.reduce((s, b) => s + b.score, 0);
+    const available = content.reduce((s, b) => s + b.maxScore, 0);
+    const scoredRatio = earned / available;
+    if (scoredRatio < legacyRatio - 0.01) {
+      fail(
+        `ratio ${ratio}: content proportion fell from ${(legacyRatio * 100).toFixed(1)}% to ${(scoredRatio * 100).toFixed(1)}% just because a page was measured`
+      );
+    }
+  }
+  ok('measuring a layout never reduces the proportion of content points earned');
+
+  const hostile = [
+    null, undefined, {}, { pageHeightPx: null, pageBudgetPx: null },
+    { pageHeightPx: -1, pageBudgetPx: PAGE }, { pageHeightPx: Infinity, pageBudgetPx: PAGE },
+    { pageHeightPx: NaN, pageBudgetPx: PAGE }, { pageHeightPx: '1123', pageBudgetPx: '1123' },
+    'a string', 42, [],
+  ];
+  let hostileBad = 0;
+  for (const layout of hostile) {
+    const r = calculateAtsScore(sample, layout);
+    if (!Number.isInteger(r.score) || r.score < 0 || r.score > 100) hostileBad++;
+    if (r.score !== legacy.score) hostileBad++; // unusable measurement == not measured
+  }
+  if (hostileBad) fail(`${hostileBad} hostile layout values misbehaved`);
+  else ok(`all ${hostile.length} hostile layout values fall back to the legacy score`);
+
+  const emptyResume = {
+    personalInfo: { fullName: '', title: '', email: '', phone: '', location: '' },
+    summary: '', skills: [], experience: [], education: [],
+    languages: [], certifications: [], projects: [], customSections: [],
+  };
+  const emptyFit = layoutOf(calculateAtsScore(emptyResume, at(1)));
+  if (!emptyFit || emptyFit.score !== 0) {
+    fail(`an empty resume earned ${emptyFit?.score} fit points for fitting an empty page`);
+  } else {
+    ok('an empty resume earns no Layout points for fitting an empty page');
+  }
+}
+
 console.log(bad === 0 ? '\nINTEGRITY OK\n' : `\nINTEGRITY FAILED (${bad})\n`);
 process.exit(bad === 0 ? 0 : 1);

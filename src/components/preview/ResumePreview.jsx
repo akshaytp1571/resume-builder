@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   ZoomIn,
   ZoomOut,
@@ -18,25 +18,65 @@ import TechTemplate from '../templates/TechTemplate';
 import AcademicTemplate from '../templates/AcademicTemplate';
 import StartupTemplate from '../templates/StartupTemplate';
 
+/** A4 at 96dpi — the budget the page-budget badge has always used. */
+const PAGE_BUDGET_PX = 1123;
+
+/**
+ * How long to wait for the layout to settle before reporting it upward.
+ * The observer fires on every keystroke that reflows the page; 250ms collapses
+ * a typing burst into one report while still feeling live.
+ */
+const LAYOUT_REPORT_DEBOUNCE_MS = 250;
+
 export default function ResumePreview({
   resumeData,
   theme,
   onDownloadPdf,
   onDownloadDocx,
+  onLayoutMeasured,
 }) {
   const [zoom, setZoom] = useState(85);
   const [pageHeight, setPageHeight] = useState(0);
+  const lastReportedHeight = useRef(0);
 
   useEffect(() => {
     const el = document.getElementById('resume-preview');
     if (!el) return;
-    const updateHeight = () => {
-      setPageHeight(el.offsetHeight);
+
+    // Report upward only when the height actually changed. This is the loop
+    // guard: the ATS score is derived from the reported height, so a re-render
+    // caused by that score must not report the same height again.
+    const report = () => {
+      const height = el.offsetHeight;
+      if (!height || height === lastReportedHeight.current) return;
+      lastReportedHeight.current = height;
+      onLayoutMeasured?.({ pageHeightPx: height, pageBudgetPx: PAGE_BUDGET_PX });
     };
-    updateHeight();
-    const observer = new ResizeObserver(updateHeight);
+
+    let timer = null;
+    const scheduleReport = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(report, LAYOUT_REPORT_DEBOUNCE_MS);
+    };
+
+    setPageHeight(el.offsetHeight);
+    // Measure once on mount without waiting, so the score is layout-aware as
+    // soon as the preview exists.
+    report();
+
+    const observer = new ResizeObserver(() => {
+      setPageHeight(el.offsetHeight);
+      scheduleReport();
+    });
     observer.observe(el);
-    return () => observer.disconnect();
+
+    return () => {
+      if (timer) clearTimeout(timer);
+      observer.disconnect();
+    };
+    // Deliberately not keyed on onLayoutMeasured: a fresh callback identity per
+    // render would tear down and rebuild the observer on every keystroke.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resumeData, theme]);
 
   const handleZoomIn = () => {
@@ -94,15 +134,15 @@ export default function ResumePreview({
           {pageHeight > 0 && (
             <span
               className={`text-[10px] font-sans font-bold px-2.5 py-0.5 rounded-full border transition-colors ${
-                pageHeight <= 1125
+                pageHeight <= PAGE_BUDGET_PX + 2
                   ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.2)]'
                   : 'bg-amber-950/80 text-amber-300 border-amber-500/50 animate-pulse'
               }`}
-              title={`Rendered height: ${pageHeight}px / 1123px max A4 budget`}
+              title={`Rendered height: ${pageHeight}px / ${PAGE_BUDGET_PX}px max A4 budget`}
             >
-              {pageHeight <= 1125
-                ? `PAGE_BUDGET: ${Math.round((pageHeight / 1123) * 100)}% (1-PAGE FIT)`
-                : `PAGE_BUDGET: ${Math.round((pageHeight / 1123) * 100)}% (PAGE 2 SPILL)`}
+              {pageHeight <= PAGE_BUDGET_PX + 2
+                ? `PAGE_BUDGET: ${Math.round((pageHeight / PAGE_BUDGET_PX) * 100)}% (1-PAGE FIT)`
+                : `PAGE_BUDGET: ${Math.round((pageHeight / PAGE_BUDGET_PX) * 100)}% (PAGE 2 SPILL)`}
             </span>
           )}
         </div>

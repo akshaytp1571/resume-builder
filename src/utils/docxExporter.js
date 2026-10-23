@@ -12,6 +12,7 @@ import {
   ImageRun,
 } from 'docx';
 import { saveAs } from 'file-saver';
+import { normalizeCoverLetter, formatLetterDate } from './coverLetter.js';
 
 function base64ToUint8Array(base64) {
   if (!base64 || typeof base64 !== 'string') return null;
@@ -707,4 +708,120 @@ export async function exportToDocx(resumeData, themeSettings) {
       .replace(/\s+/g, '_')
       .replace(/[^a-zA-Z0-9_]/g, '') || 'Resume';
   saveAs(blob, `${cleanName}_Resume.docx`);
+}
+
+/**
+ * Export a cover letter as a .docx.
+ *
+ * A letter is not a resume: single column, no photo, no section headings, no
+ * coloured rules. Just the standard business-letter shape — sender block,
+ * date, recipient, salutation, paragraphs, sign-off — with generous 1-inch
+ * margins and real paragraph spacing.
+ *
+ * `theme` is accepted for signature parity with exportToDocx but only its font
+ * is used; the letter stays monochrome on purpose so it prints correctly on
+ * letterhead and reads cleanly in an ATS.
+ */
+export async function exportCoverLetterToDocx(letter, resumeData, themeSettings) {
+  const safeLetter = normalizeCoverLetter(letter);
+  const personal =
+    resumeData && typeof resumeData === 'object' && !Array.isArray(resumeData)
+      ? resumeData.personalInfo || {}
+      : {};
+
+  const font = themeSettings?.fontFamily?.includes('Merriweather')
+    ? 'Georgia'
+    : 'Calibri';
+  const name = String(personal.fullName || '').trim();
+  const contact = [personal.email, personal.phone, personal.location]
+    .map((v) => (typeof v === 'string' ? v.trim() : ''))
+    .filter(Boolean)
+    .join(' · ');
+
+  const children = [];
+
+  /** A paragraph with the letter's standard spacing. */
+  const para = (text, opts = {}) =>
+    new Paragraph({
+      spacing: { after: opts.after ?? 200, line: 276 },
+      alignment: opts.alignment,
+      children: [
+        new TextRun({
+          text: text ?? '',
+          font,
+          size: opts.size ?? 22, // half-points: 22 = 11pt
+          bold: Boolean(opts.bold),
+          color: opts.color ?? '222222',
+        }),
+      ],
+    });
+
+  // --- Sender block --------------------------------------------------------
+  if (name) children.push(para(name, { bold: true, after: 40, size: 24 }));
+  if (contact) children.push(para(contact, { after: 240, color: '555555' }));
+
+  // --- Date ----------------------------------------------------------------
+  children.push(para(formatLetterDate(safeLetter.date), { after: 240 }));
+
+  // --- Recipient block -----------------------------------------------------
+  if (safeLetter.hiringManager) children.push(para(safeLetter.hiringManager, { after: 20 }));
+  if (safeLetter.company) children.push(para(safeLetter.company, { after: 240 }));
+
+  // --- Salutation ----------------------------------------------------------
+  children.push(
+    para(
+      safeLetter.hiringManager ? `Dear ${safeLetter.hiringManager},` : 'Dear Hiring Manager,',
+      { after: 240 }
+    )
+  );
+
+  // --- Body: one paragraph per blank-line-separated block ------------------
+  const bodyParagraphs = safeLetter.body
+    ? safeLetter.body
+        .replace(/\r\n?/g, '\n')
+        .split(/\n\s*\n/)
+        .map((p) => p.replace(/\s+/g, ' ').trim())
+        .filter(Boolean)
+    : [];
+
+  if (bodyParagraphs.length === 0) {
+    children.push(para('(No letter written yet.)', { after: 240 }));
+  } else {
+    bodyParagraphs.forEach((p) => children.push(para(p, { after: 200 })));
+  }
+
+  // --- Sign-off ------------------------------------------------------------
+  children.push(para('Sincerely,', { after: 60 }));
+  if (name) children.push(para(name));
+
+  // A Document with no children is invalid; the guards above always push the
+  // date and salutation, but keep the belt-and-braces check.
+  if (children.length === 0) {
+    children.push(new Paragraph({ children: [new TextRun({ text: '', font })] }));
+  }
+
+  const doc = new Document({
+    sections: [
+      {
+        properties: {
+          page: {
+            // 1 inch all round — standard business letter.
+            margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 },
+          },
+        },
+        children,
+      },
+    ],
+  });
+
+  const blob = await Packer.toBlob(doc);
+  const cleanName =
+    name.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '') || 'Cover';
+  const cleanCompany = safeLetter.company
+    .replace(/\s+/g, '_')
+    .replace(/[^a-zA-Z0-9_]/g, '');
+  saveAs(
+    blob,
+    cleanCompany ? `${cleanName}_Cover_Letter_${cleanCompany}.docx` : `${cleanName}_Cover_Letter.docx`
+  );
 }

@@ -16,6 +16,7 @@
  */
 
 import { INITIAL_RESUME_DATA, DEFAULT_THEME } from '../data/initialData.js';
+import { normalizeCoverLetter } from './coverLetter.js';
 
 const STORE_KEY = 'precision_resume_store_v2';
 const LEGACY_DATA_KEY = 'precision_resume_data_v1';
@@ -171,6 +172,7 @@ export function createVariant({
   name = 'Untitled resume',
   data = null,
   theme = null,
+  letter = null,
 } = {}) {
   const now = new Date().toISOString();
   return {
@@ -180,6 +182,8 @@ export function createVariant({
     updatedAt: now,
     data: normalizeResume(data),
     theme: normalizeTheme(theme),
+    // Optional: a store written before v2.1 has no letter, and must still load.
+    letter: normalizeCoverLetter(letter),
   };
 }
 
@@ -208,6 +212,10 @@ export function loadStore() {
             name: asString(v.name) || 'Untitled resume',
             data: normalizeResume(v.data),
             theme: normalizeTheme(v.theme),
+            // A v2.0 store has no letter. Normalising here (rather than
+            // defaulting at every call site) means the rest of the app can
+            // assume `variant.letter` always exists.
+            letter: normalizeCoverLetter(v.letter),
           }));
 
         if (variants.length > 0) {
@@ -483,6 +491,8 @@ export function importStoreJson(text) {
       updatedAt: v.updatedAt || new Date().toISOString(),
       data: normalizeResume(v.data),
       theme: normalizeTheme(v.theme),
+      // Backups from before v2.1 carry no letter; they import as a blank one.
+      letter: normalizeCoverLetter(v.letter),
     }));
     const activeId = variants.some((v) => v.id === parsed.activeId)
       ? parsed.activeId
