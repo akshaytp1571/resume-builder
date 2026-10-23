@@ -3,6 +3,7 @@ import {
   ChevronDown,
   Copy,
   Download,
+  FileJson2,
   FilePlus2,
   Layers,
   Pencil,
@@ -39,6 +40,7 @@ export default function VariantSwitcher({
   onCreate,
   onExportAll,
   onImportFile,
+  onOpenJsonResume,
 }) {
   const [open, setOpen] = useState(false);
   const [renamingId, setRenamingId] = useState(null);
@@ -337,6 +339,22 @@ export default function VariantSwitcher({
             >
               <Upload size={12} className="text-pink-300" />
               <span>Import</span>
+            </button>
+
+            {/* JSON Resume interop. Separate from Export/Import above: those
+                move this app's own backup format, this moves the public format
+                every other tool speaks. */}
+            <button
+              type="button"
+              onClick={() => {
+                sound.playAction();
+                onOpenJsonResume?.();
+                close();
+              }}
+              className={`px-2 py-1.5 text-[11px] font-semibold rounded-xl bg-[#250d2b] hover:bg-[#32113a] text-pink-200 border border-pink-500/20 flex items-center justify-center gap-1 transition-colors cursor-pointer ${RING}`}
+            >
+              <FileJson2 size={12} className="text-pink-300" />
+              <span>JSON Resume</span>
             </button>
           </div>
 

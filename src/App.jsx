@@ -14,6 +14,7 @@ import ApplicationTracker from './components/ui/ApplicationTracker';
 import ResumeUploadModal from './components/ui/ResumeUploadModal';
 import RecoveryBanner from './components/ui/RecoveryBanner';
 import ShortcutHelp from './components/ui/ShortcutHelp';
+import JsonResumeModal from './components/ui/JsonResumeModal';
 import { TEMPLATES_CONFIG } from './data/initialData.js';
 import { exportToDocx, exportCoverLetterToDocx } from './utils/docxExporter.js';
 import { exportToPdf, exportToVectorPdf, triggerPrint } from './utils/pdfExporter.js';
@@ -29,6 +30,8 @@ import useUndoRedo from './hooks/useUndoRedo.js';
 import useApplications from './hooks/useApplications.js';
 import useLayoutMeasurement from './hooks/useLayoutMeasurement.js';
 import useKeyboardShortcuts from './hooks/useKeyboardShortcuts.js';
+import useCommandBar, { buildCommands } from './hooks/useCommandBar.js';
+import CommandBar from './components/ui/CommandBar.jsx';
 
 /** Set when the user dismisses the recovery banner so it stops nagging. */
 const RECOVERY_BANNER_DISMISSED_KEY = 'precision_resume_banner_dismissed';
@@ -111,6 +114,7 @@ export default function App() {
   const [isJobCredentialsOpen, setIsJobCredentialsOpen] = useState(false);
   const [applyJob, setApplyJob] = useState(null);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+  const [isJsonResumeOpen, setIsJsonResumeOpen] = useState(false);
   // Absolute path to the resume file the apply agent should attach.
   const [resumePath, setResumePathState] = useState(() => getResumePath());
   const [aiRefineState, setAiRefineState] = useState({
@@ -288,6 +292,73 @@ export default function App() {
     helpOpen: isShortcutsOpen,
   });
 
+  // ⌘K palette. The registry is derived from SHORTCUTS plus the extra
+  // commands below, so the palette can never advertise a key the dispatcher
+  // does not handle.
+  const commandBar = useCommandBar();
+  const commandHandlers = useMemo(
+    () => ({
+      undo: handleUndo,
+      redo: handleRedo,
+      exportDocx: handleDownloadDocx,
+      exportPdf: handleDownloadPdf,
+      help: () => setIsShortcutsOpen(true),
+    }),
+    [handleUndo, handleRedo, handleDownloadDocx, handleDownloadPdf]
+  );
+  const commands = useMemo(
+    () =>
+      buildCommands(commandHandlers, [
+        {
+          id: 'open-json-resume',
+          title: 'Import or export JSON Resume',
+          category: 'Document',
+          run: () => setIsJsonResumeOpen(true),
+        },
+        {
+          id: 'export-cover-letter',
+          title: 'Export cover letter as DOCX',
+          category: 'Export',
+          run: handleDownloadCoverLetter,
+        },
+        {
+          id: 'open-tracker',
+          title: 'Open application tracker',
+          category: 'Navigate',
+          run: () => setIsTrackerOpen(true),
+        },
+        {
+          id: 'open-ats',
+          title: 'Open ATS score breakdown',
+          category: 'Navigate',
+          run: () => setIsAtsOpen(true),
+        },
+        {
+          id: 'open-job-match',
+          title: 'Match resume to a job description',
+          category: 'Navigate',
+          run: () => setIsJobMatchOpen(true),
+        },
+        {
+          id: 'new-variant',
+          title: 'New resume variant',
+          category: 'Variant',
+          run: handleCreateVariant,
+        },
+        {
+          id: 'open-upload',
+          title: 'Import a resume file',
+          category: 'Document',
+          run: () => setIsUploadOpen(true),
+        },
+      ]),
+    [
+      commandHandlers,
+      handleDownloadCoverLetter,
+      handleCreateVariant,
+    ]
+  );
+
   // Trigger Refine Modal
   const handleTriggerAiRefine = ({ title, originalText, refinedText, onApply, onRegenerate }) => {
     setAiRefineState({
@@ -368,6 +439,7 @@ export default function App() {
         onCreate={handleCreateVariant}
         onExportAll={handleExportAllVariants}
         onImportFile={handleImportVariants}
+        onOpenJsonResume={() => setIsJsonResumeOpen(true)}
       />
 
       {/* Main Workspace.
@@ -485,10 +557,29 @@ export default function App() {
         onListChange={updateApplications}
       />
 
+      {/* JSON Resume import/export */}
+      <JsonResumeModal
+        isOpen={isJsonResumeOpen}
+        onClose={() => setIsJsonResumeOpen(false)}
+        resumeData={resumeData}
+        onImport={setResumeData}
+      />
+
       {/* Keyboard shortcuts reference (also opened with ?) */}
       <ShortcutHelp
         isOpen={isShortcutsOpen}
         onClose={() => setIsShortcutsOpen(false)}
+      />
+
+      {/* Command palette (⌘K / Ctrl+K) */}
+      <CommandBar
+        isOpen={commandBar.isOpen}
+        onClose={commandBar.close}
+        query={commandBar.query}
+        setQuery={commandBar.setQuery}
+        activeIndex={commandBar.activeIndex}
+        setActiveIndex={commandBar.setActiveIndex}
+        commands={commands}
       />
 
       {/* Job Board Credentials Modal */}
