@@ -392,7 +392,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#140715] text-[#fce7f3] flex flex-col font-sans selection:bg-rose-500 selection:text-white">
+    <div className="flex min-h-screen flex-col bg-void font-sans text-bone selection:bg-signal selection:text-void">
       {/* Skip link. Must be the FIRST focusable node in the DOM — it is placed
           before the navbar, and nothing above it (this div, the RecoveryBanner
           further down) is focusable, so a keyboard user reaches it on the very
@@ -646,23 +646,34 @@ export default function App() {
         onOpenAiConfig={() => setIsAiConfigOpen(true)}
       />
 
-      {/* Atelier Studio Toast Notification */}
+      {/* Toast. 1px border, 2px left rule coloured by type, mono 11px, 0px
+          radius, no blur. role="status" + aria-live are asserted by the suite. */}
       {toast && (
         <div
           role="status"
           aria-live="polite"
-          className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl bg-[#200824]/95 border border-pink-500/40 shadow-[0_10px_35px_rgba(0,0,0,0.6)] text-xs font-sans text-pink-100 animate-fade-in no-print backdrop-blur-xl"
+          className="dt-saved-toast fixed bottom-5 right-5 z-50 flex max-w-sm items-center gap-2.5 border border-rule-2 bg-housing-2 px-3 py-2.5 font-mono text-[11px] uppercase tracking-[0.06em] text-bone no-print"
+          style={{
+            borderLeftWidth: '2px',
+            borderLeftColor:
+              toast.type === 'success'
+                ? 'var(--signal)'
+                : toast.type === 'error'
+                  ? 'var(--alarm)'
+                  : 'var(--rule-2)',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.55)',
+          }}
         >
           {toast.type === 'success' && (
-            <CheckCircle2 size={17} className="text-emerald-400 shrink-0" />
+            <CheckCircle2 size={14} className="shrink-0 text-signal" aria-hidden="true" />
           )}
           {toast.type === 'error' && (
-            <AlertCircle size={17} className="text-rose-400 shrink-0" />
+            <AlertCircle size={14} className="shrink-0 text-alarm" aria-hidden="true" />
           )}
           {toast.type === 'info' && (
-            <div className="w-4 h-4 border-2 border-rose-400 border-t-transparent rounded-full animate-spin shrink-0" />
+            <span aria-hidden="true" className="inline-block h-[5px] w-[5px] shrink-0 bg-bone-52" />
           )}
-          <span className="font-semibold tracking-wide">{toast.message}</span>
+          <span>{toast.message}</span>
         </div>
       )}
     </div>

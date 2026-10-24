@@ -1,12 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import {
-  ZoomIn,
-  ZoomOut,
-  Maximize2,
-  Download,
-  FileSpreadsheet,
-  Sparkles,
-} from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
 import { sound } from '../../utils/soundEffects';
 import DefaultTemplate from '../templates/DefaultTemplate';
 import ModernTemplate from '../templates/ModernTemplate';
@@ -18,6 +11,24 @@ import TechTemplate from '../templates/TechTemplate';
 import AcademicTemplate from '../templates/AcademicTemplate';
 import StartupTemplate from '../templates/StartupTemplate';
 import { safeTheme } from '../templates/templateData';
+
+/**
+ * The bench: a white A4 sheet on a warm-black surface, with print-shop
+ * furniture around it.
+ *
+ * GEOMETRY CONTRACT — pdfExporter measures #resume-preview, and the print block
+ * resets #resume-print-wrapper. Both ids and the .resume-paper class are
+ * load-bearing; the tests, the layout measurement and the export capture all
+ * depend on them. The ids are on plain <div>s with no transform of their own.
+ *
+ * Nothing that CONTAINS the sheet may be no-print. Everything AROUND it — the
+ * top strip, the crop marks, the plate readout, the zoom dock — is no-print and
+ * aria-hidden where it carries no information a screen reader needs.
+ *
+ * The sheet itself is never transformed except by the user's zoom, which the
+ * print block neutralises. The entrance animation is on a sibling, not on the
+ * paper, so a capture taken mid-animation is still correct.
+ */
 
 /** A4 at 96dpi — the budget the page-budget badge has always used. */
 const PAGE_BUDGET_PX = 1123;
@@ -122,135 +133,120 @@ export default function ResumePreview({
     }
   };
 
+  const budgetPct = pageHeight > 0 ? Math.round((pageHeight / PAGE_BUDGET_PX) * 100) : 0;
+  const overBudget = pageHeight > PAGE_BUDGET_PX + 2;
+
   return (
-    <div className="flex-1 flex flex-col h-full bg-transparent relative overflow-hidden select-none">
-      {/* Top Botanical Studio Bar */}
-      <div className="px-4 py-2.5 flex items-center justify-between border-b border-pink-500/20 bg-[#170619]/90 backdrop-blur-xl no-print z-10 text-xs text-pink-200">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 text-rose-300 font-semibold">
-            <Sparkles size={14} className="text-rose-400" />
-            <span className="tracking-wide">ARTISAN CANVAS // DIN-A4</span>
-          </div>
-          <span className="text-pink-500/40 hidden sm:inline">•</span>
-          <span className="text-[11px] text-pink-300/70 hidden md:inline">
-            794 × 1123px (Standard A4)
-          </span>
+    <div className="relative flex h-full flex-1 flex-col overflow-hidden select-none">
+      {/* ---- top strip: what is on the bench ---------------------------- */}
+      <div className="z-10 flex items-center justify-between gap-3 border-b border-rule bg-housing px-4 py-1.5 no-print">
+        <div className="flex items-center gap-2.5">
+          <span className="dt-label text-bone-52">Proof</span>
+          <span aria-hidden="true" className="h-3 w-px bg-[var(--rule)]" />
+          <span className="dt-data text-bone-32">A4 · 210×297</span>
           {pageHeight > 0 && (
-            <span
-              className={`text-[10px] font-sans font-bold px-2.5 py-0.5 rounded-full border transition-colors ${
-                pageHeight <= PAGE_BUDGET_PX + 2
-                  ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.2)]'
-                  : 'bg-amber-950/80 text-amber-300 border-amber-500/50 animate-pulse'
-              }`}
-              title={`Rendered height: ${pageHeight}px / ${PAGE_BUDGET_PX}px max A4 budget`}
-            >
-              {pageHeight <= PAGE_BUDGET_PX + 2
-                ? `PAGE_BUDGET: ${Math.round((pageHeight / PAGE_BUDGET_PX) * 100)}% (1-PAGE FIT)`
-                : `PAGE_BUDGET: ${Math.round((pageHeight / PAGE_BUDGET_PX) * 100)}% (PAGE 2 SPILL)`}
-            </span>
+            <>
+              <span aria-hidden="true" className="h-3 w-px bg-[var(--rule)]" />
+              <span
+                className={`dt-data ${overBudget ? 'text-alarm' : 'text-bone-70'}`}
+                title={`Rendered height ${pageHeight}px against a ${PAGE_BUDGET_PX}px A4 budget`}
+              >
+                {budgetPct}% {overBudget ? '· spills' : '· fits'}
+              </span>
+            </>
           )}
         </div>
 
-        {/* Viewport Zoom Controls */}
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 bg-[#1f0923] border border-pink-500/30 p-1 rounded-xl shadow-xs">
-            <button
-              type="button"
-              onClick={handleZoomOut}
-              className="p-1 rounded-lg text-pink-300/70 hover:text-pink-100 hover:bg-pink-900/40 transition-colors cursor-pointer"
-              title="Zoom Out"
-            >
-              <ZoomOut size={13} />
-            </button>
-            <span className="text-xs font-semibold text-rose-300 px-2 min-w-[42px] text-center font-mono">
-              {zoom}%
-            </span>
-            <button
-              type="button"
-              onClick={handleZoomIn}
-              className="p-1 rounded-lg text-pink-300/70 hover:text-pink-100 hover:bg-pink-900/40 transition-colors cursor-pointer"
-              title="Zoom In"
-            >
-              <ZoomIn size={13} />
-            </button>
-            <button
-              type="button"
-              onClick={handleResetZoom}
-              className="p-1 rounded-lg text-pink-300/70 hover:text-pink-100 hover:bg-pink-900/40 transition-colors cursor-pointer"
-              title="Reset Zoom (85%)"
-            >
-              <Maximize2 size={12} />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Canvas Scroll Area (Artisan Canvas Drafting Easel with Uploaded Painting Texture) */}
-      <div 
-        className="flex-1 overflow-auto p-4 sm:p-8 flex justify-center items-start relative"
-        style={{
-          backgroundImage: `
-            radial-gradient(circle at 50% 35%, rgba(20, 6, 23, 0.40) 0%, rgba(15, 4, 18, 0.85) 100%),
-            url('/canvas-thread-texture.png'),
-            url('/canvas-painting.jpg')
-          `,
-          backgroundSize: 'cover, 130px 130px, cover',
-          backgroundPosition: 'center, 0 0, center',
-          backgroundAttachment: 'local, local, local',
-        }}
-      >
-        {/* Resume Canvas Container */}
-        <div
-          id="resume-print-wrapper"
-          style={{
-            transform: `scale(${zoom / 100})`,
-            transformOrigin: 'top center',
-            transition: 'transform 0.12s cubic-bezier(0.16, 1, 0.3, 1)',
-          }}
-          className="relative transition-all print:transform-none print:p-0 print:m-0"
-        >
-          {/* Actual Printable Resume Canvas - 100% Clean without any watermarks */}
-          <div
-            id="resume-preview"
-            className="resume-paper rounded-xs shadow-2xl print:shadow-none print:m-0 print:p-0 print:border-none print:w-full"
+        {/* zoom */}
+        <div className="flex items-center gap-1 rounded-[2px] border border-rule-2">
+          <button
+            type="button"
+            onClick={handleZoomOut}
+            className="flex h-7 w-7 cursor-pointer items-center justify-center text-bone-52 transition-colors duration-[90ms] hover:bg-[rgba(237,232,220,0.05)] hover:text-bone"
+            title="Zoom out"
+            aria-label="Zoom out"
           >
-            {renderActiveTemplate()}
-          </div>
+            <ZoomOut size={12} aria-hidden="true" />
+          </button>
+          <span className="dt-data w-[38px] text-center text-bone">{zoom}%</span>
+          <button
+            type="button"
+            onClick={handleZoomIn}
+            className="flex h-7 w-7 cursor-pointer items-center justify-center text-bone-52 transition-colors duration-[90ms] hover:bg-[rgba(237,232,220,0.05)] hover:text-bone"
+            title="Zoom in"
+            aria-label="Zoom in"
+          >
+            <ZoomIn size={12} aria-hidden="true" />
+          </button>
+          <span aria-hidden="true" className="h-4 w-px bg-[var(--rule)]" />
+          <button
+            type="button"
+            onClick={handleResetZoom}
+            className="flex h-7 w-7 cursor-pointer items-center justify-center text-bone-52 transition-colors duration-[90ms] hover:bg-[rgba(237,232,220,0.05)] hover:text-bone"
+            title="Reset zoom to 85%"
+            aria-label="Reset zoom"
+          >
+            <Maximize2 size={11} aria-hidden="true" />
+          </button>
         </div>
       </div>
 
-      {/* Floating Botanical Dock at the Bottom */}
-      <div className="absolute bottom-5 left-1/2 -translate-x-1/2 bg-[#220a26]/90 border border-pink-500/35 backdrop-blur-xl px-4 py-2.5 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.6)] flex items-center gap-3 no-print z-20 text-xs text-pink-200">
-        <div className="flex items-center gap-1.5 text-rose-300 font-semibold">
-          <Sparkles size={14} className="text-rose-400 animate-pulse" />
-          <span>Atelier Dock</span>
+      {/* ---- bench ------------------------------------------------------
+          The dot grid, the vignette and the furniture live here. All of it is
+          no-print; only the sheet survives. */}
+      <div className="dt-bench dt-print-reset relative flex flex-1 items-start justify-center overflow-auto p-6 sm:p-10 lg:p-14">
+        {/* one radial vignette behind the sheet, ≤4% — the only gradient */}
+        <div
+          aria-hidden="true"
+          className="no-print pointer-events-none absolute inset-0"
+          style={{
+            background:
+              'radial-gradient(circle at 50% 34%, rgba(237,232,220,0.04) 0%, rgba(237,232,220,0) 62%)',
+          }}
+        />
+
+        {/* the sheet mount */}
+        <div className="dt-enter-sheet relative">
+          <div
+            id="resume-print-wrapper"
+            style={{
+              transform: `scale(${zoom / 100})`,
+              transformOrigin: 'top center',
+              transition: 'transform 120ms cubic-bezier(0.6,0,0.3,1)',
+            }}
+            className="relative print:transform-none print:m-0 print:p-0"
+          >
+            {/* crop marks — print-shop furniture, 12px out from the corners */}
+            <span aria-hidden="true" className="dt-crop dt-crop-tl no-print" />
+            <span aria-hidden="true" className="dt-crop dt-crop-tr no-print" />
+            <span aria-hidden="true" className="dt-crop dt-crop-bl no-print" />
+            <span aria-hidden="true" className="dt-crop dt-crop-br no-print" />
+
+            {/* THE SHEET. Ids and class are contracts — see the header note. */}
+            <div
+              id="resume-preview"
+              className="resume-paper print:m-0 print:w-full print:border-none print:p-0 print:shadow-none"
+            >
+              {renderActiveTemplate()}
+            </div>
+          </div>
         </div>
-        <div className="h-4 w-[1px] bg-pink-500/30" />
-        <span className="text-pink-300/80 font-medium">
-          Ready for Export:
-        </span>
-        <button
-          type="button"
-          onClick={() => {
-            sound.playSuccess();
-            onDownloadPdf();
-          }}
-          className="px-3 py-1.5 font-bold text-white bg-gradient-to-r from-rose-500 via-pink-500 to-amber-500 hover:from-rose-400 hover:to-amber-400 rounded-xl shadow-[0_2px_15px_rgba(244,63,94,0.35)] transition-all cursor-pointer flex items-center gap-1 active:scale-95"
+
+        {/* plate readout, bottom-left — mono 10px */}
+        <div
+          aria-hidden="true"
+          className="dt-bench-furniture no-print pointer-events-none absolute bottom-3 left-4 font-mono text-[10px] uppercase tracking-[0.08em] text-bone-32"
         >
-          <Download size={13} />
-          <span>PDF</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            sound.playSuccess();
-            onDownloadDocx();
-          }}
-          className="px-3 py-1.5 font-bold text-white bg-gradient-to-r from-purple-800 to-pink-700 hover:from-purple-700 hover:to-pink-600 rounded-xl shadow-[0_2px_15px_rgba(168,85,247,0.3)] transition-all cursor-pointer flex items-center gap-1 active:scale-95"
+          Plate 01 · A4 210×297
+        </div>
+
+        {/* fit readout, bottom-right — reflects the real zoom */}
+        <div
+          aria-hidden="true"
+          className="dt-bench-furniture no-print pointer-events-none absolute bottom-3 right-4 font-mono text-[10px] uppercase tracking-[0.08em] text-bone-32"
         >
-          <FileSpreadsheet size={13} />
-          <span>DOCX</span>
-        </button>
+          Fit {zoom}%
+        </div>
       </div>
     </div>
   );
