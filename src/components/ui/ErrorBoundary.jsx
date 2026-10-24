@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, RefreshCw, Download, ShieldAlert } from 'lucide-react';
+import { RefreshCw, Download, ShieldAlert } from 'lucide-react';
 
 // Must match STORE_KEY in src/utils/resumeStore.js. Duplicated on purpose: this
 // component has to keep working when that module (or its data) is the thing
@@ -10,9 +10,6 @@ const STORE_KEY = 'precision_resume_store_v2';
  * not parse. Duplicated for the same reason as STORE_KEY above.
  */
 const RECOVERY_PREFIX = `${STORE_KEY}__recovery_`;
-
-const FOCUS_RING =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#18071c]';
 
 /**
  * Last line of defence. Any render throw in the tree below blanks the whole
@@ -166,69 +163,66 @@ export default class ErrorBoundary extends React.Component {
     const detail = String(error?.message || error || 'Unknown error');
 
     return (
-      <div className="min-h-screen bg-[#140715] text-pink-50 font-sans flex items-center justify-center p-4">
+      <div className="flex min-h-screen items-center justify-center bg-void p-4 font-sans text-bone">
         <div
           role="alert"
           aria-live="assertive"
-          className="w-full max-w-xl bg-[#18071c] border border-rose-500/40 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.7)] overflow-hidden"
+          className="w-full max-w-xl overflow-hidden border border-rule-2 bg-housing-2"
+          style={{ boxShadow: '0 20px 60px rgba(0,0,0,0.7)' }}
         >
           {/* Header */}
-          <div className="p-4 border-b border-pink-500/20 bg-[#200824] flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-[#2e0d34] border border-rose-500/40 flex items-center justify-center text-rose-300 shrink-0">
-              <AlertTriangle size={18} />
-            </div>
+          <div className="flex items-center gap-3 border-b border-alarm/40 bg-housing px-4 py-3">
+            <span className="dt-serif shrink-0 text-[15px] text-alarm">!</span>
             <div>
-              <h1 className="text-sm font-bold tracking-wide text-pink-50">
-                Something broke the resume builder
-              </h1>
-              <p className="text-[11px] text-pink-300/70">
+              <h1 className="dt-label text-bone">Something broke the resume builder</h1>
+              <p className="mt-0.5 font-sans text-[11px] text-bone-52">
                 Your saved data is still in this browser. Nothing has been deleted.
               </p>
             </div>
           </div>
 
           {/* Body */}
-          <div className="p-5 space-y-4 text-xs">
-            <p className="text-pink-200 leading-relaxed">
+          <div className="space-y-4 p-4 text-[13px] sm:p-5">
+            <p className="font-sans leading-relaxed text-bone-70">
               The screen went blank because a part of the app hit an error it could
               not recover from. Download your data first, then reload.
             </p>
 
-            <pre className="p-3 rounded-xl bg-[#100410] border border-rose-500/25 text-[11px] text-rose-200 font-mono whitespace-pre-wrap break-words overflow-x-auto">
+            <pre className="overflow-x-auto whitespace-pre-wrap break-words border-l-2 border-alarm/50 bg-void py-2 pl-2 font-mono text-[11px] leading-relaxed text-bone-70">
               {detail}
             </pre>
 
-            <div className="p-3 rounded-xl bg-amber-950/30 border border-amber-500/35 text-amber-100 flex items-start gap-2">
-              <ShieldAlert size={14} className="text-amber-400 shrink-0 mt-0.5" />
-              <span className="leading-relaxed">
+            <p className="flex items-start gap-2 border-l-2 border-alarm py-1 pl-2 font-sans text-[12px] leading-relaxed text-bone-70">
+              <ShieldAlert size={13} className="mt-0.5 shrink-0 text-alarm" aria-hidden="true" />
+              <span>
                 Download your data before clearing site data or reinstalling the
                 browser, otherwise the resume is gone.
               </span>
-            </div>
+            </p>
 
             {downloadNote && (
-              <p className="text-[11px] text-emerald-300" role="status">
+              <p className="border-l-2 border-signal py-1 pl-2 font-mono text-[11px] text-signal" role="status">
                 {downloadNote}
               </p>
             )}
           </div>
 
           {/* Footer */}
-          <div className="p-3.5 border-t border-pink-500/20 bg-[#200824] flex flex-wrap items-center justify-end gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-rule bg-housing px-4 py-2.5">
             <button
               type="button"
               onClick={this.handleDownload}
-              className={`px-4 py-2 text-xs font-semibold rounded-xl bg-[#250d2b] hover:bg-[#32113a] text-pink-200 border border-pink-500/30 transition-colors cursor-pointer flex items-center gap-1.5 ${FOCUS_RING}`}
+              className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-[2px] border border-rule-2 px-[14px] font-mono text-[10px] uppercase tracking-[0.08em] text-bone-70 transition-colors duration-[90ms] hover:bg-[rgba(237,232,220,0.05)] hover:text-bone"
             >
-              <Download size={13} />
+              <Download size={12} aria-hidden="true" />
               <span>Download my data</span>
             </button>
             <button
               type="button"
               onClick={this.handleReload}
-              className={`px-4 py-2 text-xs font-semibold rounded-xl bg-gradient-to-r from-rose-500 via-pink-600 to-amber-500 hover:opacity-95 text-white shadow-[0_2px_15px_rgba(244,63,94,0.35)] transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 ${FOCUS_RING}`}
+              className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-[2px] border border-signal bg-signal px-[14px] font-mono text-[10px] uppercase tracking-[0.08em] text-void transition-colors duration-[90ms] hover:bg-[#c8ef2e]"
             >
-              <RefreshCw size={13} />
+              <RefreshCw size={12} aria-hidden="true" />
               <span>Reload</span>
             </button>
           </div>

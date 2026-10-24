@@ -1,11 +1,8 @@
 import React from 'react';
-import { Keyboard, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import ModalShell from './ModalShell';
 import { sound } from '../../utils/soundEffects';
 import { SHORTCUTS } from '../../hooks/useKeyboardShortcuts.js';
-
-const RING =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#18071c]';
 
 /**
  * Keyboard shortcut reference.
@@ -15,6 +12,11 @@ const RING =
  * panel that documents a key which does nothing is worse than no panel, and a
  * second copy is how that happens. Adding a shortcut to the registry adds it
  * here automatically, and a test asserts every row maps to a real handler.
+ *
+ * The contract is `dl > dt` plus a `kbd[aria-keyshortcuts]` per row, and that
+ * `aria-keyshortcuts` equals what ariaKeyshortcuts(id) returns. A keycap grid
+ * is the one place in this app where a bordered box is the honest rendering:
+ * these are physical keys, not data.
  */
 export default function ShortcutHelp({ isOpen, onClose }) {
   // ModalShell has no isOpen prop — it assumes it is only mounted when open.
@@ -23,19 +25,12 @@ export default function ShortcutHelp({ isOpen, onClose }) {
   return (
     <ModalShell onClose={onClose} labelledBy="shortcut-help-title" className="max-w-lg">
       {/* Header */}
-      <div className="p-4 border-b border-pink-500/20 flex items-center justify-between bg-[#200824]/90 backdrop-blur-xl">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-[#2e0d34] border border-pink-500/40 flex items-center justify-center text-rose-300">
-            <Keyboard size={18} aria-hidden="true" />
-          </div>
-          <div>
-            <h2 id="shortcut-help-title" className="text-sm font-bold text-pink-50 tracking-wide">
-              Keyboard Shortcuts
-            </h2>
-            <p className="text-[11px] text-pink-300/70">
-              Every shortcut below is active right now
-            </p>
-          </div>
+      <div className="flex items-center justify-between border-b border-rule bg-housing px-4 py-3">
+        <div className="flex items-baseline gap-2.5">
+          <span className="dt-serif text-[13px] text-signal">?</span>
+          <h2 id="shortcut-help-title" className="dt-label text-bone">
+            Keyboard Shortcuts
+          </h2>
         </div>
         <button
           type="button"
@@ -44,27 +39,26 @@ export default function ShortcutHelp({ isOpen, onClose }) {
             onClose();
           }}
           aria-label="Close keyboard shortcuts"
-          className={`p-1.5 rounded-xl text-pink-400/85 hover:text-pink-100 hover:bg-pink-900/30 transition-colors cursor-pointer ${RING}`}
+          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-[2px] border border-transparent text-bone-52 transition-colors duration-[90ms] hover:bg-[rgba(237,232,220,0.05)] hover:text-bone"
         >
-          <X size={18} />
+          <X size={15} aria-hidden="true" />
         </button>
       </div>
 
       {/* Body */}
-      <div className="p-4 overflow-y-auto">
-        <dl className="space-y-1.5">
+      <div className="overflow-y-auto p-4">
+        <p className="dt-label mb-2 text-bone-32">Every shortcut below is active right now</p>
+
+        <dl className="divide-y divide-[var(--rule)] border-t border-rule">
           {SHORTCUTS.map((shortcut) => (
-            <div
-              key={shortcut.id}
-              className="flex items-center justify-between gap-3 px-3 py-2 rounded-xl bg-[#1b071e] border border-pink-500/20"
-            >
-              <dt className="text-xs text-pink-100">{shortcut.description}</dt>
+            <div key={shortcut.id} className="flex items-center justify-between gap-3 py-[7px]">
+              <dt className="font-sans text-[13px] text-bone">{shortcut.description}</dt>
               <dd className="shrink-0">
                 {/* The keys are rendered as <kbd> so they read as literal key
                     names to a screen reader rather than prose. */}
                 <kbd
                   aria-keyshortcuts={shortcut.aria}
-                  className="px-2 py-1 rounded-lg bg-[#120414] border border-pink-500/30 text-[10.5px] font-mono text-rose-200 whitespace-nowrap"
+                  className="whitespace-nowrap rounded-[2px] border border-rule-2 px-1.5 py-0.5 font-mono text-[10px] tabular-nums text-bone-70"
                 >
                   {shortcut.keys}
                 </kbd>
@@ -73,16 +67,20 @@ export default function ShortcutHelp({ isOpen, onClose }) {
           ))}
         </dl>
 
-        <p className="mt-3 text-[10.5px] text-pink-300/70 leading-relaxed">
+        <p className="mt-3 font-sans text-[11px] leading-relaxed text-bone-32">
           On macOS, use ⌘ instead of Ctrl. Shortcuts are ignored while you are
           typing in a text field, so they never interrupt an edit.
         </p>
       </div>
 
       {/* Footer */}
-      <div className="p-3.5 border-t border-pink-500/20 bg-[#200824]/90 flex items-center justify-between">
-        <span className="text-[10.5px] text-pink-300/70">
-          Press <kbd className="font-mono text-pink-200">?</kbd> any time to reopen
+      <div className="flex items-center justify-between border-t border-rule bg-housing px-4 py-2.5">
+        <span className="dt-data text-bone-32">
+          Press{' '}
+          <kbd className="rounded-[2px] border border-rule-2 px-1 font-mono text-[10px] text-bone-70">
+            ?
+          </kbd>{' '}
+          any time to reopen
         </span>
         <button
           type="button"
@@ -90,7 +88,7 @@ export default function ShortcutHelp({ isOpen, onClose }) {
             sound.playAction();
             onClose();
           }}
-          className={`px-4 py-1.5 text-xs font-semibold rounded-xl bg-[#250d2b] hover:bg-[#32113a] text-pink-200 border border-pink-500/20 transition-colors cursor-pointer ${RING}`}
+          className="inline-flex h-8 cursor-pointer items-center rounded-[2px] border border-rule-2 px-[14px] font-mono text-[10px] uppercase tracking-[0.08em] text-bone-70 transition-colors duration-[90ms] hover:bg-[rgba(237,232,220,0.05)] hover:text-bone"
         >
           Close
         </button>

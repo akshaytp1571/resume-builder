@@ -4,14 +4,14 @@ import {
   Download,
   Upload,
   Trash2,
-  AlertCircle,
-  CheckCircle2,
   ExternalLink,
   LogOut,
   RefreshCw,
+  X,
 } from 'lucide-react';
 import ModalShell from './ModalShell';
 import { sound } from '../../utils/soundEffects';
+import { Button, IconButton } from './primitives';
 import {
   connect,
   disconnect,
@@ -23,9 +23,6 @@ import {
   trashFile,
   driveFilename,
 } from '../../utils/googleDrive';
-
-const RING =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#18071c]';
 
 function formatDate(iso) {
   if (!iso) return '';
@@ -185,48 +182,66 @@ export default function GoogleDriveModal({
 
   return (
     <ModalShell onClose={onClose} labelledBy="drive-title" describedBy="drive-desc">
-      <div className="p-6 sm:p-8">
-        <div className="flex items-start gap-3">
-          <Cloud className="mt-0.5 h-6 w-6 shrink-0 text-rose-300" aria-hidden="true" />
-          <div>
-            <h2 id="drive-title" className="text-lg font-bold tracking-wide text-pink-50">
-              Google Drive
-            </h2>
-            <p id="drive-desc" className="mt-1 text-sm text-pink-200/80">
-              Back up your whole workspace, or export the current resume, to your own
-              Drive. Nothing is sent anywhere else.
-            </p>
-          </div>
+      {/* Header: serif kicker + mono title + 32px close, on a hairline. */}
+      <div className="flex items-center justify-between border-b border-rule bg-housing px-4 py-3">
+        <div className="flex items-baseline gap-2.5">
+          <span className="dt-serif text-[13px] text-signal">Drive</span>
+          <h2 id="drive-title" className="dt-label text-bone">
+            Google Drive
+          </h2>
         </div>
+        <button
+          type="button"
+          aria-label="Close Google Drive dialog"
+          onClick={onClose}
+          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-[2px] border border-transparent text-bone-52 transition-colors duration-[90ms] hover:bg-[rgba(237,232,220,0.05)] hover:text-bone"
+        >
+          <X size={15} aria-hidden="true" />
+        </button>
+      </div>
 
-        {/* Scope disclosure — the user should know exactly how much of their
-            Drive this can see before they connect, not after. */}
-        <p className="mt-3 rounded-lg border border-pink-500/25 bg-black/25 p-3 text-xs text-pink-200/70">
-          This app requests the <strong>drive.file</strong> scope. It can only see
-          files it created itself — it cannot read anything else in your Drive. The
-          access token is kept in memory only and never written to disk.
+      {/* Body */}
+      <div className="space-y-5 overflow-y-auto p-4 text-[13px] sm:p-5">
+        <p
+          id="drive-desc"
+          className="font-sans text-[12.5px] leading-relaxed text-bone-70"
+        >
+          Back up your whole workspace, or export the current resume, to your own
+          Drive. Nothing is sent anywhere else.
         </p>
 
+        {/* Scope disclosure — the user should know exactly how much of their
+            Drive this can see before they connect, not after. Load-bearing
+            trust copy: word for word. */}
+        <div className="border-l-2 border-rule-2 py-1 pl-3">
+          <p className="dt-data leading-relaxed text-bone-70">
+            This app requests the <strong className="font-medium text-bone">drive.file</strong> scope. It can only see
+            files it created itself — it cannot read anything else in your Drive. The
+            access token is kept in memory only and never written to disk.
+          </p>
+        </div>
+
+        {/* Errors and confirmations are announced, not just drawn. */}
         <div aria-live="polite" role="status" className="min-h-[1.5rem]">
           {error && (
-            <p className="mt-3 flex items-start gap-2 text-sm text-rose-300">
-              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+            <p className="border-l-2 border-alarm py-1 pl-2 font-sans text-[12px] text-alarm">
               {error}
             </p>
           )}
           {status && !error && (
-            <p className="mt-3 flex items-start gap-2 text-sm text-emerald-300">
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+            <p className="border-l-2 border-signal py-1 pl-2 font-sans text-[12px] text-signal">
               {status}
             </p>
           )}
         </div>
 
         {!configured && (
-          <div className="mt-4 rounded-lg border border-amber-500/40 bg-amber-950/30 p-4 text-sm text-amber-200">
-            <p className="font-semibold">Google Drive is not configured for this build.</p>
-            <p className="mt-1 text-amber-200/80">
-              Set <code className="rounded bg-black/40 px-1">VITE_GOOGLE_CLIENT_ID</code> to
+          <div className="border-l-2 border-rule-2 py-1 pl-3">
+            <p className="font-sans text-[12px] font-medium text-bone">
+              Google Drive is not configured for this build.
+            </p>
+            <p className="dt-data mt-1 leading-relaxed text-bone-70">
+              Set <code className="text-bone">VITE_GOOGLE_CLIENT_ID</code> to
               a Google OAuth client ID and rebuild. The JSON Resume and file import/export
               options work without it.
             </p>
@@ -234,102 +249,103 @@ export default function GoogleDriveModal({
         )}
 
         {configured && !connected && (
-          <button
-            type="button"
+          <Button
+            variant="signal"
             onClick={handleConnect}
             disabled={busy === 'connect'}
-            className={`mt-4 inline-flex items-center gap-2 rounded-md border border-rose-400/50 bg-rose-500/15 px-4 py-2 text-sm font-semibold text-rose-100 hover:bg-rose-500/25 disabled:opacity-50 ${RING}`}
+            className="gap-1.5"
           >
-            <Cloud className="h-4 w-4" aria-hidden="true" />
+            <Cloud size={13} aria-hidden="true" />
             {busy === 'connect' ? 'Opening Google…' : 'Connect Google Drive'}
-          </button>
+          </Button>
         )}
 
         {configured && connected && (
           <>
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              <button
-                type="button"
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant="signal"
                 onClick={handleBackup}
                 disabled={Boolean(busy)}
-                className={`inline-flex items-center gap-2 rounded-md border border-rose-400/50 bg-rose-500/15 px-3 py-2 text-sm font-semibold text-rose-100 hover:bg-rose-500/25 disabled:opacity-50 ${RING}`}
+                className="gap-1.5"
               >
-                <Upload className="h-4 w-4" aria-hidden="true" />
+                <Upload size={13} aria-hidden="true" />
                 {busy === 'backup' ? 'Backing up…' : 'Back up everything'}
-              </button>
-              <button
-                type="button"
+              </Button>
+              <Button
+                variant="quiet"
                 onClick={handleExportOne}
                 disabled={Boolean(busy)}
-                className={`inline-flex items-center gap-2 rounded-md border border-pink-400/40 bg-black/30 px-3 py-2 text-sm font-semibold text-pink-100 hover:bg-black/50 disabled:opacity-50 ${RING}`}
+                className="gap-1.5"
               >
-                <Download className="h-4 w-4" aria-hidden="true" />
+                <Download size={13} aria-hidden="true" />
                 {busy === 'export' ? 'Exporting…' : 'Export current resume'}
-              </button>
-              <button
-                type="button"
+              </Button>
+              <Button
+                variant="quiet"
                 onClick={refresh}
                 disabled={Boolean(busy)}
-                className={`inline-flex items-center gap-2 rounded-md border border-pink-400/30 px-3 py-2 text-sm text-pink-200 hover:bg-black/40 disabled:opacity-50 ${RING}`}
+                className="gap-1.5"
               >
                 <RefreshCw
-                  className={`h-4 w-4 ${busy === 'list' ? 'animate-spin' : ''}`}
+                  size={13}
+                  className={busy === 'list' ? 'animate-spin' : ''}
                   aria-hidden="true"
                 />
                 Refresh
-              </button>
-              <button
-                type="button"
+              </Button>
+              <Button
+                variant="ghost"
                 onClick={handleDisconnect}
-                className={`ml-auto inline-flex items-center gap-2 rounded-md border border-pink-400/30 px-3 py-2 text-sm text-pink-200 hover:bg-black/40 ${RING}`}
+                className="ml-auto gap-1.5"
               >
-                <LogOut className="h-4 w-4" aria-hidden="true" />
+                <LogOut size={13} aria-hidden="true" />
                 Disconnect
-              </button>
+              </Button>
             </div>
 
-            <section className="mt-4">
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-pink-100">
+            <div className="border-t border-rule pt-3">
+              <span className="dt-label mb-2 block text-bone-52">
                 Your files
-              </h3>
+              </span>
               {files.length === 0 && busy !== 'list' && (
-                <p className="mt-2 text-sm text-pink-200/60">
+                <p className="dt-data text-bone-32">
                   Nothing here yet. Use the backup button above to create your first one.
                 </p>
               )}
-              <ul className="mt-2 divide-y divide-pink-500/15">
+              <ul className="divide-y divide-[var(--rule)]">
                 {files.map((file) => (
                   <li
                     key={file.id}
-                    className="flex flex-wrap items-center gap-2 py-2 text-sm"
+                    className="flex flex-wrap items-center gap-2 py-2"
                   >
-                    <span className="min-w-0 flex-1 truncate text-pink-100">
+                    <span className="dt-data min-w-0 flex-1 truncate text-bone">
                       {file.name}
                     </span>
-                    <span className="text-xs text-pink-200/60">
+                    <span className="dt-data shrink-0 text-bone-32">
                       {formatDate(file.modifiedTime)}
                     </span>
-                    <button
-                      type="button"
+                    <Button
+                      variant="quiet"
+                      size="sm"
                       onClick={() => handleRestore(file)}
                       disabled={Boolean(busy)}
-                      className={`rounded border border-pink-400/40 px-2 py-1 text-xs font-semibold text-pink-100 hover:bg-black/40 disabled:opacity-50 ${RING}`}
                     >
                       {busy === `restore:${file.id}` ? 'Restoring…' : 'Restore'}
-                    </button>
-                    <button
-                      type="button"
+                    </Button>
+                    <IconButton
+                      label={`Move ${file.name} to the Drive trash`}
+                      tone="alarm"
+                      size="sm"
                       onClick={() => handleTrash(file)}
                       disabled={Boolean(busy)}
-                      aria-label={`Move ${file.name} to the Drive trash`}
-                      className={`rounded border border-pink-400/30 px-2 py-1 text-xs text-pink-200 hover:bg-black/40 disabled:opacity-50 ${RING}`}
                     >
-                      <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                    </button>
+                      <Trash2 size={13} aria-hidden="true" />
+                    </IconButton>
                   </li>
                 ))}
               </ul>
-            </section>
+            </div>
           </>
         )}
 
@@ -337,21 +353,18 @@ export default function GoogleDriveModal({
           href="https://drive.google.com/drive/"
           target="_blank"
           rel="noreferrer noopener"
-          className={`mt-4 inline-flex items-center gap-1.5 text-xs text-rose-300 underline underline-offset-2 hover:text-rose-200 ${RING}`}
+          className="dt-label inline-flex items-center gap-1.5 text-bone-52 underline underline-offset-4 transition-colors duration-[90ms] hover:text-bone"
         >
           Open Google Drive
-          <ExternalLink className="h-3 w-3" aria-hidden="true" />
+          <ExternalLink size={11} aria-hidden="true" />
         </a>
+      </div>
 
-        <div className="mt-6 flex justify-end">
-          <button
-            type="button"
-            onClick={onClose}
-            className={`rounded-md border border-pink-400/40 px-4 py-2 text-sm font-semibold text-pink-100 hover:bg-black/40 ${RING}`}
-          >
-            Close
-          </button>
-        </div>
+      {/* Footer */}
+      <div className="flex justify-end gap-2 border-t border-rule bg-housing px-4 py-2.5">
+        <Button variant="quiet" onClick={onClose}>
+          Close
+        </Button>
       </div>
     </ModalShell>
   );

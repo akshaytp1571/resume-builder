@@ -1,15 +1,13 @@
 import React, { useRef, useState } from 'react';
-import { FileJson2, Download, Upload, AlertCircle, ExternalLink } from 'lucide-react';
+import { Download, Upload, ExternalLink, X } from 'lucide-react';
 import ModalShell from './ModalShell';
 import { sound } from '../../utils/soundEffects';
+import { Button } from './primitives';
 import {
   toJsonResume,
   fromJsonResume,
   jsonResumeFilename,
 } from '../../utils/jsonResume';
-
-const RING =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#18071c]';
 
 /**
  * Import/export in the public JSON Resume format.
@@ -79,113 +77,109 @@ export default function JsonResumeModal({ isOpen, onClose, resumeData, onImport 
 
   return (
     <ModalShell onClose={onClose} labelledBy="jsonresume-title" describedBy="jsonresume-desc">
-      <div className="p-6 sm:p-8">
-        <div className="flex items-start gap-3">
-          <FileJson2
-            className="mt-0.5 h-6 w-6 shrink-0 text-rose-300"
-            aria-hidden="true"
-          />
-          <div>
-            <h2
-              id="jsonresume-title"
-              className="text-lg font-bold tracking-wide text-pink-50"
-            >
-              JSON Resume
-            </h2>
-            <p id="jsonresume-desc" className="mt-1 text-sm text-pink-200/80">
-              An open format used by many resume tools. Use it to bring a resume in
-              from somewhere else, or to take this one out.
-            </p>
-          </div>
+      {/* Header: serif kicker + mono title + 32px close, on a hairline. */}
+      <div className="flex items-center justify-between border-b border-rule bg-housing px-4 py-3">
+        <div className="flex items-baseline gap-2.5">
+          <span className="dt-serif text-[13px] text-signal">Interchange</span>
+          <h2 id="jsonresume-title" className="dt-label text-bone">
+            JSON Resume
+          </h2>
         </div>
+        <button
+          type="button"
+          aria-label="Close JSON Resume dialog"
+          onClick={onClose}
+          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-[2px] border border-transparent text-bone-52 transition-colors duration-[90ms] hover:bg-[rgba(237,232,220,0.05)] hover:text-bone"
+        >
+          <X size={15} aria-hidden="true" />
+        </button>
+      </div>
+
+      {/* Body */}
+      <div className="space-y-5 overflow-y-auto p-4 text-[13px] sm:p-5">
+        <p
+          id="jsonresume-desc"
+          className="font-sans text-[12.5px] leading-relaxed text-bone-70"
+        >
+          An open format used by many resume tools. Use it to bring a resume in
+          from somewhere else, or to take this one out.
+        </p>
 
         <a
           href="https://jsonresume.org/schema"
           target="_blank"
           rel="noreferrer noopener"
-          className={`mt-3 inline-flex items-center gap-1.5 text-sm text-rose-300 underline underline-offset-2 hover:text-rose-200 ${RING}`}
+          className="dt-label inline-flex items-center gap-1.5 text-bone-52 underline underline-offset-4 transition-colors duration-[90ms] hover:text-bone"
         >
           What is JSON Resume?
-          <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+          <ExternalLink size={11} aria-hidden="true" />
         </a>
 
         {/* Errors and confirmations are announced, not just drawn. */}
         <div aria-live="polite" role="status" className="min-h-[1.5rem]">
           {error && (
-            <p className="mt-4 flex items-start gap-2 text-sm text-rose-300">
-              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+            <p className="border-l-2 border-alarm py-1 pl-2 font-sans text-[12px] text-alarm">
               {error}
             </p>
           )}
           {status && !error && (
-            <p className="mt-4 text-sm text-emerald-300">{status}</p>
+            <p className="border-l-2 border-signal py-1 pl-2 font-sans text-[12px] text-signal">
+              {status}
+            </p>
           )}
         </div>
 
-        <div className="mt-4 space-y-4">
-          <section className="rounded-lg border border-pink-500/25 bg-black/20 p-4">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-pink-100">
-              Export
-            </h3>
-            <p className="mt-1 text-sm text-pink-200/70">
-              Writes your resume as a JSON Resume document. Sections this format
-              cannot express are preserved under <code>x-</code> keys rather than
-              dropped.
-            </p>
-            <label className="mt-3 flex items-center gap-2 text-sm text-pink-200/90">
-              <input
-                type="checkbox"
-                checked={includePhoto}
-                onChange={(e) => setIncludePhoto(e.target.checked)}
-                className={`h-4 w-4 rounded border-pink-400/40 bg-black/40 accent-rose-400 ${RING}`}
-              />
-              Include my photo (adds a large base64 block to the file)
-            </label>
-            <button
-              type="button"
-              onClick={handleExport}
-              className={`mt-3 inline-flex items-center gap-2 rounded-md border border-rose-400/50 bg-rose-500/15 px-3 py-2 text-sm font-semibold text-rose-100 hover:bg-rose-500/25 ${RING}`}
-            >
-              <Download className="h-4 w-4" aria-hidden="true" />
-              Export as JSON Resume
-            </button>
-          </section>
-
-          <section className="rounded-lg border border-pink-500/25 bg-black/20 p-4">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-pink-100">
-              Import
-            </h3>
-            <p className="mt-1 text-sm text-pink-200/70">
-              Replaces the resume in the current tab. Your other tabs are untouched,
-              and you can undo afterwards.
-            </p>
+        <div className="border-t border-rule pt-3">
+          <span className="dt-label mb-2 block text-bone-52">Export</span>
+          <p className="font-sans text-[12.5px] leading-relaxed text-bone-70">
+            Writes your resume as a JSON Resume document. Sections this format
+            cannot express are preserved under <code className="dt-data text-bone">x-</code> keys rather than
+            dropped.
+          </p>
+          <label className="mt-3 flex items-center gap-2 font-sans text-[12.5px] text-bone-70">
             <input
-              ref={fileRef}
-              id="jsonresume-file"
-              type="file"
-              accept="application/json,.json"
-              onChange={(e) => handleFile(e.target.files?.[0])}
-              className="sr-only"
+              type="checkbox"
+              checked={includePhoto}
+              onChange={(e) => setIncludePhoto(e.target.checked)}
+              className="h-3.5 w-3.5 accent-signal"
             />
-            <label
-              htmlFor="jsonresume-file"
-              className={`mt-3 inline-flex cursor-pointer items-center gap-2 rounded-md border border-pink-400/40 bg-black/30 px-3 py-2 text-sm font-semibold text-pink-100 hover:bg-black/50 ${RING}`}
-            >
-              <Upload className="h-4 w-4" aria-hidden="true" />
-              Choose a JSON Resume file
-            </label>
-          </section>
+            Include my photo (adds a large base64 block to the file)
+          </label>
+          <Button variant="quiet" size="sm" onClick={handleExport} className="mt-3 gap-1.5">
+            <Download size={12} aria-hidden="true" />
+            Export as JSON Resume
+          </Button>
         </div>
 
-        <div className="mt-6 flex justify-end">
-          <button
-            type="button"
-            onClick={onClose}
-            className={`rounded-md border border-pink-400/40 px-4 py-2 text-sm font-semibold text-pink-100 hover:bg-black/40 ${RING}`}
+        <div className="border-t border-rule pt-3">
+          <span className="dt-label mb-2 block text-bone-52">Import</span>
+          <p className="font-sans text-[12.5px] leading-relaxed text-bone-70">
+            Replaces the resume in the current tab. Your other tabs are untouched,
+            and you can undo afterwards.
+          </p>
+          <input
+            ref={fileRef}
+            id="jsonresume-file"
+            type="file"
+            accept="application/json,.json"
+            onChange={(e) => handleFile(e.target.files?.[0])}
+            className="sr-only"
+          />
+          <label
+            htmlFor="jsonresume-file"
+            className="mt-3 inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-[2px] border border-rule-2 px-[10px] font-mono text-[10px] uppercase tracking-[0.08em] text-bone-70 transition-colors duration-[90ms] hover:bg-[rgba(237,232,220,0.05)] hover:text-bone"
           >
-            Close
-          </button>
+            <Upload size={12} aria-hidden="true" />
+            Choose a JSON Resume file
+          </label>
         </div>
+      </div>
+
+      {/* Footer */}
+      <div className="flex justify-end gap-2 border-t border-rule bg-housing px-4 py-2.5">
+        <Button variant="quiet" onClick={onClose}>
+          Close
+        </Button>
       </div>
     </ModalShell>
   );

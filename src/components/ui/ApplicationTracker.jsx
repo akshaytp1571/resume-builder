@@ -1,18 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import {
-  Briefcase,
-  Building2,
   ExternalLink,
-  Inbox,
   Trash2,
-  TrendingUp,
   X,
   CheckCircle2,
-  Clock,
-  AlertTriangle,
 } from 'lucide-react';
 import ModalShell from './ModalShell';
 import { sound } from '../../utils/soundEffects';
+import { Button, Chip, EmptyState } from './primitives';
 import {
   STATUSES,
   computeStats,
@@ -20,45 +15,26 @@ import {
   removeApplication,
 } from '../../utils/applicationTracker';
 
-const RING =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#18071c]';
-
 /**
- * Per-status colours. Each is a background + text + border trio so a badge
- * reads as a status at a glance without relying on colour alone — every badge
- * also carries its label as text.
+ * Status → chip tone. Colour carries state, but every chip also carries its
+ * label as text so it never relies on hue alone.
  */
-const STATUS_STYLES = {
-  applied: {
-    label: 'Applied',
-    badge: 'bg-sky-950/60 border-sky-500/40 text-sky-200',
-    dot: 'bg-sky-400',
-  },
-  screening: {
-    label: 'Screening',
-    badge: 'bg-indigo-950/60 border-indigo-500/40 text-indigo-200',
-    dot: 'bg-indigo-400',
-  },
-  interview: {
-    label: 'Interview',
-    badge: 'bg-amber-950/60 border-amber-500/40 text-amber-200',
-    dot: 'bg-amber-400',
-  },
-  offer: {
-    label: 'Offer',
-    badge: 'bg-emerald-950/60 border-emerald-500/40 text-emerald-200',
-    dot: 'bg-emerald-400',
-  },
-  rejected: {
-    label: 'Rejected',
-    badge: 'bg-rose-950/60 border-rose-500/40 text-rose-200',
-    dot: 'bg-rose-400',
-  },
-  withdrawn: {
-    label: 'Withdrawn',
-    badge: 'bg-[#250d2b] border-pink-500/25 text-pink-300/85',
-    dot: 'bg-pink-400/70',
-  },
+const STATUS_TONE = {
+  applied: 'neutral',
+  screening: 'neutral',
+  interview: 'neutral',
+  offer: 'present',
+  rejected: 'missing',
+  withdrawn: 'neutral',
+};
+
+const STATUS_LABELS = {
+  applied: 'Applied',
+  screening: 'Screening',
+  interview: 'Interview',
+  offer: 'Offer',
+  rejected: 'Rejected',
+  withdrawn: 'Withdrawn',
 };
 
 function formatDate(iso) {
@@ -138,17 +114,15 @@ export default function ApplicationTracker({
 
   return (
     <ModalShell onClose={onClose} labelledBy="tracker-title" className="max-w-4xl">
-      {/* Header */}
-      <div className="p-4 border-b border-pink-500/20 flex items-center justify-between bg-[#200824]/90 backdrop-blur-xl">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-[#2e0d34] border border-pink-500/40 flex items-center justify-center text-rose-300">
-            <Briefcase size={18} />
-          </div>
+      {/* Header: serif kicker + mono title + 32px close, on a hairline. */}
+      <div className="flex items-center justify-between border-b border-rule bg-housing px-4 py-3">
+        <div className="flex items-baseline gap-2.5">
+          <span className="dt-serif text-[13px] text-signal">Log</span>
           <div>
-            <h2 id="tracker-title" className="text-sm font-bold text-pink-50 tracking-wide">
+            <h2 id="tracker-title" className="dt-label text-bone">
               Application Tracker
             </h2>
-            <p className="text-[11px] text-pink-300/70">
+            <p className="dt-data mt-0.5 text-bone-32">
               Every application you sent, and which resume you used
             </p>
           </div>
@@ -160,51 +134,50 @@ export default function ApplicationTracker({
             onClose();
           }}
           aria-label="Close application tracker"
-          className={`p-1.5 rounded-xl text-pink-400/85 hover:text-pink-100 hover:bg-pink-900/30 transition-colors cursor-pointer ${RING}`}
+          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-[2px] border border-transparent text-bone-52 transition-colors duration-[90ms] hover:bg-[rgba(237,232,220,0.05)] hover:text-bone"
         >
-          <X size={18} />
+          <X size={15} />
         </button>
       </div>
 
-      {/* Stats strip */}
-      <div className="px-4 py-3 border-b border-pink-500/15 bg-[#18071c] grid grid-cols-3 gap-2">
-        <div className="p-2.5 rounded-xl bg-[#1b071e] border border-pink-500/20">
-          <div className="text-[10px] uppercase tracking-wide text-pink-300/70">Total</div>
-          <div className="text-lg font-black text-pink-100 leading-tight">{stats.total}</div>
-        </div>
-        <div className="p-2.5 rounded-xl bg-[#1b071e] border border-pink-500/20">
-          <div className="text-[10px] uppercase tracking-wide text-pink-300/70 flex items-center gap-1">
-            <Clock size={10} aria-hidden="true" />
-            Active
+      {/* Stats readout: three columns of numerals on hairlines, no cards. */}
+      <div className="grid grid-cols-3 divide-x divide-[var(--rule)] border-b border-rule bg-housing px-4 py-3">
+        <div className="pr-3">
+          <div className="dt-label text-bone-52">Total</div>
+          <div className="font-mono text-[18px] leading-tight tabular-nums text-bone">
+            {stats.total}
           </div>
-          <div className="text-lg font-black text-emerald-300 leading-tight">{stats.activeCount}</div>
         </div>
-        <div className="p-2.5 rounded-xl bg-[#1b071e] border border-pink-500/20">
-          <div className="text-[10px] uppercase tracking-wide text-pink-300/70 flex items-center gap-1">
-            <TrendingUp size={10} aria-hidden="true" />
-            Response rate
+        <div className="px-3">
+          <div className="dt-label text-bone-52">Active</div>
+          <div className="font-mono text-[18px] leading-tight tabular-nums text-signal">
+            {stats.activeCount}
           </div>
-          <div className="text-lg font-black text-amber-300 leading-tight">
+        </div>
+        <div className="pl-3">
+          <div className="dt-label text-bone-52">Response rate</div>
+          <div className="font-mono text-[18px] leading-tight tabular-nums text-bone">
             {Math.round(stats.responseRate * 100)}%
           </div>
         </div>
       </div>
 
-      {/* Filter */}
-      <div className="px-4 py-2.5 border-b border-pink-500/15 bg-[#18071c] flex flex-wrap items-center gap-2">
-        <label htmlFor="tracker-filter" className="text-[11px] font-semibold text-pink-200">
+      {/* Filter: a ledger select, not a boxed control. */}
+      <div className="flex flex-wrap items-center gap-2 border-b border-rule bg-housing px-4 py-2">
+        <label htmlFor="tracker-filter" className="dt-label text-bone-52">
           Filter
         </label>
         <select
           id="tracker-filter"
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          className={`bg-[#150518] border border-pink-500/25 rounded-xl px-2.5 py-1 text-[11px] text-pink-100 focus:outline-none focus:border-rose-400 cursor-pointer ${RING}`}
+          className="cursor-pointer border-0 border-b bg-transparent px-0 py-1 font-mono text-[11px] text-bone focus:outline-none"
+          style={{ borderBottomColor: 'var(--rule-2)' }}
         >
           <option value="all">All ({stats.total})</option>
           {STATUSES.map((s) => (
             <option key={s} value={s}>
-              {STATUS_STYLES[s].label} ({stats.byStatus[s]})
+              {STATUS_LABELS[s]} ({stats.byStatus[s]})
             </option>
           ))}
         </select>
@@ -213,57 +186,42 @@ export default function ApplicationTracker({
       {/* Save error. aria-live so a quota failure is announced, not just drawn. */}
       <div aria-live="polite" role="status">
         {saveError && (
-          <div className="mx-4 mt-3 p-2.5 rounded-xl bg-rose-950/50 border border-rose-500/40 text-[11px] text-rose-200 flex items-start gap-2">
-            <AlertTriangle size={13} className="shrink-0 mt-0.5 text-rose-400" aria-hidden="true" />
-            <span>{saveError}</span>
+          <div className="mx-4 mt-3 border-l-2 border-alarm py-1 pl-2">
+            <p className="font-sans text-[12px] text-alarm">{saveError}</p>
           </div>
         )}
       </div>
 
       {/* List */}
-      <div className="p-4 overflow-y-auto">
+      <div className="overflow-y-auto p-4">
         {visible.length === 0 ? (
-          <div className="py-10 text-center space-y-2">
-            <div className="w-12 h-12 mx-auto rounded-2xl bg-[#2d0d34] border border-pink-500/30 flex items-center justify-center text-rose-300">
-              <Inbox size={22} />
-            </div>
-            <p className="text-xs font-semibold text-pink-100">
-              {stats.total === 0 ? 'No applications yet' : 'Nothing matches this filter'}
-            </p>
-            <p className="text-[11px] text-pink-300/85 max-w-sm mx-auto leading-relaxed">
-              {stats.total === 0
+          <EmptyState
+            title={stats.total === 0 ? 'No applications yet' : 'Nothing matches this filter'}
+            hint={
+              stats.total === 0
                 ? 'When you apply to a job through the Apply Agent, it is recorded here automatically — the company, the date, and which resume variant you used.'
-                : 'Try a different status filter to see the rest of your applications.'}
-            </p>
-          </div>
+                : 'Try a different status filter to see the rest of your applications.'
+            }
+          />
         ) : (
-          <ul className="space-y-2">
+          <ul className="divide-y divide-[var(--rule)]">
             {visible.map((app) => {
-              const style = STATUS_STYLES[app.status] || STATUS_STYLES.applied;
+              const tone = STATUS_TONE[app.status] || 'neutral';
               const isConfirming = confirmDeleteId === app.id;
 
               return (
-                <li
-                  key={app.id}
-                  className="p-3 rounded-2xl bg-[#1b071e] border border-pink-500/20 space-y-2"
-                >
+                <li key={app.id} className="space-y-2 py-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-xs font-bold text-pink-50 truncate">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="truncate font-sans text-[13px] font-medium text-bone">
                           {app.title || 'Untitled role'}
                         </span>
-                        <span className={`px-1.5 py-0.5 rounded-full border text-[9.5px] font-bold ${style.badge}`}>
-                          <span className={`inline-block w-1.5 h-1.5 rounded-full mr-1 ${style.dot}`} aria-hidden="true" />
-                          {style.label}
-                        </span>
+                        <Chip tone={tone}>{STATUS_LABELS[app.status] || STATUS_LABELS.applied}</Chip>
                       </div>
 
-                      <div className="flex items-center gap-2 text-[10.5px] text-pink-300/85 mt-0.5 flex-wrap">
-                        <span className="flex items-center gap-1">
-                          <Building2 size={10} aria-hidden="true" />
-                          {app.company || 'Unknown company'}
-                        </span>
+                      <div className="dt-data mt-0.5 flex flex-wrap items-center gap-2 text-bone-52">
+                        <span>{app.company || 'Unknown company'}</span>
                         <span aria-hidden="true">•</span>
                         <span>{formatDate(app.appliedAt)}</span>
                         {hostOf(app.url) && (
@@ -275,29 +233,29 @@ export default function ApplicationTracker({
                       </div>
 
                       {/* Which resume was used - the payoff for variants. */}
-                      <div className="mt-1 text-[10.5px]">
+                      <div className="dt-data mt-1">
                         {app.variantOrphaned ? (
-                          <span className="text-amber-300/90">
+                          <span className="text-alarm">
                             Resume “{app.variantName || 'unknown'}” has since been deleted
                           </span>
                         ) : (
-                          <span className="text-pink-300/85">
-                            Resume: <span className="text-pink-200">{app.variantName || 'unknown'}</span>
+                          <span className="text-bone-52">
+                            Resume: <span className="text-bone-70">{app.variantName || 'unknown'}</span>
                           </span>
                         )}
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1.5 shrink-0">
+                    <div className="flex shrink-0 items-center gap-1.5">
                       {app.url && (
                         <a
                           href={app.url}
                           target="_blank"
                           rel="noreferrer"
                           aria-label={`Open the original job listing for ${app.title || 'this role'}`}
-                          className={`p-1.5 rounded-lg text-pink-400/85 hover:text-pink-100 hover:bg-pink-900/30 transition-colors cursor-pointer ${RING}`}
+                          className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-[2px] border border-transparent text-bone-52 transition-colors duration-[90ms] hover:bg-[rgba(237,232,220,0.05)] hover:text-bone"
                         >
-                          <ExternalLink size={13} />
+                          <ExternalLink size={13} aria-hidden="true" />
                         </a>
                       )}
                       <button
@@ -308,22 +266,22 @@ export default function ApplicationTracker({
                             ? `Confirm deleting the application to ${app.company || 'this company'}`
                             : `Delete the application to ${app.company || 'this company'}`
                         }
-                        className={`px-1.5 py-1.5 rounded-lg text-[10px] font-semibold transition-colors cursor-pointer flex items-center gap-1 ${
+                        className={`inline-flex cursor-pointer items-center gap-1 rounded-[2px] border px-1.5 py-1 font-mono text-[10px] uppercase tracking-[0.08em] transition-colors duration-[90ms] ${
                           isConfirming
-                            ? 'bg-rose-900/60 border border-rose-500/50 text-rose-100'
-                            : 'text-pink-400/85 hover:text-rose-300 hover:bg-rose-950/40'
-                        } ${RING}`}
+                            ? 'border-alarm bg-alarm/10 text-alarm'
+                            : 'border-transparent text-alarm hover:bg-alarm/10'
+                        }`}
                       >
-                        <Trash2 size={12} />
+                        <Trash2 size={12} aria-hidden="true" />
                         {isConfirming && <span>Confirm</span>}
                       </button>
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-pink-950/60">
+                  <div className="flex flex-wrap items-center gap-2 border-t border-rule pt-2">
                     <label
                       htmlFor={`status-${app.id}`}
-                      className="text-[10.5px] font-semibold text-pink-300/85"
+                      className="dt-label text-bone-52"
                     >
                       Status
                     </label>
@@ -331,11 +289,12 @@ export default function ApplicationTracker({
                       id={`status-${app.id}`}
                       value={app.status}
                       onChange={(e) => handleStatusChange(app.id, e.target.value)}
-                      className={`bg-[#150518] border border-pink-500/25 rounded-lg px-2 py-0.5 text-[10.5px] text-pink-100 focus:outline-none focus:border-rose-400 cursor-pointer ${RING}`}
+                      className="cursor-pointer border-0 border-b bg-transparent px-0 py-0.5 font-mono text-[11px] text-bone focus:outline-none"
+                      style={{ borderBottomColor: 'var(--rule-2)' }}
                     >
                       {STATUSES.map((s) => (
                         <option key={s} value={s}>
-                          {STATUS_STYLES[s].label}
+                          {STATUS_LABELS[s]}
                         </option>
                       ))}
                     </select>
@@ -352,12 +311,13 @@ export default function ApplicationTracker({
                       value={app.notes || ''}
                       onChange={(e) => handleNotesChange(app.id, e.target.value)}
                       placeholder="Notes (recruiter name, next step...)"
-                      className={`flex-1 min-w-[140px] bg-[#150518] border border-pink-500/25 rounded-lg px-2 py-0.5 text-[10.5px] text-pink-100 placeholder:text-pink-300/60 focus:outline-none focus:border-rose-400 ${RING}`}
+                      className="min-w-[140px] flex-1 border-0 border-b bg-transparent px-0 py-0.5 font-sans text-[16px] text-bone placeholder:text-bone-32 focus:outline-none sm:text-[11px]"
+                      style={{ borderBottomColor: 'var(--rule-2)' }}
                     />
                   </div>
 
                   {isConfirming && (
-                    <p className="text-[10px] text-rose-300/90" role="status">
+                    <p className="border-l-2 border-alarm py-0.5 pl-2 font-sans text-[11px] text-alarm" role="status">
                       Press Confirm again to delete. This cannot be undone.
                     </p>
                   )}
@@ -369,21 +329,20 @@ export default function ApplicationTracker({
       </div>
 
       {/* Footer */}
-      <div className="p-3.5 border-t border-pink-500/20 bg-[#200824]/90 flex items-center justify-between">
-        <span className="text-[10.5px] text-pink-300/70 flex items-center gap-1">
-          <CheckCircle2 size={11} className="text-emerald-400" aria-hidden="true" />
+      <div className="flex items-center justify-between border-t border-rule bg-housing px-4 py-2.5">
+        <span className="dt-data flex items-center gap-1.5 text-bone-32">
+          <CheckCircle2 size={11} className="text-signal" aria-hidden="true" />
           Saved in this browser only
         </span>
-        <button
-          type="button"
+        <Button
+          variant="quiet"
           onClick={() => {
             sound.playAction();
             onClose();
           }}
-          className={`px-4 py-1.5 text-xs font-semibold rounded-xl bg-[#250d2b] hover:bg-[#32113a] text-pink-200 border border-pink-500/20 transition-colors cursor-pointer ${RING}`}
         >
           Close
-        </button>
+        </Button>
       </div>
     </ModalShell>
   );

@@ -1,10 +1,8 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { Search, CornerDownLeft } from 'lucide-react';
 import ModalShell from './ModalShell';
+import { Keycap } from './primitives';
 import { filterCommands, groupCommands } from '../../hooks/useCommandBar.js';
-
-const RING =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#18071c]';
 
 /**
  * The ⌘K command palette.
@@ -94,8 +92,9 @@ export default function CommandBar({
           Command palette
         </h2>
 
-        <div className="flex items-center gap-3 border-b border-pink-500/25 px-4 py-3">
-          <Search className="h-5 w-5 shrink-0 text-rose-300" aria-hidden="true" />
+        {/* The input is the hero: full width, no box, one bottom rule. */}
+        <div className="flex items-baseline gap-2.5 border-b border-rule-2 bg-housing px-4 pb-2 pt-3">
+          <Search size={15} className="shrink-0 self-center text-signal" aria-hidden="true" />
           <label htmlFor="commandbar-input" className="sr-only">
             Search commands
           </label>
@@ -116,7 +115,7 @@ export default function CommandBar({
             aria-controls="commandbar-list"
             aria-autocomplete="list"
             aria-activedescendant={activeId}
-            className={`w-full bg-transparent text-base text-pink-50 placeholder:text-pink-300/50 focus:outline-none ${RING}`}
+            className="w-full border-0 bg-transparent px-0 py-1 text-[16px] text-bone placeholder:text-bone-32 focus:outline-none"
           />
         </div>
 
@@ -125,18 +124,18 @@ export default function CommandBar({
           id="commandbar-list"
           role="group"
           aria-label="Commands"
-          className="overflow-y-auto p-2"
+          className="overflow-y-auto py-1"
         >
           {visible.length === 0 && (
-            <p role="status" className="px-3 py-6 text-center text-sm text-pink-200/70">
+            <p role="status" className="dt-serif px-4 py-6 text-center text-[14px] text-bone-52">
               No commands match “{query}”.
             </p>
           )}
 
           {groups.map((group) => (
-            <div key={group.category} className="mb-1">
+            <div key={group.category}>
               <p
-                className="px-3 pb-1 pt-2 text-[10px] font-bold uppercase tracking-widest text-pink-300/70"
+                className="dt-label border-t border-rule px-4 pb-1 pt-2 text-bone-32"
                 aria-hidden="true"
               >
                 {group.category}
@@ -154,17 +153,15 @@ export default function CommandBar({
                         onMouseEnter={() => setActiveIndex(index)}
                         onClick={() => runAt(index)}
                         aria-current={isActive ? 'true' : undefined}
-                        className={`flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-sm transition-colors ${RING} ${
+                        className={`flex w-full cursor-pointer items-center justify-between gap-3 border-l-2 px-4 py-2 text-left font-sans text-[13px] transition-colors duration-[90ms] ${
                           isActive
-                            ? 'bg-rose-500/20 text-pink-50'
-                            : 'text-pink-100/90 hover:bg-black/30'
+                            ? 'border-l-signal bg-[rgba(237,232,220,0.05)] text-bone'
+                            : 'border-l-transparent text-bone-70 hover:text-bone'
                         }`}
                       >
                         <span>{cmd.title}</span>
                         {cmd.shortcut && (
-                          <kbd className="shrink-0 rounded border border-pink-400/30 bg-black/40 px-1.5 py-0.5 font-mono text-[10px] text-pink-200/80">
-                            {cmd.shortcut}
-                          </kbd>
+                          <Keycap className="shrink-0">{cmd.shortcut}</Keycap>
                         )}
                       </button>
                     </li>
@@ -175,27 +172,22 @@ export default function CommandBar({
           ))}
         </div>
 
-        <div className="flex items-center justify-between gap-3 border-t border-pink-500/25 px-4 py-2 text-[11px] text-pink-200/60">
+        {/* Footer legend: keycaps and quiet mono prose. */}
+        <div className="flex items-center justify-between gap-3 border-t border-rule bg-housing px-4 py-2">
           <span className="flex items-center gap-1.5">
-            <kbd className="rounded border border-pink-400/30 bg-black/40 px-1 py-0.5 font-mono">
-              ↑
-            </kbd>
-            <kbd className="rounded border border-pink-400/30 bg-black/40 px-1 py-0.5 font-mono">
-              ↓
-            </kbd>
-            to move
+            <Keycap>↑</Keycap>
+            <Keycap>↓</Keycap>
+            <span className="dt-data text-bone-32">to move</span>
           </span>
           <span className="flex items-center gap-1.5">
-            <kbd className="rounded border border-pink-400/30 bg-black/40 px-1 py-0.5 font-mono">
-              <CornerDownLeft className="inline h-3 w-3" aria-hidden="true" />
-            </kbd>
-            to run
+            <Keycap>
+              <CornerDownLeft size={10} aria-hidden="true" />
+            </Keycap>
+            <span className="dt-data text-bone-32">to run</span>
           </span>
           <span className="flex items-center gap-1.5">
-            <kbd className="rounded border border-pink-400/30 bg-black/40 px-1 py-0.5 font-mono">
-              Esc
-            </kbd>
-            to close
+            <Keycap>Esc</Keycap>
+            <span className="dt-data text-bone-32">to close</span>
           </span>
         </div>
       </div>

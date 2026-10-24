@@ -1,16 +1,11 @@
 import React, { useState } from 'react';
 import {
   X,
-  Key,
-  Globe,
-  Sliders,
-  CheckCircle2,
-  AlertCircle,
   Eye,
   EyeOff,
   Zap,
-  Sparkles,
-  Server,
+  AlertCircle,
+  CheckCircle2,
   RefreshCw,
   Search,
 } from 'lucide-react';
@@ -26,6 +21,24 @@ import {
 } from '../../utils/aiService';
 import { sound } from '../../utils/soundEffects';
 import ModalShell from './ModalShell';
+import { Button, Field } from './primitives';
+
+/** One-line note per provider, shown beside the radio row. */
+const PROVIDER_NOTE = {
+  vyceai: 'Vyce AI (deepseek-v4.1)',
+  groq: 'Fast & Free Tier',
+  ollama: 'Offline Local',
+  openai: 'GPT Models',
+  openrouter: 'Multi-Model',
+  deepseek: 'DeepSeek API',
+};
+
+const QUICK_PICKS = {
+  vyceai: ['deepseek-v4.1', 'deepseek-v4-flash', 'claude-sonnet-4-6', 'gpt-6-luna'],
+  groq: ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768'],
+  openai: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo'],
+  deepseek: ['deepseek-chat', 'deepseek-reasoner'],
+};
 
 export default function AiConfigModal({ isOpen, onClose, onConfigSaved }) {
   const [config, setConfig] = useState(getSavedAiConfig);
@@ -123,7 +136,7 @@ export default function AiConfigModal({ isOpen, onClose, onConfigSaved }) {
     } catch (err) {
       setTestResult({
         success: false,
-        message: err.message || 'Connection failed. Check API key, Base URL, and Model.',
+        message: err.message || 'Connection failed. Check API Key, Base URL, and Model.',
       });
     } finally {
       setTesting(false);
@@ -162,390 +175,330 @@ export default function AiConfigModal({ isOpen, onClose, onConfigSaved }) {
 
   return (
     <ModalShell onClose={onClose} labelledBy="ai-config-title" className="max-w-xl">
-        {/* Modal Header */}
-        <div className="p-4 border-b border-pink-500/20 flex items-center justify-between bg-[#200824]/90 backdrop-blur-xl">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-[#2e0d34] border border-pink-500/40 flex items-center justify-center text-rose-300">
-              <Sparkles size={18} className="animate-pulse" />
-            </div>
-            <div>
-              <h2
-                id="ai-config-title"
-                className="text-sm font-bold text-pink-50 tracking-wide flex items-center gap-2"
-              >
-                AI Intelligence & LLM Setup
-              </h2>
-              <p className="text-[11px] text-pink-300/70">
-                OpenAI-Compatible Multi-Provider Architecture
-              </p>
-            </div>
+      {/* Header: mono kicker + title + 32px close, on a hairline. */}
+      <div className="flex items-start justify-between border-b border-rule bg-housing px-4 py-3">
+        <div className="min-w-0">
+          <div className="flex items-baseline gap-2.5">
+            <span className="dt-serif text-[13px] text-signal">LLM</span>
+            <h2 id="ai-config-title" className="dt-label text-bone">
+              AI Intelligence &amp; LLM Setup
+            </h2>
           </div>
-          <button
-            type="button"
-            aria-label="Close AI settings dialog"
-            onClick={() => {
-              sound.playAction();
-              onClose();
-            }}
-            className="p-1.5 rounded-xl text-pink-400/85 hover:text-pink-100 hover:bg-pink-900/30 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#18071c]"
-          >
-            <X size={18} />
-          </button>
+          <p className="dt-data mt-1 text-bone-32">
+            OpenAI-Compatible Multi-Provider Architecture
+          </p>
         </div>
+        <button
+          type="button"
+          aria-label="Close AI settings dialog"
+          onClick={() => {
+            sound.playAction();
+            onClose();
+          }}
+          className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-[2px] border border-transparent text-bone-52 transition-colors duration-[90ms] hover:bg-[rgba(237,232,220,0.05)] hover:text-bone"
+        >
+          <X size={15} aria-hidden="true" />
+        </button>
+      </div>
 
-        {/* Modal Body */}
-        <div className="p-5 overflow-y-auto space-y-4 text-xs">
-          {/* 1. Select Provider */}
-          <div>
-            <label className="block text-[11px] font-semibold text-pink-200 tracking-wide mb-2 flex items-center gap-1.5">
-              <Server size={13} className="text-rose-400" />
-              <span>1. Select AI Provider</span>
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {AI_PROVIDERS.map((prov) => {
-                const isSelected = config.providerId === prov.id;
-                return (
-                  <button
-                    key={prov.id}
-                    type="button"
-                    onClick={() => handleProviderSelect(prov.id)}
-                    className={`p-2.5 rounded-xl text-left transition-all cursor-pointer relative ${
-                      isSelected
-                        ? 'bg-[#2f0e35] border border-rose-400 text-rose-100 shadow-[0_0_15px_rgba(244,63,94,0.3)]'
-                        : 'bg-[#18071c] border border-pink-500/20 text-pink-300/70 hover:border-pink-500/40 hover:text-pink-100'
+      {/* Body */}
+      <div className="space-y-5 overflow-y-auto p-4 text-[13px] sm:p-5">
+        {/* 1. Provider: hairline radio rows, one square box each. */}
+        <div>
+          <span className="dt-label mb-2 block text-bone-52">1. Select AI Provider</span>
+          <div className="divide-y divide-[var(--rule)] border-t border-rule">
+            {AI_PROVIDERS.map((prov) => {
+              const isSelected = config.providerId === prov.id;
+              return (
+                <button
+                  key={prov.id}
+                  type="button"
+                  onClick={() => handleProviderSelect(prov.id)}
+                  aria-pressed={isSelected}
+                  className="flex w-full cursor-pointer items-center gap-2.5 py-2 text-left"
+                >
+                  <span
+                    aria-hidden="true"
+                    className={`flex h-3 w-3 shrink-0 items-center justify-center border ${
+                      isSelected ? 'border-signal' : 'border-rule-2'
                     }`}
                   >
-                    <div className="font-semibold text-xs truncate flex items-center justify-between">
-                      <span>{prov.name.split(' ')[0]}</span>
-                      {isSelected && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-ping" />
-                      )}
-                    </div>
-                    <p className="text-[10px] text-pink-300/70 truncate mt-0.5">
-                      {prov.id === 'vyceai'
-                        ? 'Vyce AI (deepseek-v4.1)'
-                        : prov.id === 'groq'
-                        ? 'Fast & Free Tier'
-                        : prov.id === 'ollama'
-                        ? 'Offline Local'
-                        : prov.id === 'openai'
-                        ? 'GPT Models'
-                        : prov.id === 'openrouter'
-                        ? 'Multi-Model'
-                        : prov.id === 'deepseek'
-                        ? 'DeepSeek API'
-                        : 'Custom Proxy'}
-                    </p>
-                  </button>
-                );
-              })}
-            </div>
-
-            {currentProvider.hint && (
-              <p className="text-[11px] text-rose-300/80 mt-2 flex items-center gap-1.5">
-                <Sparkles size={12} className="text-rose-400" />
-                <span>{currentProvider.hint}</span>
-              </p>
-            )}
+                    {isSelected && <span className="h-[5px] w-[5px] bg-signal" />}
+                  </span>
+                  <span
+                    className={`font-sans text-[13px] ${isSelected ? 'text-signal' : 'text-bone-70'}`}
+                  >
+                    {prov.name.split(' ')[0]}
+                  </span>
+                  <span className="dt-data ml-auto truncate text-bone-32">
+                    {PROVIDER_NOTE[prov.id] || 'Custom Proxy'}
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
-          {/* 2. Endpoint Base URL */}
-          <div>
-            <label className="block text-[11px] font-semibold text-pink-200 tracking-wide mb-1 flex items-center gap-1.5">
-              <Globe size={13} className="text-rose-400" />
-              <span>2. Endpoint Base URL</span>
-            </label>
-            <input
-              type="text"
-              value={config.baseUrl}
-              onChange={(e) => {
-                setConfig({ ...config, baseUrl: e.target.value });
-                setTestResult(null);
-              }}
-              placeholder="https://vyceai.com/v1"
-              className="w-full bg-[#150518] border border-pink-500/25 rounded-xl px-3 py-1.5 text-xs text-pink-100 focus:outline-none focus:border-rose-400 font-mono"
-            />
-          </div>
+          {currentProvider.hint && (
+            <p className="dt-data mt-2 text-bone-52">{currentProvider.hint}</p>
+          )}
+        </div>
 
-          {/* 3. API Key */}
+        {/* 2. Endpoint */}
+        <div className="border-t border-rule pt-3">
+          <Field
+            label="2. Endpoint Base URL"
+            type="text"
+            value={config.baseUrl}
+            onChange={(e) => {
+              setConfig({ ...config, baseUrl: e.target.value });
+              setTestResult(null);
+            }}
+            placeholder="https://vyceai.com/v1"
+            inputClassName="font-mono"
+          />
+        </div>
+
+        {/* 3. API key */}
+        <div className="border-t border-rule pt-3">
           {currentProvider.needsApiKey ? (
-            <div>
-              <div className="flex justify-between items-center mb-1">
-                <label className="text-[11px] font-semibold text-pink-200 tracking-wide flex items-center gap-1.5">
-                  <Key size={13} className="text-rose-400" />
-                  <span>3. API Authentication Key</span>
-                </label>
+            <>
+              <div className="mb-1 flex items-center justify-between gap-2">
+                <span className="dt-label text-bone-52">3. API Authentication Key</span>
                 <button
                   type="button"
                   onClick={() => setShowKey(!showKey)}
-                  className="text-[11px] text-pink-300/80 hover:text-pink-100 flex items-center gap-1 cursor-pointer"
+                  className="dt-data inline-flex cursor-pointer items-center gap-1 text-bone-52 transition-colors duration-[90ms] hover:text-bone"
                 >
-                  {showKey ? <EyeOff size={11} /> : <Eye size={11} />}
+                  {showKey ? <EyeOff size={11} aria-hidden="true" /> : <Eye size={11} aria-hidden="true" />}
                   <span>{showKey ? 'Hide' : 'Reveal'}</span>
                 </button>
               </div>
-              <div className="relative">
-                <input
-                  type={showKey ? 'text' : 'password'}
-                  value={config.apiKey || ''}
-                  onChange={(e) => {
-                    setConfig({ ...config, apiKey: e.target.value });
-                    setTestResult(null);
-                  }}
-                  placeholder="sk-..."
-                  className="w-full bg-[#150518] border border-pink-500/25 rounded-xl px-3 py-1.5 text-xs text-pink-100 focus:outline-none focus:border-rose-400 font-mono tracking-wider"
-                />
-              </div>
-              <p className="text-[10px] text-pink-300/70 mt-1">
-                🔒 Keys are saved locally in your browser session and never transmitted to third-party tracking servers.
-              </p>
-            </div>
-          ) : (
-            <div className="p-2.5 rounded-xl bg-pink-950/30 border border-pink-500/30 text-[11px] text-pink-200">
-              ✦ No API Key required for local Ollama server. Ensure `ollama serve` is active on port 11434.
-            </div>
-          )}
-
-          {/* 4. Model Identifier & Discovery */}
-          <div>
-            <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
-              <label className="text-[11px] font-semibold text-pink-200 tracking-wide flex items-center gap-1.5">
-                <Sparkles size={13} className="text-rose-400" />
-                <span>4. Model Identifier</span>
-              </label>
-
-              <div className="flex items-center gap-2">
-                {config.model && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      sound.playAction();
-                      setConfig((prev) => ({ ...prev, model: '' }));
-                      setTestResult(null);
-                    }}
-                    className="text-[10.5px] text-pink-300/70 hover:text-rose-300 transition-colors cursor-pointer flex items-center gap-1 px-2 py-0.5 rounded-lg border border-pink-500/20 hover:border-rose-500/40"
-                    title="Clear model identifier"
-                  >
-                    <X size={10} />
-                    <span>Clear</span>
-                  </button>
-                )}
-
-                {/* Model Discovery Button */}
-                <button
-                  type="button"
-                  onClick={handleDiscoverModels}
-                  disabled={discovering}
-                  className="px-3 py-1 rounded-xl bg-[#2a0c30] hover:bg-[#381040] border border-pink-400/70 hover:border-pink-300 text-rose-200 text-[11px] font-semibold tracking-wide transition-all cursor-pointer flex items-center gap-1.5 shadow-xs disabled:opacity-50"
-                  title="Query the server /models endpoint to discover available models"
-                >
-                  <RefreshCw
-                    size={11}
-                    className={discovering ? 'animate-spin text-rose-300' : 'text-rose-400'}
-                  />
-                  <span>{discovering ? 'Discovering...' : 'Discover Models'}</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Persistent Model Input - NEVER Disappears */}
-            <div className="relative">
               <input
-                type="text"
-                value={config.model || ''}
+                type={showKey ? 'text' : 'password'}
+                value={config.apiKey || ''}
                 onChange={(e) => {
-                  setConfig((prev) => ({ ...prev, model: e.target.value }));
+                  setConfig({ ...config, apiKey: e.target.value });
                   setTestResult(null);
                 }}
-                placeholder="Enter model name (e.g. deepseek-v4.1, gpt-4o) or pick below..."
-                className="w-full bg-[#150518] border border-pink-500/35 focus:border-rose-400 rounded-xl px-3 py-2 text-xs text-pink-50 placeholder:text-pink-300/70 focus:outline-none shadow-inner font-mono"
+                placeholder="sk-..."
+                aria-label="3. API Authentication Key"
+                className="w-full border-0 border-b bg-transparent px-0 py-2 font-mono text-[16px] tracking-wider text-bone placeholder:text-bone-32 focus:outline-none"
+                style={{ borderBottomColor: 'var(--rule-2)' }}
               />
-              {config.model && (
-                <span className="absolute right-2.5 top-2 text-[9.5px] font-sans px-2 py-0.5 rounded-full bg-emerald-950/80 text-emerald-300 border border-emerald-500/40">
-                  Active
-                </span>
-              )}
-            </div>
+              <p className="dt-data mt-1 text-bone-32">
+                Keys are saved locally in your browser session and never transmitted to third-party tracking servers.
+              </p>
+            </>
+          ) : (
+            <p className="border-l-2 border-rule-2 py-1 pl-2 font-sans text-[12px] text-bone-52">
+              No API Key required for local Ollama server. Ensure `ollama serve` is active on port 11434.
+            </p>
+          )}
+        </div>
 
-            {/* Quick-Pick Model Badges for the selected provider */}
-            <div className="flex flex-wrap items-center gap-1.5 mt-2">
-              <span className="text-[10px] text-pink-300/70 font-sans">Quick Pick:</span>
-              {(config.providerId === 'vyceai'
-                ? ['deepseek-v4.1', 'deepseek-v4-flash', 'claude-sonnet-4-6', 'gpt-6-luna']
-                : config.providerId === 'groq'
-                ? ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768']
-                : config.providerId === 'openai'
-                ? ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo']
-                : config.providerId === 'deepseek'
-                ? ['deepseek-chat', 'deepseek-reasoner']
-                : ['auto', 'gpt-4o', 'claude-3-5-sonnet']
-              ).map((m) => (
-                <button
-                  key={m}
-                  type="button"
+        {/* 4. Model identifier */}
+        <div className="border-t border-rule pt-3">
+          <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+            <span className="dt-label text-bone-52">4. Model Identifier</span>
+            <div className="flex items-center gap-2">
+              {config.model && (
+                <Button
+                  size="sm"
                   onClick={() => {
                     sound.playAction();
-                    setConfig((prev) => ({ ...prev, model: m }));
+                    setConfig((prev) => ({ ...prev, model: '' }));
                     setTestResult(null);
                   }}
-                  className={`px-2.5 py-0.5 rounded-lg text-[10.5px] font-mono transition-all cursor-pointer border ${
-                    config.model === m
-                      ? 'bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold border-rose-300 shadow-[0_0_10px_rgba(244,63,94,0.35)]'
-                      : 'bg-[#220a26] text-pink-200 border-pink-500/25 hover:border-pink-400 hover:text-white'
-                  }`}
-                  title={`Use model ${m}`}
+                  title="Clear model identifier"
                 >
-                  {m}
-                </button>
-              ))}
-            </div>
-
-            {/* Discovery Error Badge */}
-            {discoveryError && (
-              <div className="mt-2 p-2.5 rounded-xl bg-rose-950/50 border border-rose-500/40 text-[11px] text-rose-200 flex items-start gap-2 animate-fade-in">
-                <AlertCircle size={14} className="text-rose-400 shrink-0 mt-0.5" />
-                <div>
-                  <span className="font-semibold">Discovery notice:</span> {discoveryError}
-                  <div className="text-[10px] text-pink-300/70 mt-0.5">
-                    You can still type your model name directly into the input field above.
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Discovered Models Interactive List */}
-            {discoveredModels.length > 0 && (
-              <div className="mt-3 p-3 rounded-2xl bg-[#1b081e] border border-pink-500/30 space-y-2 animate-fade-in">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[11px] font-semibold text-rose-300 flex items-center gap-1.5">
-                    <Sparkles size={12} className="text-rose-400" />
-                    <span>Discovered Models ({discoveredModels.length})</span>
-                  </span>
-                  {discoveredModels.length > 5 && (
-                    <div className="relative">
-                      <Search size={11} className="absolute left-2.5 top-2 text-pink-400/85" />
-                      <input
-                        type="text"
-                        value={modelFilter}
-                        onChange={(e) => setModelFilter(e.target.value)}
-                        placeholder="Filter..."
-                        className="w-36 bg-[#130416] border border-pink-500/25 rounded-lg pl-7 pr-2 py-0.5 text-[10.5px] text-pink-100 focus:outline-none focus:border-rose-400 placeholder:text-pink-300/70 font-mono"
-                      />
-                    </div>
-                  )}
-                </div>
-
-                <div className="max-h-36 overflow-y-auto pr-1 flex flex-wrap gap-1.5 custom-scrollbar">
-                  {filteredModels.length === 0 ? (
-                    <span className="text-[10.5px] text-pink-300/70 py-1">
-                      No models matching "{modelFilter}"
-                    </span>
-                  ) : (
-                    filteredModels.map((m) => {
-                      const isCurrent = config.model === m;
-                      return (
-                        <button
-                          key={m}
-                          type="button"
-                          onClick={() => {
-                            sound.playAction();
-                            setConfig((prev) => ({ ...prev, model: m }));
-                            setTestResult(null);
-                          }}
-                          className={`px-2.5 py-1 rounded-lg text-[10.5px] font-mono transition-all cursor-pointer truncate max-w-full text-left ${
-                            isCurrent
-                              ? 'bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold shadow-[0_0_12px_rgba(244,63,94,0.4)]'
-                              : 'bg-[#220a26] hover:bg-[#2d0e32] text-pink-200 border border-pink-500/25 hover:border-pink-400'
-                          }`}
-                          title={`Select ${m}`}
-                        >
-                          {isCurrent && '✓ '}
-                          {m}
-                        </button>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* 5. Temperature */}
-          <div>
-            <div className="flex justify-between items-center mb-1">
-              <label className="text-[11px] font-semibold text-pink-200 tracking-wide flex items-center gap-1.5">
-                <Sliders size={13} className="text-rose-400" />
-                <span>5. Creativity / Temperature</span>
-              </label>
-              <span className="text-[11px] font-bold text-rose-300 font-mono">
-                {config.temperature}
-              </span>
-            </div>
-            <input
-              type="range"
-              min="0.1"
-              max="1.0"
-              step="0.05"
-              value={config.temperature}
-              onChange={(e) =>
-                setConfig({ ...config, temperature: parseFloat(e.target.value) })
-              }
-              className="w-full accent-rose-500 cursor-pointer h-1.5 bg-[#120414] rounded-lg"
-            />
-            <div className="flex justify-between text-[10px] text-pink-300/70 mt-0.5">
-              <span>Precise / Factual (0.1)</span>
-              <span>Creative / Expressive (1.0)</span>
-            </div>
-          </div>
-
-          {/* Test Connection Result Box */}
-          {testResult && (
-            <div
-              className={`p-3 rounded-2xl border text-xs flex items-start gap-2.5 ${
-                testResult.success
-                  ? 'bg-emerald-950/50 border-emerald-500/60 text-emerald-200'
-                  : 'bg-rose-950/50 border-rose-500/60 text-rose-200'
-              }`}
-            >
-              {testResult.success ? (
-                <CheckCircle2 size={16} className="text-emerald-400 shrink-0 mt-0.5" />
-              ) : (
-                <AlertCircle size={16} className="text-rose-400 shrink-0 mt-0.5" />
+                  Clear
+                </Button>
               )}
-              <span className="leading-tight">{testResult.message}</span>
+              <Button
+                size="sm"
+                onClick={handleDiscoverModels}
+                disabled={discovering}
+                title="Query the server /models endpoint to discover available models"
+              >
+                <RefreshCw size={11} aria-hidden="true" />
+                <span>{discovering ? 'Discovering...' : 'Discover Models'}</span>
+              </Button>
+            </div>
+          </div>
+
+          <input
+            type="text"
+            value={config.model || ''}
+            onChange={(e) => {
+              setConfig((prev) => ({ ...prev, model: e.target.value }));
+              setTestResult(null);
+            }}
+            placeholder="Enter model name (e.g. deepseek-v4.1, gpt-4o) or pick below..."
+            aria-label="4. Model Identifier"
+            className="w-full border-0 border-b bg-transparent px-0 py-2 font-mono text-[16px] text-bone placeholder:text-bone-32 focus:outline-none"
+            style={{ borderBottomColor: 'var(--rule-2)' }}
+          />
+
+          {config.model && (
+            <span className="dt-label mt-1 inline-flex items-center gap-1.5 text-signal">
+              <span aria-hidden="true" className="h-[5px] w-[5px] bg-signal" />
+              Active
+            </span>
+          )}
+
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            <span className="dt-label text-bone-32">Quick Pick:</span>
+            {(QUICK_PICKS[config.providerId] || ['auto', 'gpt-4o', 'claude-3-5-sonnet']).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => {
+                  sound.playAction();
+                  setConfig((prev) => ({ ...prev, model: m }));
+                  setTestResult(null);
+                }}
+                title={`Use model ${m}`}
+                className={`cursor-pointer rounded-[2px] border px-1.5 py-0.5 font-mono text-[10px] transition-colors duration-[90ms] ${
+                  config.model === m
+                    ? 'border-signal/60 text-signal'
+                    : 'border-rule-2 text-bone-70 hover:text-bone'
+                }`}
+              >
+                {m}
+              </button>
+            ))}
+          </div>
+
+          {discoveryError && (
+            <div className="mt-2">
+              <p className="border-l-2 border-alarm py-1 pl-2 font-sans text-[12px] text-alarm">
+                <span className="font-semibold">Discovery notice:</span> {discoveryError}
+              </p>
+              <p className="dt-data mt-1 pl-2 text-bone-32">
+                You can still type your model name directly into the input field above.
+              </p>
+            </div>
+          )}
+
+          {discoveredModels.length > 0 && (
+            <div className="mt-3 border-t border-rule pt-3">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <span className="dt-label text-bone-52">
+                  Discovered Models ({discoveredModels.length})
+                </span>
+                {discoveredModels.length > 5 && (
+                  <div className="flex items-center gap-1.5">
+                    <Search size={11} className="shrink-0 text-bone-32" aria-hidden="true" />
+                    <input
+                      type="text"
+                      value={modelFilter}
+                      onChange={(e) => setModelFilter(e.target.value)}
+                      placeholder="Filter..."
+                      aria-label="Filter discovered models"
+                      className="w-32 border-0 border-b bg-transparent px-0 py-1 font-mono text-[16px] text-bone placeholder:text-bone-32 focus:outline-none"
+                      style={{ borderBottomColor: 'var(--rule-2)' }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="max-h-36 divide-y divide-[var(--rule)] overflow-y-auto border-t border-rule">
+                {filteredModels.length === 0 ? (
+                  <span className="dt-data block py-1 text-bone-32">
+                    No models matching "{modelFilter}"
+                  </span>
+                ) : (
+                  filteredModels.map((m) => {
+                    const isCurrent = config.model === m;
+                    return (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => {
+                          sound.playAction();
+                          setConfig((prev) => ({ ...prev, model: m }));
+                          setTestResult(null);
+                        }}
+                        title={`Select ${m}`}
+                        className={`flex w-full cursor-pointer items-center gap-2 py-[6px] text-left font-mono text-[11px] ${
+                          isCurrent ? 'text-signal' : 'text-bone-70 hover:text-bone'
+                        }`}
+                      >
+                        <span
+                          aria-hidden="true"
+                          className={`h-[5px] w-[5px] shrink-0 ${
+                            isCurrent ? 'bg-signal' : 'bg-bone-32'
+                          }`}
+                        />
+                        <span className="truncate">{m}</span>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
             </div>
           )}
         </div>
 
-        {/* Modal Footer */}
-        <div className="p-3.5 border-t border-pink-500/20 bg-[#200824]/90 flex items-center justify-between">
-          <button
-            type="button"
-            onClick={handleTestConnection}
-            disabled={testing}
-            className="px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-[#250d2b] hover:bg-[#32113a] text-rose-200 border border-pink-500/40 transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
-          >
-            <Zap size={13} className={testing ? 'animate-spin' : 'text-rose-400'} />
-            <span>{testing ? 'Testing...' : 'Test Connection'}</span>
-          </button>
-
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-3 py-1.5 text-xs font-semibold rounded-xl text-pink-300/70 hover:text-pink-100 cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleSave}
-              className="px-4 py-2 text-xs font-semibold rounded-xl bg-gradient-to-r from-rose-500 via-pink-600 to-amber-500 hover:opacity-95 text-white shadow-[0_2px_15px_rgba(244,63,94,0.35)] transition-all cursor-pointer active:scale-95"
-            >
-              Save Configuration
-            </button>
+        {/* 5. Temperature */}
+        <div className="border-t border-rule pt-3">
+          <div className="mb-1 flex items-baseline justify-between">
+            <span className="dt-label text-bone-52">5. Creativity / Temperature</span>
+            <span className="dt-data text-bone-70">{config.temperature}</span>
+          </div>
+          <input
+            type="range"
+            min="0.1"
+            max="1.0"
+            step="0.05"
+            value={config.temperature}
+            onChange={(e) =>
+              setConfig({ ...config, temperature: parseFloat(e.target.value) })
+            }
+            aria-label="5. Creativity / Temperature"
+            className="h-[3px] w-full cursor-pointer appearance-none bg-[var(--rule)]"
+            style={{ accentColor: 'var(--signal)' }}
+          />
+          <div className="mt-1 flex justify-between font-mono text-[10px] text-bone-32">
+            <span>Precise / Factual (0.1)</span>
+            <span>Creative / Expressive (1.0)</span>
           </div>
         </div>
-      </ModalShell>
+
+        {/* Test-connection output: a hairline notice, never a filled box. */}
+        {testResult && (
+          <p
+            className={`flex items-start gap-2 border-l-2 py-1 pl-2 font-sans text-[12px] ${
+              testResult.success ? 'border-signal text-signal' : 'border-alarm text-alarm'
+            }`}
+          >
+            {testResult.success ? (
+              <CheckCircle2 size={13} className="mt-0.5 shrink-0" aria-hidden="true" />
+            ) : (
+              <AlertCircle size={13} className="mt-0.5 shrink-0" aria-hidden="true" />
+            )}
+            <span className="leading-tight">{testResult.message}</span>
+          </p>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="flex justify-end gap-2 border-t border-rule bg-housing px-4 py-2.5">
+        <Button
+          onClick={handleTestConnection}
+          disabled={testing}
+          className="mr-auto"
+        >
+          <Zap size={12} aria-hidden="true" />
+          <span>{testing ? 'Testing...' : 'Test Connection'}</span>
+        </Button>
+
+        <Button onClick={onClose}>Cancel</Button>
+
+        <Button variant="signal" onClick={handleSave}>
+          Save Configuration
+        </Button>
+      </div>
+    </ModalShell>
   );
 }

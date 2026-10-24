@@ -146,6 +146,9 @@ export default function App() {
     onRegenerate: null,
   });
   const [isExporting, setIsExporting] = useState(false);
+  // Counts export sweeps rather than holding a boolean: a rapid second export
+  // must restart the animation, and a boolean would need a reset in between.
+  const [sweepCount, setSweepCount] = useState(0);
   const [isAtsOpen, setIsAtsOpen] = useState(false);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
 
@@ -238,6 +241,7 @@ export default function App() {
   // ordering in one place instead of three copies that can drift apart.
   const runExport = async ({ start, run, success, failure }) => {
     setIsExporting(true);
+    setSweepCount((n) => n + 1);
     setToast({ type: 'info', message: start });
     try {
       await run();
@@ -496,6 +500,22 @@ export default function App() {
           onDownloadDocx={handleDownloadDocx}
           onLayoutMeasured={handleLayoutMeasured}
         />
+
+        {/* THE SWEEP. One 1px lime hairline crossing the bench on each export,
+            so the wait has a shape. It is a sibling of the preview, never a
+            child — the paper must never be inside an animated element, or a
+            capture taken during the animation comes out off-register.
+            key={sweepCount} remounts it so a second export restarts rather than
+            continuing a finished animation. */}
+        {sweepCount > 0 && isExporting && (
+          <div
+            key={sweepCount}
+            aria-hidden="true"
+            className="no-print dt-sweep pointer-events-none absolute inset-y-0 right-0 left-0 z-30 lg:left-[460px] xl:left-[500px]"
+          >
+            <div className="dt-sweep-line h-px w-full bg-signal" style={{ boxShadow: '0 0 8px rgba(216,255,62,0.5)' }} />
+          </div>
+        )}
       </main>
 
       {/* ATS Scanner Hologram Modal */}
