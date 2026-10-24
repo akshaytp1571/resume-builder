@@ -1,8 +1,9 @@
 import React from 'react';
-import { Palette, Type, Layout, Check, Sparkles, FileText, Layers, AlertTriangle } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { TEMPLATES_CONFIG } from '../../data/initialData';
 import { getDroppedSections } from '../../data/templateCapabilities';
 import { sound } from '../../utils/soundEffects';
+import { SectionIndex, Chip } from '../ui/primitives';
 
 const COLOR_PRESETS = [
   {
@@ -45,6 +46,122 @@ const FONT_OPTIONS = [
   { name: 'Merriweather (Classic Serif)', value: "'Merriweather', Georgia, serif" },
 ];
 
+/**
+ * A miniature plate per template: pure CSS bars approximating that template's
+ * layout. No image dependency, no icon per template — the arrangement is the mark.
+ */
+function TemplatePlate({ id, color }) {
+  const bar = (key, w, h = 2, extra = '') => (
+    <span
+      key={key}
+      className={`block ${extra}`}
+      style={{ width: w, height: h, backgroundColor: 'var(--rule-2)' }}
+    />
+  );
+  const accent = { backgroundColor: color };
+
+  const layouts = {
+    classic: (
+      <>
+        {bar('h', '55%', 3, 'mb-1')}
+        <span className="mb-1 block h-[8px] w-[10px]" style={accent} />
+        {bar('a', '90%')}
+        {bar('b', '74%')}
+      </>
+    ),
+    modern: (
+      <span className="flex h-full gap-1">
+        <span className="flex w-1/3 flex-col gap-0.5 border-r pr-1" style={{ borderColor: 'var(--rule)' }}>
+          <span className="block h-[7px] w-full" style={accent} />
+          {bar('a', '80%')}
+          {bar('b', '60%')}
+        </span>
+        <span className="flex flex-1 flex-col gap-0.5">
+          {bar('c', '70%', 3, 'mb-0.5')}
+          {bar('d', '100%')}
+          {bar('e', '88%')}
+        </span>
+      </span>
+    ),
+    minimal: (
+      <>
+        {bar('h', '42%', 2, 'mb-1')}
+        <span className="mb-1 block h-px w-full" style={accent} />
+        {bar('a', '96%')}
+        {bar('b', '96%')}
+        {bar('c', '68%')}
+      </>
+    ),
+    creative: (
+      <>
+        <span className="mb-1 block h-[6px] w-full" style={accent} />
+        {bar('h', '64%', 3, 'mb-1')}
+        <span className="flex flex-wrap gap-0.5">
+          <span className="block h-[3px] w-[9px] border" style={{ borderColor: color }} />
+          <span className="block h-[3px] w-[9px] border" style={{ borderColor: color }} />
+          <span className="block h-[3px] w-[9px] border" style={{ borderColor: color }} />
+        </span>
+      </>
+    ),
+    executive: (
+      <>
+        {bar('h', '48%', 3, 'mb-1')}
+        <span className="mb-1 block h-px w-8" style={accent} />
+        {bar('a', '90%')}
+        {bar('b', '82%')}
+      </>
+    ),
+    compact: (
+      <>
+        {bar('h', '38%', 2, 'mb-0.5')}
+        {bar('a', '94%')}
+        {bar('b', '94%')}
+        {bar('c', '94%', 2, 'mt-0.5')}
+        {bar('d', '70%')}
+      </>
+    ),
+    tech: (
+      <span className="flex h-full gap-1">
+        <span className="flex w-[3px] flex-col" style={accent} />
+        <span className="flex flex-1 flex-col gap-0.5">
+          {bar('a', '100%', 2)}
+          {bar('b', '84%')}
+          {bar('c', '92%')}
+          {bar('d', '66%')}
+        </span>
+      </span>
+    ),
+    academic: (
+      <>
+        {bar('h', '60%', 2, 'mx-auto mb-1')}
+        <span className="mb-1 block h-px w-full" style={accent} />
+        {bar('a', '100%')}
+        {bar('b', '94%')}
+        {bar('c', '88%')}
+      </>
+    ),
+    startup: (
+      <>
+        <span className="mb-1 flex items-center gap-1">
+          <span className="block h-[8px] w-[8px]" style={accent} />
+          {bar('h', '60%', 3)}
+        </span>
+        {bar('a', '92%')}
+        {bar('b', '78%')}
+      </>
+    ),
+  };
+
+  return (
+    <span
+      aria-hidden="true"
+      className="mb-1.5 flex h-11 w-full flex-col justify-start overflow-hidden border border-rule bg-void px-1.5 py-1.5"
+    >
+      {layouts[id] || layouts.classic}
+    </span>
+  );
+}
+
 export default function ThemeCustomizer({ theme, onChange, resumeData }) {
   const handleUpdate = (field, value) => {
     sound.playAction();
@@ -55,18 +172,16 @@ export default function ThemeCustomizer({ theme, onChange, resumeData }) {
   };
 
   return (
-    <div className="space-y-6 text-xs text-pink-100 animate-fade-in font-sans">
-      {/* Template Chooser Matrix */}
+    <div className="space-y-5">
+      {/* template plates — 3x3, hairline grid */}
       <div>
-        <label className="block text-[11px] font-bold text-pink-200 uppercase tracking-wider mb-2.5 flex items-center justify-between">
-          <span className="flex items-center gap-1.5">
-            <Layout size={13} className="text-rose-400" />
-            ✦ Resume Template Design ({TEMPLATES_CONFIG.length})
-          </span>
-          <span className="text-[10px] text-pink-400/85 font-sans">Instant Preview</span>
-        </label>
+        <SectionIndex
+          index={1}
+          title="Theme"
+          action={<Chip>{TEMPLATES_CONFIG.length} templates</Chip>}
+        />
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        <div className="grid grid-cols-3 gap-2">
           {TEMPLATES_CONFIG.map((tpl) => {
             const isSelected = theme.templateId === tpl.id;
             const dropped = getDroppedSections(tpl.id, resumeData);
@@ -75,40 +190,29 @@ export default function ThemeCustomizer({ theme, onChange, resumeData }) {
                 key={tpl.id}
                 type="button"
                 onClick={() => handleUpdate('templateId', tpl.id)}
-                className={`p-3 rounded-xl text-left transition-all cursor-pointer relative overflow-hidden ${
+                className={`cursor-pointer rounded-[2px] border p-1.5 text-left transition-colors duration-[90ms] ${
                   isSelected
-                    ? 'bg-[#3b133e] border border-pink-400 shadow-[0_6px_24px_rgba(244,63,94,0.3)]'
-                    : 'bg-[#1b081e] border border-pink-500/20 hover:border-pink-500/50 hover:bg-[#250c29]'
+                    ? 'border-signal/60 bg-[rgba(216,255,62,0.04)]'
+                    : 'border-rule hover:border-rule-2'
                 }`}
               >
-                {isSelected && (
-                  <span className="absolute top-2.5 right-2.5 w-4 h-4 rounded-full bg-rose-500 text-white flex items-center justify-center font-bold">
-                    <Check size={11} className="stroke-[3]" />
-                  </span>
-                )}
-                <div className="flex items-center gap-2 mb-1">
-                  <span
-                    className="w-2.5 h-2.5 rounded-full shrink-0 shadow-[0_0_6px_currentColor]"
-                    style={{ backgroundColor: tpl.previewColor }}
-                  />
-                  <span className="text-xs font-bold text-pink-50">{tpl.name}</span>
-                </div>
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <span className="text-[9px] font-semibold px-2 py-0.2 rounded-full bg-pink-950/80 text-pink-300 border border-pink-500/30">
-                    {tpl.badge}
-                  </span>
-                </div>
-                <p className="text-[11px] text-pink-300/70 line-clamp-2 leading-relaxed">
-                  {tpl.description}
-                </p>
+                <TemplatePlate id={tpl.id} color={tpl.previewColor} />
+                <span
+                  className={`dt-label block truncate text-[9px] ${
+                    isSelected ? 'text-signal' : 'text-bone-52'
+                  }`}
+                  title={tpl.name}
+                >
+                  {tpl.name}
+                </span>
                 {!isSelected && dropped.length > 0 && (
-                  <p
-                    className="mt-1.5 flex items-start gap-1 text-[10px] font-medium text-amber-300/90 leading-snug"
+                  <span
+                    className="mt-0.5 flex items-start gap-1 text-[9px] leading-snug text-alarm"
                     title={`This template does not render: ${dropped.join(', ')}`}
                   >
-                    <AlertTriangle size={10} className="mt-0.5 shrink-0 text-amber-400" />
-                    <span>Hides {dropped.join(', ')}</span>
-                  </p>
+                    <AlertTriangle size={9} className="mt-0.5 shrink-0" aria-hidden="true" />
+                    <span className="truncate">Hides {dropped.join(', ')}</span>
+                  </span>
                 )}
               </button>
             );
@@ -116,13 +220,11 @@ export default function ThemeCustomizer({ theme, onChange, resumeData }) {
         </div>
       </div>
 
-      {/* Chromatic Palette Matrix */}
-      <div>
-        <label className="block text-[11px] font-bold text-pink-200 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
-          <Palette size={13} className="text-rose-400" />
-          ✦ Palette & Chromatics
-        </label>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
+      {/* palette — 1px-bordered swatch squares with hex readouts */}
+      <div className="border-t border-rule pt-4">
+        <span className="dt-label mb-2 block text-bone-52">Palette &amp; Chromatics</span>
+
+        <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
           {COLOR_PRESETS.map((cp, idx) => {
             const isMatch = theme.primaryColor === cp.primary;
             return (
@@ -137,71 +239,66 @@ export default function ThemeCustomizer({ theme, onChange, resumeData }) {
                     secondaryColor: cp.secondary,
                   });
                 }}
-                className={`p-2.5 rounded-xl border text-left flex items-center gap-2 transition-all cursor-pointer ${
-                  isMatch
-                    ? 'bg-[#3b133e] border-pink-400 shadow-[0_0_15px_rgba(244,63,94,0.25)]'
-                    : 'bg-[#1b081e] border-pink-500/20 hover:border-pink-500/40 hover:bg-[#250c29]'
+                className={`flex cursor-pointer items-center gap-2 rounded-[2px] border px-2 py-1.5 text-left transition-colors duration-[90ms] ${
+                  isMatch ? 'border-signal/50' : 'border-rule hover:border-rule-2'
                 }`}
               >
-                <div className="flex items-center -space-x-1">
+                <span className="flex shrink-0 items-center gap-1">
                   <span
-                    className="w-3.5 h-3.5 rounded-full border border-white/40"
+                    className="block h-4 w-4 border border-rule-2"
                     style={{ backgroundColor: cp.primary }}
                   />
                   <span
-                    className="w-3 h-3 rounded-full border border-white/40"
+                    className="block h-4 w-4 border border-rule-2"
                     style={{ backgroundColor: cp.secondary }}
                   />
-                </div>
-                <span className="text-[10.5px] font-medium text-pink-200 truncate">
-                  {cp.name}
+                </span>
+                <span className="min-w-0 flex-1 truncate">
+                  <span className="dt-data block truncate text-[11px] text-bone-70">{cp.name}</span>
+                  <span className="dt-data block text-[10px] text-bone-32">
+                    {cp.primary} · {cp.secondary}
+                  </span>
                 </span>
               </button>
             );
           })}
         </div>
 
-        {/* Custom hex selector */}
-        <div className="flex items-center gap-4 p-2.5 rounded-xl bg-[#1b081e] border border-pink-500/20 text-xs">
+        {/* custom hex selector */}
+        <div className="mt-3 flex flex-wrap items-center gap-4 border-t border-rule pt-3">
           <div className="flex items-center gap-2">
-            <span className="text-pink-300 text-[10px] uppercase font-bold">Primary:</span>
+            <span className="dt-label text-bone-32">Primary</span>
             <input
               type="color"
               value={theme.primaryColor || '#3E5566'}
               onChange={(e) => handleUpdate('primaryColor', e.target.value)}
-              className="w-6 h-6 rounded-lg cursor-pointer border-0 bg-transparent"
+              className="h-6 w-6 cursor-pointer rounded-[2px] border border-rule-2 bg-transparent"
             />
-            <span className="text-pink-200 text-[11px] font-mono">{theme.primaryColor}</span>
+            <span className="dt-data text-bone-70">{theme.primaryColor}</span>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-pink-300 text-[10px] uppercase font-bold">Secondary:</span>
+            <span className="dt-label text-bone-32">Secondary</span>
             <input
               type="color"
               value={theme.secondaryColor || '#56707F'}
               onChange={(e) => handleUpdate('secondaryColor', e.target.value)}
-              className="w-6 h-6 rounded-lg cursor-pointer border-0 bg-transparent"
+              className="h-6 w-6 cursor-pointer rounded-[2px] border border-rule-2 bg-transparent"
             />
-            <span className="text-pink-200 text-[11px] font-mono">{theme.secondaryColor}</span>
+            <span className="dt-data text-bone-70">{theme.secondaryColor}</span>
           </div>
         </div>
       </div>
 
-      {/* Page Budget & Fit Mode */}
-      <div>
-        <label className="block text-[11px] font-bold text-pink-200 uppercase tracking-wider mb-2.5 flex items-center justify-between">
-          <span className="flex items-center gap-1.5">
-            <FileText size={13} className="text-rose-400" />
-            ✦ Page Budget & Strict 1-Page Fit
-          </span>
-          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-            theme.singlePage !== false
-              ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/50'
-              : 'bg-pink-950/80 text-pink-300 border-pink-700'
-          }`}>
-            {theme.singlePage !== false ? '1-PAGE LOCKED' : 'EXPANDED'}
-          </span>
-        </label>
+      {/* page budget */}
+      <div className="border-t border-rule pt-4">
+        <div className="mb-2 flex items-baseline justify-between gap-2">
+          <span className="dt-label text-bone-52">Page Budget &amp; Fit</span>
+          <Chip tone={theme.singlePage !== false ? 'present' : 'neutral'}>
+            {theme.singlePage !== false ? '1-page locked' : 'Expanded'}
+          </Chip>
+        </div>
+
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
@@ -213,17 +310,20 @@ export default function ThemeCustomizer({ theme, onChange, resumeData }) {
                 fontSize: 'compact',
               });
             }}
-            className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+            className={`cursor-pointer rounded-[2px] border p-2.5 text-left transition-colors duration-[90ms] ${
               theme.singlePage !== false
-                ? 'bg-[#102b20] border-emerald-400 text-emerald-200 shadow-[0_4px_16px_rgba(16,185,129,0.2)]'
-                : 'bg-[#1b081e] border-pink-500/20 text-pink-300/70 hover:border-pink-500/40'
+                ? 'border-signal/50'
+                : 'border-rule hover:border-rule-2'
             }`}
           >
-            <div className="flex items-center gap-1.5 font-bold text-xs mb-0.5">
-              <Sparkles size={12} className={theme.singlePage !== false ? 'text-emerald-400 animate-pulse' : 'text-slate-400'} />
-              <span>1-PAGE STRICT</span>
-            </div>
-            <p className="text-[10.5px] text-pink-300/70">
+            <span
+              className={`dt-label mb-1 block ${
+                theme.singlePage !== false ? 'text-signal' : 'text-bone-52'
+              }`}
+            >
+              1-Page Strict
+            </span>
+            <p className="text-[11px] leading-snug text-bone-32">
               Auto-compresses margins so Languages & Education fit on Page 1.
             </p>
           </button>
@@ -238,41 +338,48 @@ export default function ThemeCustomizer({ theme, onChange, resumeData }) {
                 fontSize: 'normal',
               });
             }}
-            className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+            className={`cursor-pointer rounded-[2px] border p-2.5 text-left transition-colors duration-[90ms] ${
               theme.singlePage === false
-                ? 'bg-[#3b133e] border-pink-400 text-pink-100 shadow-[0_4px_16px_rgba(244,63,94,0.25)]'
-                : 'bg-[#1b081e] border-pink-500/20 text-pink-300/70 hover:border-pink-500/40'
+                ? 'border-signal/50'
+                : 'border-rule hover:border-rule-2'
             }`}
           >
-            <div className="flex items-center gap-1.5 font-bold text-xs mb-0.5">
-              <Layers size={12} className={theme.singlePage === false ? 'text-rose-400' : 'text-slate-400'} />
-              <span>MULTI-PAGE</span>
-            </div>
-            <p className="text-[10.5px] text-pink-300/70">
+            <span
+              className={`dt-label mb-1 block ${
+                theme.singlePage === false ? 'text-signal' : 'text-bone-52'
+              }`}
+            >
+              Multi-Page
+            </span>
+            <p className="text-[11px] leading-snug text-bone-32">
               Relaxed spacing for multi-page documents and extensive CVs.
             </p>
           </button>
         </div>
       </div>
 
-      {/* Typography & Spacing */}
-      <div>
-        <label className="block text-[11px] font-bold text-pink-200 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
-          <Type size={13} className="text-rose-400" />
-          ✦ Typography & Information Density
-        </label>
+      {/* typography & density */}
+      <div className="border-t border-rule pt-4">
+        <span className="dt-label mb-2 block text-bone-52">
+          Typography &amp; Information Density
+        </span>
+
         <div className="space-y-3">
           <div>
-            <label className="block text-[10.5px] font-medium text-pink-300/80 mb-1">
+            <label
+              htmlFor="theme-font"
+              className="dt-label mb-1 block text-bone-32"
+            >
               Resume Font Family
             </label>
             <select
+              id="theme-font"
               value={theme.fontFamily || "'Calibri', 'Segoe UI', system-ui, sans-serif"}
               onChange={(e) => handleUpdate('fontFamily', e.target.value)}
-              className="w-full bg-[#1b081e] border border-pink-500/30 rounded-xl px-3 py-2 text-xs text-pink-100 focus:outline-none focus:border-pink-400"
+              className="dt-data w-full cursor-pointer rounded-[2px] border border-rule-2 bg-transparent px-2 py-1.5 text-bone focus:outline-none"
             >
               {FONT_OPTIONS.map((f, i) => (
-                <option key={i} value={f.value} className="bg-[#1b081e] text-pink-100">
+                <option key={i} value={f.value} className="bg-housing text-bone">
                   {f.name}
                 </option>
               ))}
@@ -280,19 +387,17 @@ export default function ThemeCustomizer({ theme, onChange, resumeData }) {
           </div>
 
           <div>
-            <label className="block text-[10.5px] font-medium text-pink-300/80 mb-1">
-              Content Density Preset
-            </label>
-            <div className="grid grid-cols-3 gap-2">
+            <span className="dt-label mb-1 block text-bone-32">Content Density Preset</span>
+            <div className="grid grid-cols-3 gap-1.5">
               {['compact', 'normal', 'relaxed'].map((density) => (
                 <button
                   key={density}
                   type="button"
                   onClick={() => handleUpdate('fontSize', density)}
-                  className={`py-2 text-[11px] font-bold uppercase rounded-xl transition-all cursor-pointer ${
+                  className={`dt-label cursor-pointer rounded-[2px] border py-1.5 text-center capitalize transition-colors duration-[90ms] ${
                     theme.fontSize === density
-                      ? 'bg-gradient-to-r from-rose-500 to-pink-500 text-white shadow-[0_2px_12px_rgba(244,63,94,0.35)]'
-                      : 'bg-[#1b081e] border border-pink-500/20 text-pink-300/70 hover:border-pink-500/40 hover:text-pink-100'
+                      ? 'border-signal/50 text-signal'
+                      : 'border-rule text-bone-32 hover:border-rule-2 hover:text-bone-70'
                   }`}
                 >
                   {density}

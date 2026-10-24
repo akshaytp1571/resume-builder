@@ -15,6 +15,7 @@ import { sound } from '../../utils/soundEffects';
 import { matchKeywords } from '../../utils/keywordMatcher';
 import { loadStore, getActiveVariant } from '../../utils/resumeStore';
 import ModalShell from './ModalShell';
+import AtsGauge from './AtsGauge';
 
 /** The active variant's data, read fresh when the parent did not pass it. */
 function activeResumeData() {
@@ -85,24 +86,17 @@ export default function AtsScoreModal({ atsResult, onClose, resumeData }) {
   };
 
   return (
-    <ModalShell onClose={onClose} labelledBy="ats-score-title" className="max-w-xl">
-        {/* Modal Header */}
-        <div className="p-4 border-b border-pink-500/20 flex items-center justify-between bg-[#200824]/90 backdrop-blur-xl">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-[#2e0d34] border border-pink-500/40 flex items-center justify-center text-rose-300">
-              <Award size={18} />
-            </div>
-            <div>
-              <h2
-                id="ats-score-title"
-                className="text-sm font-bold text-pink-50 tracking-wide flex items-center gap-2"
-              >
-                ATS Readiness & Score Breakdown
-              </h2>
-              <p className="text-[11px] text-pink-300/70">
-                Enterprise ATS Compatibility Algorithm
-              </p>
-            </div>
+    <ModalShell onClose={onClose} labelledBy="ats-score-title" className="max-w-2xl">
+        {/* Header: mono index + title + 40px close, on a hairline. */}
+        <div className="flex items-center justify-between border-b border-rule bg-housing px-4 py-3">
+          <div className="flex items-baseline gap-2.5">
+            <span className="dt-serif text-[13px] text-signal">ATS</span>
+            {/* modals.test.jsx asserts this accessible name matches
+                /ATS Readiness/i. The string is fixed — style it, never rename
+                it. */}
+            <h2 id="ats-score-title" className="dt-label text-bone">
+              ATS Readiness &amp; Score Breakdown
+            </h2>
           </div>
           <button
             type="button"
@@ -111,117 +105,76 @@ export default function AtsScoreModal({ atsResult, onClose, resumeData }) {
               sound.playAction();
               onClose();
             }}
-            className="p-1.5 rounded-xl text-pink-400/85 hover:text-pink-100 hover:bg-pink-900/30 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#18071c]"
+            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-[2px] border border-transparent text-bone-52 transition-colors duration-[90ms] hover:bg-[rgba(237,232,220,0.05)] hover:text-bone"
           >
-            <X size={18} />
+            <X size={15} aria-hidden="true" />
           </button>
         </div>
 
-        {/* Modal Body */}
-        <div className="p-5 overflow-y-auto space-y-5 text-xs">
-          {/* Top Score Banner / Radar HUD */}
-          <div className="p-4 rounded-2xl bg-gradient-to-r from-[#2e0e33] via-[#220a26] to-[#18071c] border border-pink-500/40 flex items-center justify-between shadow-lg">
-            <div>
-              <span className="text-[10.5px] font-semibold tracking-wide text-rose-300">
-                ✦ ATS Compliance Score
-              </span>
-              <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-rose-300 via-pink-200 to-amber-200">
-                  {score}%
-                </span>
-                <span className="text-pink-300/70 font-sans text-sm">/ 100</span>
-              </div>
-              <p className="text-xs font-semibold mt-1 text-emerald-300">
-                Status: {rating}
-              </p>
-            </div>
-
-            <div className="text-right">
-              <button
-                type="button"
-                onClick={triggerCelebration}
-                className="px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-gradient-to-r from-rose-500 via-pink-600 to-amber-500 hover:opacity-95 text-white flex items-center gap-1.5 shadow-[0_2px_15px_rgba(244,63,94,0.35)] cursor-pointer transition-all active:scale-95"
-              >
-                <Sparkles size={13} />
-                <span>Celebrate</span>
-              </button>
+        {/* Body */}
+        <div className="space-y-5 overflow-y-auto p-4 text-[13px] sm:p-5">
+          {/* THE GAUGE — the app's most instrument-like surface. */}
+          <div>
+            <AtsGauge score={score} />
+            <div className="mt-3 flex items-baseline justify-between border-t border-rule pt-2">
+              <span className="dt-label text-bone-32">Rating</span>
+              <span className="dt-data text-bone-70">{rating}</span>
             </div>
           </div>
 
-          {/* Category Breakdown */}
-          <div className="space-y-2.5">
-            <h3 className="text-xs font-semibold text-rose-300 tracking-wide">
-              Category Breakdown
-            </h3>
-            <div className="grid grid-cols-1 gap-2">
-              {breakdown.map((item, idx) => {
-                const percentage = Math.round((item.score / item.maxScore) * 100);
-                return (
-                  <div
-                    key={idx}
-                    className="p-3 rounded-2xl bg-[#1b071e] border border-pink-500/20 flex items-center justify-between"
-                  >
-                    <div className="flex items-center gap-2.5 flex-1 min-w-0 pr-4">
-                      {item.status === 'good' ? (
-                        <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
-                      ) : (
-                        <AlertCircle size={16} className="text-amber-400 shrink-0" />
-                      )}
-                      <div className="flex-1 truncate">
-                        <div className="flex justify-between text-xs mb-1 font-semibold">
-                          <span className="text-pink-100">{item.category}</span>
-                          <span className="text-rose-300 font-mono">
-                            {item.score}/{item.maxScore}
-                          </span>
-                        </div>
-                        <div className="w-full bg-[#120414] rounded-full h-2 overflow-hidden border border-pink-500/20">
-                          <div
-                            className={`h-full rounded-full transition-all ${
-                              item.status === 'good' ? 'bg-emerald-400 shadow-[0_0_8px_#34d399]' : 'bg-amber-400 shadow-[0_0_8px_#fbbf24]'
-                            }`}
-                            style={{ width: `${percentage}%` }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+          {/* Breakdown: hairline rows, mono numerals. No bars, no rings. */}
+          <div>
+            <div className="mb-1 flex items-baseline justify-between">
+              <span className="dt-label text-bone-52">Category</span>
+              <span className="dt-label text-bone-32">Score</span>
+            </div>
+            <div className="divide-y divide-[var(--rule)] border-t border-rule">
+              {breakdown.map((item, idx) => (
+                <div key={idx} className="flex items-center gap-2 py-[7px]">
+                  {item.status === 'good' ? (
+                    <CheckCircle2 size={13} className="shrink-0 text-signal" aria-hidden="true" />
+                  ) : (
+                    <AlertCircle size={13} className="shrink-0 text-alarm" aria-hidden="true" />
+                  )}
+                  <span className="min-w-0 flex-1 truncate font-sans text-[13px] text-bone">
+                    {item.category}
+                  </span>
+                  <span className="dt-data shrink-0 tabular-nums text-bone-70">
+                    {item.score}
+                    <span className="text-bone-32">/{item.maxScore}</span>
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Job Description Keyword Match — local, offline, no AI */}
-          <div className="rounded-2xl bg-[#1b071e] border border-pink-500/20 overflow-hidden">
-            <h3 className="text-xs font-semibold text-rose-300 tracking-wide">
-              <button
-                type="button"
-                onClick={() => {
-                  sound.playTab();
-                  setJdOpen((open) => !open);
-                }}
-                aria-expanded={jdOpen}
-                aria-controls="jd-match-panel"
-                className="w-full flex items-center justify-between gap-2 px-3 py-3 text-left cursor-pointer hover:bg-pink-900/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#18071c]"
-              >
-                <span className="flex items-center gap-1.5">
-                  <Target size={13} className="text-rose-400" />
-                  <span>Match Against a Job Description</span>
-                  <span className="text-[10px] font-normal text-pink-300/70">offline</span>
-                </span>
+          {/* Job description keyword match — local, offline, no AI. */}
+          <div className="border-t border-rule pt-3">
+            <button
+              type="button"
+              onClick={() => {
+                sound.playTab();
+                setJdOpen((open) => !open);
+              }}
+              aria-expanded={jdOpen}
+              aria-controls="jd-match-panel"
+              className="flex w-full cursor-pointer items-baseline justify-between gap-2 text-left"
+            >
+              <span className="dt-label text-bone-52">Match against a job description</span>
+              <span className="flex items-center gap-2">
+                <span className="dt-data text-bone-32">offline</span>
                 <ChevronDown
-                  size={14}
-                  className={`shrink-0 text-pink-300/70 transition-transform ${jdOpen ? 'rotate-180' : ''}`}
+                  size={13}
+                  aria-hidden="true"
+                  className={`shrink-0 text-bone-32 transition-transform duration-[90ms] ${jdOpen ? 'rotate-180' : ''}`}
                 />
-              </button>
-            </h3>
+              </span>
+            </button>
 
             {jdOpen && (
-              <div id="jd-match-panel" className="px-3 pb-3 space-y-2.5">
-                <label
-                  htmlFor="jd-match-input"
-                  className="block text-[11px] font-semibold text-pink-200 tracking-wide"
-                >
-                  Paste the job description:
+              <div id="jd-match-panel" className="mt-3 space-y-3">
+                <label htmlFor="jd-match-input" className="dt-label mb-1 block text-bone-52">
+                  Paste the job description
                 </label>
                 <textarea
                   id="jd-match-input"
@@ -229,8 +182,9 @@ export default function AtsScoreModal({ atsResult, onClose, resumeData }) {
                   value={jobDescription}
                   onChange={(e) => setJobDescription(e.target.value)}
                   aria-label="Job description to match against this resume"
-                  placeholder="Paste the requirements and responsibilities from LinkedIn, Indeed, or a company careers page..."
-                  className="w-full bg-[#120414] border border-pink-500/25 rounded-xl p-3 text-xs text-pink-100 placeholder:text-pink-300/70 focus:outline-none focus:border-rose-400 focus-visible:ring-2 focus-visible:ring-rose-400 font-sans leading-relaxed transition-colors resize-y select-text"
+                  placeholder="Paste the requirements and responsibilities from the posting…"
+                  className="w-full resize-y select-text border-0 border-b bg-transparent px-0 py-2 font-sans text-[16px] leading-relaxed text-bone placeholder:text-bone-32 focus:outline-none focus-visible:outline-none"
+                  style={{ borderBottomColor: 'var(--rule-2)' }}
                 />
 
                 <div className="flex flex-wrap items-center gap-2">
@@ -239,10 +193,10 @@ export default function AtsScoreModal({ atsResult, onClose, resumeData }) {
                     onClick={handleAnalyze}
                     disabled={!jobDescription.trim()}
                     aria-label="Analyze job description match"
-                    className="px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-gradient-to-r from-rose-500 via-pink-600 to-amber-500 hover:opacity-95 text-white flex items-center gap-1.5 shadow-[0_2px_15px_rgba(244,63,94,0.35)] cursor-pointer transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#18071c]"
+                    className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-[2px] border border-signal bg-signal px-3 font-mono text-[10px] uppercase tracking-[0.08em] text-void transition-colors duration-[90ms] hover:bg-[#c8ef2e] disabled:cursor-not-allowed disabled:opacity-40"
                   >
-                    <Target size={13} />
-                    <span>Analyze Match</span>
+                    <Target size={12} aria-hidden="true" />
+                    <span>Analyze match</span>
                   </button>
 
                   <button
@@ -250,62 +204,58 @@ export default function AtsScoreModal({ atsResult, onClose, resumeData }) {
                     onClick={handleClear}
                     disabled={!jobDescription && !analyzedJd}
                     aria-label="Clear job description and match results"
-                    className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-[#250d2b] hover:bg-[#32113a] text-pink-200 transition-colors cursor-pointer border border-pink-500/20 disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#18071c]"
+                    className="inline-flex h-8 cursor-pointer items-center rounded-[2px] border border-rule-2 px-3 font-mono text-[10px] uppercase tracking-[0.08em] text-bone-70 transition-colors duration-[90ms] hover:bg-[rgba(237,232,220,0.05)] hover:text-bone disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     Clear
                   </button>
                 </div>
 
                 {match?.error && (
-                  <div className="p-3 rounded-xl bg-amber-950/30 border border-amber-500/35 text-xs text-amber-100/90 flex items-start gap-2 font-sans">
-                    <AlertCircle size={14} className="text-amber-400 shrink-0 mt-0.5" />
+                  <p className="flex items-start gap-2 border-l-2 border-alarm py-1 pl-2 font-sans text-[12px] text-alarm">
+                    <AlertCircle size={13} className="mt-0.5 shrink-0" aria-hidden="true" />
                     <span>{match.error}</span>
-                  </div>
+                  </p>
                 )}
 
                 {match && !match.error && (
                   <>
-                    <div
-                      aria-live="polite"
-                      className="p-3 rounded-xl bg-gradient-to-r from-[#2e0e33] via-[#220a26] to-[#18071c] border border-pink-500/40"
-                    >
+                    <div aria-live="polite" className="border-t border-rule pt-3">
                       <div className="flex items-baseline justify-between gap-2">
-                        <span className="text-[10.5px] font-semibold tracking-wide text-rose-300">
-                          ✦ Keyword Match
-                        </span>
-                        <span className="text-[10.5px] text-pink-300/70 font-mono">
+                        <span className="dt-label text-bone-52">Keyword match</span>
+                        <span className="dt-data text-bone-32">
                           {match.matchedWeight}/{match.totalWeight} weighted
                         </span>
                       </div>
-                      <div className="flex items-baseline gap-2 mt-1">
-                        <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-rose-300 via-pink-200 to-amber-200">
+                      <div className="mt-1 flex items-baseline gap-2">
+                        <span className="font-mono text-[28px] leading-none tabular-nums text-bone">
                           {match.matchScore}%
                         </span>
-                        <span className="text-pink-300/70 font-sans text-xs">
+                        <span className="dt-data text-bone-52">
                           {match.matched.length} of{' '}
                           {match.matched.length + match.missing.length} keywords
                         </span>
                       </div>
+                      {/* same calibrated strip language as the gauge */}
                       <div
                         role="progressbar"
                         aria-valuenow={match.matchScore}
                         aria-valuemin={0}
                         aria-valuemax={100}
                         aria-label="Job description keyword match score"
-                        className="w-full bg-[#120414] rounded-full h-2 overflow-hidden border border-pink-500/20 mt-2"
+                        className="mt-2 h-[3px] w-full bg-[rgba(237,232,220,0.12)]"
                       >
                         <div
-                          className={`h-full rounded-full transition-all ${
+                          className={`h-full ${
                             match.matchScore >= 70
-                              ? 'bg-emerald-400 shadow-[0_0_8px_#34d399]'
+                              ? 'bg-signal'
                               : match.matchScore >= 40
-                                ? 'bg-amber-400 shadow-[0_0_8px_#fbbf24]'
-                                : 'bg-rose-500 shadow-[0_0_8px_#f43f5e]'
+                                ? 'bg-[#f5b544]'
+                                : 'bg-alarm'
                           }`}
                           style={{ width: `${match.matchScore}%` }}
                         />
                       </div>
-                      <p className="text-[10.5px] text-pink-300/70 mt-2 font-sans">
+                      <p className="dt-data mt-2 text-bone-32">
                         {Object.keys(match.sections)
                           .filter((key) => match.sections[key] > 0)
                           .map((key) => `${SECTION_LABELS[key] || key} ${match.sections[key]}`)
@@ -314,20 +264,20 @@ export default function AtsScoreModal({ atsResult, onClose, resumeData }) {
                     </div>
 
                     {match.matched.length > 0 && (
-                      <div className="p-3 rounded-xl bg-emerald-950/30 border border-emerald-500/40 space-y-1.5">
-                        <span className="text-xs font-semibold text-emerald-200 flex items-center gap-1.5">
-                          <CheckCircle2 size={13} className="text-emerald-400" />
-                          <span>Matched keywords ({match.matched.length})</span>
+                      <div>
+                        <span className="dt-label flex items-center gap-1.5 text-bone-52">
+                          <CheckCircle2 size={12} className="text-signal" aria-hidden="true" />
+                          Matched ({match.matched.length})
                         </span>
-                        <div className="flex flex-wrap gap-1.5">
+                        <div className="mt-1.5 flex flex-wrap gap-1">
                           {match.matched.map((kw) => (
                             <span
                               key={kw.term}
                               title={`Found in ${SECTION_LABELS[kw.where] || kw.where}`}
-                              className="px-2 py-0.5 rounded-lg bg-emerald-950/80 border border-emerald-500/40 text-emerald-100 text-[11px]"
+                              className="rounded-[2px] border border-signal/40 px-1.5 py-0.5 font-mono text-[10px] text-signal"
                             >
                               {kw.term}
-                              <span className="text-emerald-300/60"> · {kw.category}</span>
+                              <span className="text-signal/50"> · {kw.category}</span>
                             </span>
                           ))}
                         </div>
@@ -335,31 +285,31 @@ export default function AtsScoreModal({ atsResult, onClose, resumeData }) {
                     )}
 
                     {match.missing.length > 0 && (
-                      <div className="p-3 rounded-xl bg-amber-950/30 border border-amber-500/40 space-y-1.5">
+                      <div>
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs font-semibold text-amber-200 flex items-center gap-1.5">
-                            <AlertCircle size={13} className="text-amber-400" />
-                            <span>Missing keywords ({match.missing.length})</span>
+                          <span className="dt-label flex items-center gap-1.5 text-bone-52">
+                            <AlertCircle size={12} className="text-alarm" aria-hidden="true" />
+                            Missing ({match.missing.length})
                           </span>
                           <button
                             type="button"
                             onClick={handleCopyMissing}
                             aria-label="Copy missing keywords to clipboard"
-                            className="px-2.5 py-1 rounded-lg bg-[#2a1a12] border border-amber-500/40 hover:border-amber-400 text-amber-200 text-[10.5px] font-semibold transition-colors cursor-pointer flex items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#18071c]"
+                            className="inline-flex cursor-pointer items-center gap-1 rounded-[2px] border border-rule-2 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-bone-52 transition-colors duration-[90ms] hover:bg-[rgba(237,232,220,0.05)] hover:text-bone"
                           >
-                            {copied ? <Check size={11} /> : <Copy size={11} />}
-                            <span>{copied ? 'Copied' : 'Copy missing keywords'}</span>
+                            {copied ? <Check size={10} aria-hidden="true" /> : <Copy size={10} aria-hidden="true" />}
+                            <span>{copied ? 'Copied' : 'Copy'}</span>
                           </button>
                         </div>
-                        <div className="flex flex-wrap gap-1.5">
+                        <div className="mt-1.5 flex flex-wrap gap-1">
                           {match.missing.map((kw) => (
                             <span
                               key={kw.term}
                               title={`Weight ${kw.weight}`}
-                              className="px-2 py-0.5 rounded-lg bg-amber-950/80 border border-amber-500/40 text-amber-100 text-[11px]"
+                              className="rounded-[2px] border border-alarm/40 px-1.5 py-0.5 font-mono text-[10px] text-alarm"
                             >
                               + {kw.term}
-                              <span className="text-amber-300/60"> · {kw.category}</span>
+                              <span className="text-alarm/50"> · {kw.category}</span>
                             </span>
                           ))}
                         </div>
@@ -367,9 +317,9 @@ export default function AtsScoreModal({ atsResult, onClose, resumeData }) {
                     )}
 
                     {match.matched.length === 0 && match.missing.length === 0 && (
-                      <div className="p-3 rounded-xl bg-[#120414] border border-pink-500/20 text-xs text-pink-300/70 font-sans">
+                      <p className="dt-data border-l-2 border-rule-2 py-1 pl-2 text-bone-32">
                         No keywords could be extracted from that text.
-                      </div>
+                      </p>
                     )}
                   </>
                 )}
@@ -377,43 +327,41 @@ export default function AtsScoreModal({ atsResult, onClose, resumeData }) {
             )}
           </div>
 
-          {/* Actionable Recommendations */}
-          <div>
-            <h3 className="text-xs font-semibold text-rose-300 tracking-wide mb-2 flex items-center gap-1.5">
-              <Sparkles size={13} className="text-rose-400" />
-              <span>Recommendations & Optimization Tips</span>
-            </h3>
+          {/* Recommendations: numbered hairline rows, not amber cards. */}
+          <div className="border-t border-rule pt-3">
+            <span className="dt-label mb-2 block text-bone-52">
+              Recommendations{suggestions.length > 0 ? ` · ${suggestions.length}` : ''}
+            </span>
             {suggestions.length > 0 ? (
-              <div className="space-y-2">
+              <ol className="divide-y divide-[var(--rule)]">
                 {suggestions.map((sug, i) => (
-                  <div
-                    key={i}
-                    className="p-3 rounded-2xl bg-amber-950/30 border border-amber-500/35 text-xs text-amber-100/90 flex items-start gap-2.5 font-sans leading-relaxed"
-                  >
-                    <span className="text-amber-400 font-bold mt-0.5">•</span>
-                    <span>{sug}</span>
-                  </div>
+                  <li key={i} className="flex items-start gap-2 py-2">
+                    <span className="dt-serif mt-px w-[14px] shrink-0 text-[12px] text-signal">
+                      {i + 1}
+                    </span>
+                    <span className="font-sans text-[12.5px] leading-relaxed text-bone-70">
+                      {sug}
+                    </span>
+                  </li>
                 ))}
-              </div>
+              </ol>
             ) : (
-              <div className="p-3.5 rounded-2xl bg-emerald-950/30 border border-emerald-500/40 text-xs text-emerald-200 flex items-center gap-2.5">
-                <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
-                <span>
-                  High probability of passing 100% of enterprise automated screening filters.
-                </span>
-              </div>
+              <p className="flex items-center gap-2 font-sans text-[12.5px] text-bone-70">
+                <CheckCircle2 size={13} className="shrink-0 text-signal" aria-hidden="true" />
+                <span>No outstanding issues. This resume should pass an automated screen.</span>
+              </p>
             )}
           </div>
         </div>
 
-        {/* Modal Footer */}
-        <div className="p-3.5 border-t border-pink-500/20 bg-[#200824]/90 flex justify-end">
+        {/* Footer */}
+        <div className="flex justify-end border-t border-rule bg-housing px-4 py-2.5">
           <button
             onClick={() => {
               sound.playAction();
               onClose();
             }}
-            className="px-4 py-1.5 text-xs font-semibold rounded-xl bg-[#250d2b] hover:bg-[#32113a] text-pink-200 transition-colors cursor-pointer border border-pink-500/20"
+            className="inline-flex h-8 cursor-pointer items-center rounded-[2px] border border-rule-2 px-[14px] font-mono text-[10px] uppercase tracking-[0.08em] text-bone-70 transition-colors duration-[90ms] hover:bg-[rgba(237,232,220,0.05)] hover:text-bone"
           >
             Close
           </button>

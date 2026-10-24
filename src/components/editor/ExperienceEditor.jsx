@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, ChevronDown, ChevronUp, Briefcase, Sparkles } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, ChevronUp, Wand2 } from 'lucide-react';
 import { sound } from '../../utils/soundEffects';
 import { refineBulletWithAi, getSavedAiConfig, isAiConfigReady } from '../../utils/aiService';
+import { Field, Button, IconButton, SectionIndex, Chip, EmptyState } from '../ui/primitives';
 
 export default function ExperienceEditor({
   experience,
@@ -111,192 +112,172 @@ export default function ExperienceEditor({
   };
 
   return (
-    <div className="space-y-4 font-sans text-xs animate-fade-in">
-      <div className="flex items-center justify-between">
-        <label className="block text-xs font-bold text-pink-200 tracking-wide flex items-center gap-1.5">
-          <Briefcase size={13} className="text-rose-400" />
-          <span>Professional Experience ({experience?.length || 0})</span>
-        </label>
-        <button
-          type="button"
-          onClick={handleAddExperience}
-          className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-400 hover:to-pink-500 text-white flex items-center gap-1.5 transition-all cursor-pointer shadow-[0_2px_12px_rgba(244,63,94,0.3)] active:scale-95"
-        >
-          <Plus size={13} />
-          <span>Add Role</span>
-        </button>
-      </div>
+    <div className="space-y-5">
+      <div>
+        <SectionIndex
+          index={5}
+          title="Professional Experience"
+          action={<Chip>{experience?.length || 0} roles</Chip>}
+        />
 
-      <div className="space-y-3">
-        {experience?.map((exp, index) => {
-          const isExpanded = expandedIndex === index;
-          return (
-            <div
-              key={exp.id || index}
-              className={`rounded-2xl border transition-all overflow-hidden canvas-card ${
-                isExpanded
-                  ? 'border-pink-500/50 shadow-[0_8px_30px_rgba(225,29,72,0.18)]'
-                  : 'border-pink-500/20 hover:border-pink-400/40'
-              }`}
-            >
-              {/* Header card banner */}
-              <div
-                className="p-3.5 flex items-center justify-between cursor-pointer hover:bg-pink-900/15 transition-colors"
-                onClick={() => {
-                  sound.playBlip(750, 950, 0.02);
-                  setExpandedIndex(isExpanded ? null : index);
-                }}
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-7 h-7 rounded-xl bg-[#2b0c32] border border-pink-500/40 flex items-center justify-center text-rose-300 shrink-0">
-                    <Briefcase size={13} />
-                  </div>
-                  <div className="truncate">
-                    <p className="text-xs font-bold text-pink-50 truncate">
-                      {exp.role || 'Role Name'}
-                    </p>
-                    <p className="text-[11px] text-pink-300/70 truncate">
-                      {exp.company} • {exp.period}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteExperience(index);
+        {experience?.length === 0 ? (
+          <EmptyState
+            title="No roles yet."
+            hint="Add the most recent role first; the ledger reads top-down."
+          />
+        ) : (
+          <ul className="divide-y divide-[var(--rule)] border-t border-rule">
+            {experience?.map((exp, index) => {
+              const isExpanded = expandedIndex === index;
+              return (
+                <li key={exp.id || index} className="py-3">
+                  {/* header row — ordinal, role, company, controls */}
+                  <div
+                    className="flex cursor-pointer items-start justify-between gap-2"
+                    onClick={() => {
+                      sound.playBlip(750, 950, 0.02);
+                      setExpandedIndex(isExpanded ? null : index);
                     }}
-                    className="p-1.5 rounded-lg text-pink-400/85 hover:text-rose-300 hover:bg-rose-950/50 transition-colors cursor-pointer"
-                    title="Delete role"
                   >
-                    <Trash2 size={13} />
-                  </button>
-                  <div className="text-pink-300 p-1">
-                    {isExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-                  </div>
-                </div>
-              </div>
-
-              {/* Expanded Edit Form */}
-              {isExpanded && (
-                <div className="p-4 pt-2 space-y-3.5 border-t border-pink-500/20 bg-[#17061a]/90">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[11px] font-semibold text-pink-200 mb-1">
-                        Role / Title
-                      </label>
-                      <input
-                        type="text"
-                        value={exp.role}
-                        onChange={(e) => handleFieldChange(index, 'role', e.target.value)}
-                        placeholder="e.g. QA Lead / Test Architect"
-                        className="w-full bg-[#1e0823] border border-pink-500/25 rounded-xl px-2.5 py-1.5 text-xs text-pink-100 placeholder:text-pink-300/70 focus:outline-none focus:border-rose-400"
-                      />
+                    <div className="flex min-w-0 items-baseline gap-2">
+                      <span className="dt-serif shrink-0 text-[12px] text-signal">
+                        {String(index + 1).padStart(2, '0')}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate text-[13px] text-bone">
+                          {exp.role || 'Role Name'}
+                        </p>
+                        <p className="dt-data truncate text-bone-32">
+                          {exp.company} · {exp.period}
+                        </p>
+                      </div>
                     </div>
 
-                    <div>
-                      <label className="block text-[11px] font-semibold text-pink-200 mb-1">
-                        Company & Location
-                      </label>
-                      <input
-                        type="text"
-                        value={exp.company}
-                        onChange={(e) => handleFieldChange(index, 'company', e.target.value)}
-                        placeholder="e.g. Northwind Technologies, Austin"
-                        className="w-full bg-[#1e0823] border border-pink-500/25 rounded-xl px-2.5 py-1.5 text-xs text-pink-100 placeholder:text-pink-300/70 focus:outline-none focus:border-rose-400"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-semibold text-pink-200 mb-1">
-                        Timeline / Dates
-                      </label>
-                      <input
-                        type="text"
-                        value={exp.period}
-                        onChange={(e) => handleFieldChange(index, 'period', e.target.value)}
-                        placeholder="e.g. April 2021 – Present"
-                        className="w-full bg-[#1e0823] border border-pink-500/25 rounded-xl px-2.5 py-1.5 text-xs text-pink-100 placeholder:text-pink-300/70 focus:outline-none focus:border-rose-400"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-semibold text-pink-200 mb-1">
-                        Project / Context Details
-                      </label>
-                      <input
-                        type="text"
-                        value={exp.product || ''}
-                        onChange={(e) => handleFieldChange(index, 'product', e.target.value)}
-                        placeholder="e.g. Platform: FleetWorks logistics suite"
-                        className="w-full bg-[#1e0823] border border-pink-500/25 rounded-xl px-2.5 py-1.5 text-xs text-pink-100 placeholder:text-pink-300/70 focus:outline-none focus:border-rose-400"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Highlights Bullet List */}
-                  <div className="pt-2">
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="block text-[11px] font-semibold text-pink-200 tracking-wide">
-                        Key Accomplishments & Impact ({exp.highlights?.length || 0})
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => handleAddHighlight(index)}
-                        className="text-[11px] text-rose-300 hover:text-rose-200 flex items-center gap-1 cursor-pointer font-semibold"
+                    <div className="flex shrink-0 items-center gap-1">
+                      <IconButton
+                        label="Delete role"
+                        title="Delete role"
+                        tone="alarm"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteExperience(index);
+                        }}
                       >
-                        <Plus size={12} /> Add Bullet
-                      </button>
-                    </div>
-
-                    <div className="space-y-3">
-                      {exp.highlights?.map((hl, hIdx) => {
-                        const isLoading = loadingBulletKey === `${index}-${hIdx}`;
-                        return (
-                          <div key={hIdx} className="space-y-1.5 bg-[#1b081e] p-2.5 rounded-xl border border-pink-500/20">
-                            <div className="flex items-start gap-2">
-                              <span className="text-rose-400 text-xs mt-1.5 font-bold font-mono">{hIdx + 1}.</span>
-                              <textarea
-                                rows={2}
-                                value={hl}
-                                onChange={(e) => handleHighlightChange(index, hIdx, e.target.value)}
-                                placeholder="Detail testing achievements, metrics, or automation results..."
-                                className="flex-1 bg-[#230a28] border border-pink-500/25 rounded-xl p-2.5 text-xs text-pink-50 placeholder:text-pink-300/70 focus:outline-none focus:border-rose-400 transition-colors leading-relaxed font-sans"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteHighlight(index, hIdx)}
-                                className="p-1 mt-1 text-pink-400/85 hover:text-rose-300 cursor-pointer"
-                                title="Remove bullet"
-                              >
-                                <Trash2 size={13} />
-                              </button>
-                            </div>
-
-                            <div className="flex justify-end pt-0.5">
-                              <button
-                                type="button"
-                                onClick={() => handleAiRefineBullet(index, hIdx)}
-                                disabled={isLoading || !hl}
-                                className="px-2.5 py-1 text-[10.5px] font-semibold rounded-lg bg-pink-950/80 hover:bg-pink-900 border border-pink-500/40 text-pink-200 transition-all cursor-pointer flex items-center gap-1 shadow-xs disabled:opacity-50"
-                                title="Enhance bullet using Google XYZ formula (Accomplished [X] as measured by [Y], by doing [Z])"
-                              >
-                                <Sparkles size={11} className={isLoading ? 'animate-spin' : 'text-rose-400'} />
-                                <span>{isLoading ? 'Optimizing...' : 'AI Polish (XYZ)'}</span>
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
+                        <Trash2 size={13} aria-hidden="true" />
+                      </IconButton>
+                      <span className="text-bone-32" aria-hidden="true">
+                        {isExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                      </span>
                     </div>
                   </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
+
+                  {isExpanded && (
+                    <div className="mt-3 space-y-4 border-t border-rule pt-3">
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <Field
+                          label="Role / Title"
+                          value={exp.role}
+                          onChange={(e) => handleFieldChange(index, 'role', e.target.value)}
+                          placeholder="e.g. QA Lead / Test Architect"
+                        />
+                        <Field
+                          label="Company & Location"
+                          value={exp.company}
+                          onChange={(e) => handleFieldChange(index, 'company', e.target.value)}
+                          placeholder="e.g. Northwind Technologies, Austin"
+                        />
+                        <Field
+                          label="Timeline / Dates"
+                          value={exp.period}
+                          onChange={(e) => handleFieldChange(index, 'period', e.target.value)}
+                          placeholder="e.g. April 2021 – Present"
+                        />
+                        <Field
+                          label="Project / Context Details"
+                          value={exp.product || ''}
+                          onChange={(e) => handleFieldChange(index, 'product', e.target.value)}
+                          placeholder="e.g. Platform: FleetWorks logistics suite"
+                        />
+                      </div>
+
+                      {/* accomplishments — numbered hairline rows, not cards */}
+                      <div className="border-t border-rule pt-3">
+                        <span className="dt-label mb-2 block text-bone-52">
+                          Key Accomplishments & Impact ({exp.highlights?.length || 0})
+                        </span>
+
+                        <div className="divide-y divide-[var(--rule)]">
+                          {exp.highlights?.map((hl, hIdx) => {
+                            const isLoading = loadingBulletKey === `${index}-${hIdx}`;
+                            return (
+                              <div key={hIdx} className="py-2">
+                                <div className="flex items-start gap-2">
+                                  <span className="dt-serif mt-1.5 shrink-0 text-[12px] text-signal">
+                                    {String(hIdx + 1).padStart(2, '0')}
+                                  </span>
+                                  <textarea
+                                    rows={2}
+                                    value={hl}
+                                    onChange={(e) => handleHighlightChange(index, hIdx, e.target.value)}
+                                    placeholder="Detail testing achievements, metrics, or automation results..."
+                                    className="flex-1 resize-none border-0 border-b bg-transparent px-0 py-1 text-[13px] leading-[1.45] text-bone placeholder:text-bone-32 focus:outline-none focus-visible:outline-none"
+                                    style={{ borderBottomColor: 'var(--rule-2)' }}
+                                  />
+                                  <IconButton
+                                    label="Remove bullet"
+                                    title="Remove bullet"
+                                    tone="alarm"
+                                    size="sm"
+                                    className="mt-0.5"
+                                    onClick={() => handleDeleteHighlight(index, hIdx)}
+                                  >
+                                    <Trash2 size={13} aria-hidden="true" />
+                                  </IconButton>
+                                </div>
+
+                                <div className="mt-1 flex justify-end">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleAiRefineBullet(index, hIdx)}
+                                    disabled={isLoading || !hl}
+                                    title="Enhance bullet using Google XYZ formula (Accomplished [X] as measured by [Y], by doing [Z])"
+                                  >
+                                    <Wand2
+                                      size={11}
+                                      className={isLoading ? 'animate-spin' : ''}
+                                      aria-hidden="true"
+                                    />
+                                    <span>{isLoading ? 'Optimizing...' : 'AI Polish (XYZ)'}</span>
+                                  </Button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        <div className="pt-2">
+                          <Button variant="quiet" size="sm" onClick={() => handleAddHighlight(index)}>
+                            <Plus size={12} aria-hidden="true" />
+                            Add Bullet
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+
+        <div className="pt-3">
+          <Button variant="quiet" size="sm" onClick={handleAddExperience}>
+            <Plus size={12} aria-hidden="true" />
+            Add Role
+          </Button>
+        </div>
       </div>
     </div>
   );

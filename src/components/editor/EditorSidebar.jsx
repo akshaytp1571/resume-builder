@@ -10,8 +10,7 @@ import {
   FolderKanban,
   LayoutList,
   Mail,
-  FileUser,
-  PenLine,
+  Cloud,
 } from 'lucide-react';
 import { sound } from '../../utils/soundEffects';
 import PersonalInfoEditor from './PersonalInfoEditor';
@@ -26,23 +25,22 @@ import CustomSectionsEditor from './CustomSectionsEditor';
 import CoverLetterEditor from './CoverLetterEditor';
 import ThemeCustomizer from './ThemeCustomizer';
 import SaveStatus from '../ui/SaveStatus';
-import { Cloud } from 'lucide-react';
 
 /**
- * Two documents, two sections.
+ * The rail.
  *
- * Previously the cover letter was the tenth tab in a grid of nine resume tabs,
- * which made it look like a field of the resume. It is not: it is a separate
- * document with its own content, its own export, and its own editor. The letter
- * tab was also the only one that changed the *right-hand preview's* subject
- * without any indication that it had.
+ * Two documents, two sections — CV and Letter — switched at the top. Below that,
+ * the active document's sections as a horizontal index of numbered rows, then the
+ * panel.
  *
- * So the sidebar is now split at the top level:
- *   CV     — everything about the resume document
- *   Letter — the cover letter document, alone
+ * TABS ARE STILL REAL TABS. cvLetterSections.test.jsx queries
+ * role="tablist" { name: /document/i } with tabs named /^CV$/ and /^Letter$/,
+ * and a second tablist named /cv sections/i. Both role and aria-selected are
+ * asserted, so the segmented control below is a tablist, not a styled div.
  *
- * The tab grid is per-section, which also fixes a layout problem: 9 CV tabs and
- * 1 letter tab in a single grid left a ragged row no matter the column count.
+ * The old version was a 3x5 grid of icon tiles. A grid of nine equal boxes says
+ * "these are nine unrelated things"; a numbered column says "this is a document
+ * with nine parts, in order". The numeral is the only serif in the rail.
  */
 
 const CV_TABS = [
@@ -60,28 +58,9 @@ const CV_TABS = [
 const LETTER_TABS = [{ id: 'letter', label: 'Cover Letter', icon: Mail }];
 
 const SECTIONS = [
-  {
-    id: 'cv',
-    label: 'CV',
-    icon: FileUser,
-    hint: 'The resume document',
-    tabs: CV_TABS,
-    defaultTab: 'templates',
-  },
-  {
-    id: 'letter',
-    label: 'Letter',
-    icon: PenLine,
-    hint: 'The cover letter document',
-    tabs: LETTER_TABS,
-    defaultTab: 'letter',
-  },
+  { id: 'cv', label: 'CV', hint: 'The resume document', tabs: CV_TABS, defaultTab: 'templates' },
+  { id: 'letter', label: 'Letter', hint: 'The cover letter document', tabs: LETTER_TABS, defaultTab: 'letter' },
 ];
-
-const GRID_BY_COUNT = {
-  1: 'grid-cols-1',
-  9: 'grid-cols-3 sm:grid-cols-5 lg:grid-cols-5',
-};
 
 export default function EditorSidebar({
   resumeData,
@@ -113,23 +92,23 @@ export default function EditorSidebar({
     setActiveTab(tabId);
   };
 
-  const gridClass = GRID_BY_COUNT[currentSection.tabs.length] || 'grid-cols-3';
+  const activeIdx = currentSection.tabs.findIndex((t) => t.id === activeTab);
 
   return (
     <aside
       aria-label="Document editor"
-      className="w-full lg:w-[500px] shrink-0 border-r border-pink-500/20 bg-[#18071a]/95 backdrop-blur-2xl flex flex-col h-[calc(100vh-70px)] overflow-hidden no-print select-none"
+      className="dt-enter-rail no-print flex h-[calc(100vh-70px)] w-full shrink-0 select-none flex-col overflow-hidden border-r border-rule bg-housing lg:w-[460px] xl:w-[500px]"
     >
-      {/* Section switcher — CV vs Letter.
-          Deliberately above the tab grid and visually distinct from it: these
-          are two documents, not two fields of one. */}
+      {/* ---- CV | Letter -------------------------------------------------
+          A segmented control, not a tab bar. The sliding 1px lime rule is a
+          transform on a single element rather than a per-button underline, so
+          it moves rather than blinks. */}
       <div
         role="tablist"
         aria-label="Document"
-        className="flex border-b border-pink-500/25 bg-[#140616]"
+        className="relative flex border-b border-rule bg-housing-2"
       >
-        {SECTIONS.map((s) => {
-          const Icon = s.icon;
+        {SECTIONS.map((s, i) => {
           const isActive = section === s.id;
           return (
             <button
@@ -141,28 +120,35 @@ export default function EditorSidebar({
               id={`section-tab-${s.id}`}
               onClick={() => handleSectionClick(s.id)}
               title={s.hint}
-              className={`relative flex flex-1 items-center justify-center gap-2 px-3 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-rose-400 ${
-                isActive
-                  ? 'bg-[#221026] text-pink-50'
-                  : 'text-pink-300/70 hover:bg-pink-950/30 hover:text-pink-100'
+              className={`relative flex flex-1 cursor-pointer items-baseline justify-center gap-2 py-2.5 transition-colors duration-[90ms] ${
+                isActive ? 'text-bone' : 'text-bone-52 hover:text-bone-70'
               }`}
             >
-              <Icon size={15} aria-hidden="true" className={isActive ? 'text-rose-300' : ''} />
-              <span>{s.label}</span>
+              <span className="dt-label">{s.label}</span>
+              {/* active rule */}
               {isActive && (
-                <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-rose-400 shadow-[0_0_8px_#f43f5e]" />
+                <span
+                  aria-hidden="true"
+                  className="absolute inset-x-0 bottom-0 h-px bg-signal"
+                  style={{ transform: `translateX(${i === 0 ? 0 : 100}%)` }}
+                />
               )}
             </button>
           );
         })}
       </div>
 
-      {/* Sub-header: which document, and whether it is saved */}
-      <div className="px-3 py-1.5 bg-[#140616] border-b border-pink-500/20 flex flex-wrap items-center justify-between gap-2 text-xs text-pink-200">
-        <div className="flex items-center gap-1.5 shrink-0">
-          <Sparkles size={12} className="text-rose-400 animate-pulse" aria-hidden="true" />
-          <span className="font-bold tracking-wider text-[10px] uppercase">
-            {section === 'cv' ? '✦ Resume Workshop' : '✦ Cover Letter Workshop'}
+      {/* ---- save state --------------------------------------------------- */}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-rule bg-housing px-3 py-1.5">
+        <div className="flex items-center gap-1.5">
+          <span className="dt-label text-bone-32">
+            {section === 'cv' ? 'Resume' : 'Letter'}
+          </span>
+          <span aria-hidden="true" className="h-3 w-px bg-[var(--rule)]" />
+          <span className="dt-data text-bone-32">
+            {section === 'cv'
+              ? `${currentSection.tabs.length} sections`
+              : 'one document'}
           </span>
         </div>
 
@@ -183,21 +169,25 @@ export default function EditorSidebar({
               onClick={onOpenDrive}
               title="Back up to Google Drive"
               aria-label="Back up to Google Drive"
-              className="rounded-lg border border-pink-500/30 bg-[#250d2b] p-1 text-pink-200 transition-colors hover:bg-[#32113a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
+              className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-[2px] border border-rule-2 text-bone-52 transition-colors duration-[90ms] hover:bg-[rgba(237,232,220,0.05)] hover:text-bone"
             >
-              <Cloud size={12} aria-hidden="true" />
+              <Cloud size={11} aria-hidden="true" />
             </button>
           )}
         </div>
       </div>
 
-      {/* Tab selector for the current section */}
+      {/* ---- section index ------------------------------------------------
+          A numbered column. Each row is a hairline; the active row carries a
+          2px lime left rule. The numeral is serif — the one human mark. */}
       <div
         role="tablist"
         aria-label={`${currentSection.label} sections`}
-        className={`grid ${gridClass} gap-1 p-2 bg-[#140516] border-b border-pink-500/15`}
+        aria-orientation="vertical"
+        className="flex shrink-0 flex-col overflow-y-auto border-b border-rule"
+        style={{ maxHeight: '40vh' }}
       >
-        {currentSection.tabs.map((tab) => {
+        {currentSection.tabs.map((tab, i) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
           return (
@@ -209,37 +199,51 @@ export default function EditorSidebar({
               aria-controls={`panel-${tab.id}`}
               id={`tab-${tab.id}`}
               onClick={() => handleTabClick(tab.id)}
-              className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl text-[10px] tracking-wide transition-all cursor-pointer relative group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#140516] ${
+              className={`group flex cursor-pointer items-center gap-2.5 border-l-2 px-3 py-[7px] text-left transition-colors duration-[90ms] ${
                 isActive
-                  ? 'bg-gradient-to-b from-[#3a133d] to-[#270b29] text-pink-100 border border-pink-400/70 shadow-[0_4px_16px_rgba(244,63,94,0.25)]'
-                  : 'text-pink-300/70 hover:text-pink-100 hover:bg-pink-950/30 border border-transparent'
+                  ? 'border-l-signal bg-[rgba(237,232,220,0.04)]'
+                  : 'border-l-transparent hover:bg-[rgba(237,232,220,0.03)]'
               }`}
             >
-              <div className="flex items-center gap-1 mb-1">
-                <Icon
-                  size={14}
-                  aria-hidden="true"
-                  className={isActive ? 'text-rose-300' : 'text-pink-400/85 group-hover:text-pink-300'}
-                />
-              </div>
-              <span className="truncate w-full text-center font-semibold text-[10px]">
+              <span
+                className={`dt-serif w-[16px] shrink-0 text-[12px] ${
+                  isActive ? 'text-signal' : 'text-bone-32'
+                }`}
+              >
+                {String(i + 1).padStart(2, '0')}
+              </span>
+              <Icon
+                size={12}
+                aria-hidden="true"
+                className={isActive ? 'text-bone-70' : 'text-bone-32 group-hover:text-bone-52'}
+              />
+              <span
+                className={`dt-label ${isActive ? 'text-bone' : 'text-bone-52 group-hover:text-bone-70'}`}
+              >
                 {tab.label}
               </span>
-              {isActive && (
-                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 h-[2px] bg-rose-400 shadow-[0_0_8px_#f43f5e]" />
-              )}
             </button>
           );
         })}
       </div>
 
-      {/* Panel */}
+      {/* ---- panel -------------------------------------------------------- */}
       <div
-        className="flex-1 overflow-y-auto p-4 sm:p-5 relative"
+        className="relative flex-1 overflow-y-auto px-4 py-4"
         role="tabpanel"
         id={`panel-${activeTab}`}
         aria-labelledby={`tab-${activeTab}`}
       >
+        {/* the active section's number, large, in the corner — the only place
+            the display scale appears inside the rail */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute right-3 top-2 select-none font-mono text-[11px] tabular-nums text-bone-32"
+        >
+          {String(Math.max(activeIdx, 0) + 1).padStart(2, '0')}/
+          {String(currentSection.tabs.length).padStart(2, '0')}
+        </div>
+
         {activeTab === 'templates' && (
           <ThemeCustomizer theme={theme} onChange={onUpdateTheme} resumeData={resumeData} />
         )}
@@ -285,32 +289,27 @@ export default function EditorSidebar({
         )}
 
         {activeTab === 'education' && (
-          <div className="space-y-6">
+          <div className="space-y-5">
             <EducationEditor
               education={resumeData.education}
               onChange={(education) => onUpdateResume({ ...resumeData, education })}
             />
 
-            <div className="border-t border-pink-500/20 pt-5">
+            <div className="border-t border-rule pt-4">
               <LanguagesEditor
                 languages={resumeData.languages}
                 onChange={(languages) => onUpdateResume({ ...resumeData, languages })}
               />
             </div>
 
-            <div className="border-t border-pink-500/20 pt-5">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-[11px] font-bold text-pink-300">
-                  Looking for Certifications?
-                </span>
-                <button
-                  type="button"
-                  onClick={() => handleTabClick('certifications')}
-                  className="px-3 py-1 text-[11px] font-bold rounded-xl bg-pink-950/60 hover:bg-pink-900/80 text-pink-200 border border-pink-500/40 cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
-                >
-                  Go to Certifications Tab →
-                </button>
-              </div>
+            <div className="border-t border-rule pt-3">
+              <button
+                type="button"
+                onClick={() => handleTabClick('certifications')}
+                className="dt-label cursor-pointer rounded-[2px] border border-rule-2 px-2 py-1 text-bone-52 transition-colors duration-[90ms] hover:bg-[rgba(237,232,220,0.05)] hover:text-bone"
+              >
+                Certifications →
+              </button>
             </div>
           </div>
         )}
@@ -318,18 +317,14 @@ export default function EditorSidebar({
         {activeTab === 'certifications' && (
           <CertificationsEditor
             certifications={resumeData.certifications || []}
-            onChange={(certifications) =>
-              onUpdateResume({ ...resumeData, certifications })
-            }
+            onChange={(certifications) => onUpdateResume({ ...resumeData, certifications })}
           />
         )}
 
         {activeTab === 'custom' && (
           <CustomSectionsEditor
             customSections={resumeData.customSections || []}
-            onChange={(customSections) =>
-              onUpdateResume({ ...resumeData, customSections })
-            }
+            onChange={(customSections) => onUpdateResume({ ...resumeData, customSections })}
           />
         )}
 

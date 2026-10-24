@@ -1,5 +1,5 @@
 import React, { useId, useMemo, useState } from 'react';
-import { Download, FileText, Sparkles, Trash2, Wand2 } from 'lucide-react';
+import { Copy, Download, Trash2, Wand2 } from 'lucide-react';
 import { sound } from '../../utils/soundEffects';
 import {
   createCoverLetter,
@@ -9,12 +9,12 @@ import {
   countWords,
 } from '../../utils/coverLetter.js';
 
-const FOCUS_RING =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#18071a]';
+// A ledger field: no box, one hairline under it. 16px so iOS does not zoom the
+// viewport on focus, which would look like a layout bug.
+const FIELD_CLASS =
+  'w-full resize-y border-0 border-b bg-transparent px-0 py-2 text-[16px] leading-[1.45] text-bone placeholder:text-bone-32 focus:outline-none focus-visible:outline-none';
 
-const FIELD_CLASS = `w-full bg-[#18071a] border border-pink-500/25 rounded-xl px-3 py-2 text-xs text-pink-50 placeholder:text-pink-300/60 focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-400/40 transition-colors font-sans ${FOCUS_RING}`;
-
-const LABEL_CLASS = 'block text-[11px] font-bold text-pink-200 uppercase tracking-wider mb-1.5';
+const LABEL_CLASS = 'dt-label mb-1 block text-bone-52';
 
 /**
  * Cover letter editor.
@@ -65,20 +65,17 @@ export default function CoverLetterEditor({
   };
 
   return (
-    <div className="space-y-4 font-sans text-xs text-pink-100 animate-fade-in">
-      {/* Header + word count */}
-      <div className="flex items-center justify-between gap-2">
-        <label
-          htmlFor={`${uid}-body`}
-          className="text-xs font-bold text-pink-200 uppercase tracking-wider flex items-center gap-1.5"
-        >
-          <FileText size={13} className="text-rose-400" aria-hidden="true" />
-          ✦ Cover Letter
-        </label>
-        <span
-          className="text-[10px] px-2.5 py-0.5 rounded-full font-sans font-semibold border bg-pink-950/70 text-pink-300 border-pink-500/40 whitespace-nowrap"
-          aria-live="polite"
-        >
+    <div className="space-y-5">
+      {/* Header + word count. The count is a readout, so it is mono and tabular
+          and lives on the baseline grid rather than in a pill. */}
+      <div className="flex items-baseline justify-between gap-2">
+        <div className="flex items-baseline gap-2">
+          <span className="dt-serif text-[13px] text-signal">01</span>
+          <label htmlFor={`${uid}-body`} className="dt-label text-bone-70">
+            Cover letter
+          </label>
+        </div>
+        <span className="dt-data whitespace-nowrap text-bone-32" aria-live="polite">
           {words} {words === 1 ? 'word' : 'words'} · {chars} chars
         </span>
       </div>
@@ -117,7 +114,7 @@ export default function CoverLetterEditor({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label htmlFor={`${uid}-manager`} className={LABEL_CLASS}>
-            Hiring manager <span className="text-pink-400/85 normal-case font-normal">(optional)</span>
+            Hiring manager <span className="normal-case tracking-normal text-bone-32">optional</span>
           </label>
           <input
             id={`${uid}-manager`}
@@ -153,30 +150,31 @@ export default function CoverLetterEditor({
           value={safe.body}
           onChange={(e) => update({ body: e.target.value })}
           placeholder="Write your letter, or press Generate draft to start from your resume."
-          className={`${FIELD_CLASS} rounded-2xl p-3.5 leading-relaxed resize-y`}
+          className={`${FIELD_CLASS} leading-relaxed`}
         />
       </div>
 
-      {/* Actions */}
-      <div className="p-3.5 rounded-2xl bg-[#1d0920] border border-pink-500/30 space-y-2.5 shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
+      {/* Actions. One quiet row — the generate button is the only signal-coloured
+          control, because it is the one action that creates content. */}
+      <div className="space-y-2.5 border-t border-rule pt-4">
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={handleGenerate}
             disabled={isGenerating}
-            className={`px-3.5 py-1.5 text-xs font-bold rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-400 hover:to-pink-400 text-white shadow-[0_2px_12px_rgba(244,63,94,0.35)] transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 disabled:opacity-50 ${FOCUS_RING}`}
+            className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-[2px] border border-signal bg-signal px-[14px] font-mono text-[11px] uppercase tracking-[0.08em] text-void transition-colors duration-[90ms] hover:bg-[#c8ef2e] disabled:cursor-not-allowed disabled:opacity-40"
             title="Build a draft from your resume's own summary, skills and latest role"
           >
-            <Wand2 size={13} aria-hidden="true" />
+            <Wand2 size={12} aria-hidden="true" />
             <span>{isGenerating ? 'Drafting…' : 'Generate draft'}</span>
           </button>
 
           <button
             type="button"
             onClick={handleCopyPreview}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-xl bg-[#250d2b] hover:bg-[#32113a] text-pink-200 border border-pink-500/25 transition-colors cursor-pointer flex items-center gap-1.5 ${FOCUS_RING}`}
+            className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-[2px] border border-rule-2 px-[10px] font-mono text-[10px] uppercase tracking-[0.08em] text-bone-70 transition-colors duration-[90ms] hover:bg-[rgba(237,232,220,0.05)] hover:text-bone"
           >
-            <Sparkles size={13} className="text-rose-300" aria-hidden="true" />
+            <Copy size={12} aria-hidden="true" />
             <span>Copy letter</span>
           </button>
 
@@ -187,9 +185,9 @@ export default function CoverLetterEditor({
                 sound.playAction();
                 onExportDocx();
               }}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-xl bg-[#250d2b] hover:bg-[#32113a] text-pink-200 border border-pink-500/25 transition-colors cursor-pointer flex items-center gap-1.5 ${FOCUS_RING}`}
+              className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-[2px] border border-rule-2 px-[10px] font-mono text-[10px] uppercase tracking-[0.08em] text-bone-70 transition-colors duration-[90ms] hover:bg-[rgba(237,232,220,0.05)] hover:text-bone"
             >
-              <Download size={13} className="text-pink-300" aria-hidden="true" />
+              <Download size={12} aria-hidden="true" />
               <span>.DOCX</span>
             </button>
           )}
@@ -197,17 +195,17 @@ export default function CoverLetterEditor({
           <button
             type="button"
             onClick={handleClear}
-            className={`ml-auto px-3 py-1.5 text-xs font-semibold rounded-xl bg-[#250d2b] hover:bg-rose-950/60 text-pink-300/80 hover:text-rose-200 border border-pink-500/20 hover:border-rose-500/40 transition-colors cursor-pointer flex items-center gap-1.5 ${FOCUS_RING}`}
+            className="ml-auto inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-[2px] border border-transparent px-[10px] font-mono text-[10px] uppercase tracking-[0.08em] text-bone-32 transition-colors duration-[90ms] hover:border-alarm/60 hover:text-alarm"
             aria-label="Clear the cover letter"
           >
-            <Trash2 size={13} aria-hidden="true" />
+            <Trash2 size={12} aria-hidden="true" />
             <span>Clear</span>
           </button>
         </div>
 
-        <p className="text-[10.5px] text-pink-300/70 leading-relaxed">
-          The draft is assembled from your own summary, skills and most recent role —
-          no placeholders. Edit it before sending.
+        <p className="font-sans text-[11px] leading-relaxed text-bone-32">
+          The draft is assembled from your own summary, skills and most recent role
+          — no placeholders. Edit it before sending.
         </p>
       </div>
     </div>

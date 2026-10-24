@@ -45,3 +45,6 @@ DEPLOY.txt
 qa-probes/
 probe-*.mjs
 
+
+# local playwright probes (not part of the app)
+probe*.mjs

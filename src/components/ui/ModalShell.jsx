@@ -124,9 +124,13 @@ export default function ModalShell({
   };
 
   return (
+    // Backdrop: a flat 72% void scrim with a 1px inset frame. No blur — a
+    // backdrop-filter on a full-screen overlay is the most expensive thing on
+    // the page and it was one of the tells.
     <div
-      className={`fixed inset-0 ${zIndex} flex items-center justify-center p-4 bg-black/85 backdrop-blur-md font-sans select-none animate-fade-in`}
+      className={`fixed inset-0 ${zIndex} flex items-start justify-center overflow-y-auto bg-[rgba(12,13,11,0.72)] p-4 pt-[8vh] font-sans select-none dt-enter-rail`}
       onMouseDown={handleBackdropClick}
+      style={{ boxShadow: 'inset 0 0 0 1px var(--rule)' }}
     >
       <div
         ref={dialogRef}
@@ -135,7 +139,9 @@ export default function ModalShell({
         aria-labelledby={labelledBy}
         aria-describedby={describedBy}
         tabIndex={-1}
-        className={`w-full bg-[#18071c] border border-pink-500/35 rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.7)] overflow-hidden flex flex-col max-h-[92vh] relative canvas-card outline-none ${className}`}
+        // 0px radius, hairline border, housing-2 fill. A modal is a sheet of
+        // paper on the same bench, not a floating card on a card.
+        className={`relative flex max-h-[88vh] w-full flex-col overflow-hidden rounded-none border border-rule-2 bg-housing-2 shadow-[0_20px_60px_rgba(0,0,0,0.7)] outline-none ${className}`}
       >
         {children}
       </div>

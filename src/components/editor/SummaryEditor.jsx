@@ -1,19 +1,30 @@
 import React, { useState } from 'react';
-import { Sparkles, Wand2 } from 'lucide-react';
+import { Wand2 } from 'lucide-react';
 import { sound } from '../../utils/soundEffects';
 import { refineSummaryWithAi, getSavedAiConfig, isAiConfigReady } from '../../utils/aiService';
+import { Field, Button, SectionIndex, Chip } from '../ui/primitives';
+
+/**
+ * Section editors share one pattern:
+ *   SectionIndex (serif numeral + mono title)
+ *   ledger fields (bottom rule only)
+ *   quiet mono actions
+ *   hairline-separated groups, never cards
+ *
+ * No icons per section header, no emoji, no gradient buttons, no glow.
+ */
 
 const SUMMARY_PRESETS = [
   {
-    title: 'QA Lead (Original Protocol)',
+    title: 'QA Lead (original)',
     text: 'QA Lead with 5 years of experience in software testing for enterprise web and mobile products. Led a QA team for an end-to-end Order-to-Cash automation platform for a leading ready-mix concrete and cement manufacturer, covering three mobile apps and a central web interface. Hands-on in manual functional testing, API testing (Postman, Rest Assured), performance testing (JMeter), and Selenium automation. Experienced in production L2 support, team leadership, and Agile delivery using JIRA.',
   },
   {
-    title: 'Automation & API High-Impact',
+    title: 'Automation & API',
     text: 'Results-driven QA Lead and Test Automation Engineer with 5+ years of specialized experience in architecting robust Selenium, Rest Assured, and JMeter test suites. Proven track record in orchestrating multi-platform testing across iOS, Android, and distributed cloud applications with high test coverage and rapid defect turnaround.',
   },
   {
-    title: 'Enterprise Scalability & L2 DevOps',
+    title: 'Enterprise & L2',
     text: 'Seasoned Software Quality Assurance Lead specializing in end-to-end enterprise platform verification and post-deployment L2 production engineering. Adept in guiding Agile cross-functional teams, formulating scalable test strategies, and implementing automated continuous testing pipelines.',
   },
 ];
@@ -29,6 +40,7 @@ export default function SummaryEditor({
   const [errorMsg, setErrorMsg] = useState(null);
 
   const words = summary?.trim() ? summary.trim().split(/\s+/).length : 0;
+  const optimal = words >= 35 && words <= 100;
 
   const handleAiRefine = async () => {
     sound.playAction();
@@ -48,110 +60,97 @@ export default function SummaryEditor({
         tone: selectedTone,
       });
 
-      // Pass to refinement diff modal
       onTriggerAiRefine({
-        title: 'AI Summary Refinement',
+        title: 'AI summary refinement',
         originalText: summary,
         refinedText: refined,
         onApply: (appliedText) => onChange(appliedText),
         onRegenerate: async (instructions) => {
-          const re = await refineSummaryWithAi({
+          return refineSummaryWithAi({
             summary,
             tone: selectedTone,
             extraInstructions: instructions,
           });
-          return re;
         },
       });
     } catch (err) {
-      setErrorMsg(err.message || 'AI refinement failed. Check AI config.');
+      setErrorMsg(err.message || 'Refinement failed. Check the AI configuration.');
     } finally {
       setIsAiLoading(false);
     }
   };
 
   return (
-    <div className="space-y-4 font-sans text-xs text-pink-100 animate-fade-in">
-      <div className="flex items-center justify-between">
-        <label className="block text-xs font-bold text-pink-200 uppercase tracking-wider flex items-center gap-1.5">
-          <Sparkles size={13} className="text-rose-400" />
-          ✦ Executive Summary & Career Narrative
-        </label>
-        <span
-          className={`text-[10px] px-2.5 py-0.5 rounded-full font-sans font-semibold border ${
-            words >= 35 && words <= 100
-              ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/40 shadow-[0_0_8px_rgba(16,185,129,0.2)]'
-              : 'bg-amber-950/80 text-amber-300 border-amber-600/40'
-          }`}
-        >
-          {words} words ({words >= 35 && words <= 100 ? 'Optimal' : 'Recommended: 40-80'})
-        </span>
-      </div>
+    <div className="space-y-5">
+      <div>
+        <SectionIndex
+          index={3}
+          title="Summary"
+          action={
+            <Chip tone={optimal ? 'present' : 'missing'}>
+              {words} {words === 1 ? 'word' : 'words'}
+              {optimal ? '' : ' · 40–80'}
+            </Chip>
+          }
+        />
 
-      <div className="relative">
-        <textarea
+        <Field
+          label="Career narrative"
+          multiline
           rows={6}
           value={summary || ''}
           onChange={(e) => onChange(e.target.value)}
-          placeholder="Enter career synopsis, leadership directives, and architectural accomplishments..."
-          className="w-full bg-[#18071a] border border-pink-500/25 rounded-2xl p-3.5 text-xs text-pink-50 placeholder:text-pink-300/70 focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-400/40 transition-colors leading-relaxed font-sans"
+          placeholder="Two or three sentences: what you do, at what scale, and the result."
         />
       </div>
 
-      {/* AI Refinement Bar */}
-      <div className="p-3.5 rounded-2xl bg-[#1d0920] border border-pink-500/30 space-y-2.5 shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-pink-200">
-            <Sparkles size={13} className="text-rose-400 animate-pulse" />
-            <span>AI Narrative Refinement (DeepSeek V4.1)</span>
-          </div>
-
+      {/* AI refinement — a tool, not a feature banner. */}
+      <div className="border-t border-rule pt-4">
+        <div className="mb-2 flex items-baseline justify-between gap-2">
+          <span className="dt-label text-bone-52">Refine with AI</span>
           <button
             type="button"
             onClick={onOpenAiConfig}
-            className="text-[11px] text-pink-400/80 hover:text-pink-200 underline cursor-pointer"
+            className="dt-data cursor-pointer text-bone-32 underline underline-offset-2 transition-colors hover:text-bone-70"
           >
-            Configure AI Provider
+            Configure provider
           </button>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <label htmlFor="summary-tone" className="sr-only">
+            Tone
+          </label>
           <select
+            id="summary-tone"
             value={selectedTone}
             onChange={(e) => setSelectedTone(e.target.value)}
-            className="bg-[#150617] border border-pink-500/30 rounded-xl px-3 py-1.5 text-xs text-pink-200 focus:outline-none focus:border-pink-400 flex-1 min-w-[150px]"
+            className="min-w-[150px] flex-1 rounded-[2px] border border-rule-2 bg-transparent px-2 py-1.5 font-mono text-[11px] text-bone focus:outline-none"
           >
-            <option value="Executive & Metric-Driven">Tone: Executive & Metrics</option>
-            <option value="High-Impact & Direct">Tone: High-Impact & Direct</option>
-            <option value="Lead QA Architect Focus">Tone: Lead Architect Focus</option>
-            <option value="Agile & Product Delivery">Tone: Agile & Product Delivery</option>
+            <option value="Executive & Metric-Driven">Tone: executive & metrics</option>
+            <option value="High-Impact & Direct">Tone: high-impact & direct</option>
+            <option value="Lead QA Architect Focus">Tone: lead architect</option>
+            <option value="Agile & Product Delivery">Tone: agile & delivery</option>
           </select>
 
-          <button
-            type="button"
+          <Button
+            variant="quiet"
+            size="sm"
             onClick={handleAiRefine}
             disabled={isAiLoading || !summary}
-            className="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-400 hover:to-pink-400 text-white shadow-[0_2px_12px_rgba(244,63,94,0.35)] transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 disabled:opacity-50"
           >
-            <Wand2 size={13} className={isAiLoading ? 'animate-spin' : ''} />
-            <span>{isAiLoading ? 'Polishing...' : 'Polish with AI'}</span>
-          </button>
+            <Wand2 size={12} className={isAiLoading ? 'animate-spin' : ''} aria-hidden="true" />
+            {isAiLoading ? 'Polishing…' : 'Polish'}
+          </Button>
         </div>
 
-        {errorMsg && (
-          <p className="text-[10.5px] text-rose-300">
-            ⚠ {errorMsg}
-          </p>
-        )}
+        {errorMsg && <p className="dt-data mt-2 text-alarm">{errorMsg}</p>}
       </div>
 
-      {/* Preset suggestions */}
-      <div className="p-3.5 rounded-2xl bg-[#19081c] border border-pink-500/20">
-        <div className="flex items-center gap-1.5 text-xs font-bold text-pink-200 mb-2">
-          <Sparkles size={12} className="text-rose-400" />
-          <span>Curated Role Archetypes</span>
-        </div>
-        <div className="grid grid-cols-1 gap-2">
+      {/* presets — hairline rows, not cards */}
+      <div className="border-t border-rule pt-4">
+        <span className="dt-label mb-2 block text-bone-52">Starting points</span>
+        <div className="divide-y divide-[var(--rule)]">
           {SUMMARY_PRESETS.map((preset, idx) => (
             <button
               key={idx}
@@ -160,14 +159,14 @@ export default function SummaryEditor({
                 sound.playAction();
                 onChange(preset.text);
               }}
-              className="text-left p-2.5 rounded-xl bg-[#140516] hover:bg-[#220925] border border-pink-500/20 hover:border-pink-400/70 text-xs transition-all cursor-pointer group"
+              className="group w-full cursor-pointer py-2 text-left"
             >
-              <div className="font-semibold text-pink-100 group-hover:text-rose-300 transition-colors">
-                ✦ {preset.title}
-              </div>
-              <p className="text-pink-300/70 text-[11px] line-clamp-2 mt-0.5">
+              <span className="dt-data block text-bone-70 transition-colors group-hover:text-bone">
+                {preset.title}
+              </span>
+              <span className="mt-0.5 line-clamp-2 block font-sans text-[12px] leading-snug text-bone-32">
                 {preset.text}
-              </p>
+              </span>
             </button>
           ))}
         </div>
