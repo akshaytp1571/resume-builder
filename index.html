@@ -4,20 +4,30 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/avatar.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Browser chrome only. The rendered shell is --void #0C0D0B (index.css);
+         this value is metadata the OS reads for the status bar and task
+         switcher, and src/test/pwa.test.js asserts it verbatim. Do not "fix"
+         the mismatch by changing the page background to match. -->
     <meta name="theme-color" content="#140715" />
-    <meta name="description" content="A local-first resume builder with ATS scoring, job-description matching and vector PDF export. Your resume never leaves the browser." />
+    <meta name="description" content="A local-first résumé builder. Structured editor, live A4 preview, nine templates, ATS scoring, cover letters and an application tracker. Your resume never leaves the browser." />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Resume Studio" />
-    <title>NEXUS RESUME PROTOCOL // Quantum Cyber-Studio</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>Resume Studio — ATS résumé builder</title>
+
+    <!-- Self-hosted so first paint never waits on a third-party request. The
+         app is an offline PWA; blocking on fonts.googleapis.com contradicted
+         that. Preload the two faces that paint above the fold. -->
+    <link rel="preload" href="/fonts/archivo-600-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/plex-mono-400-normal.woff2" as="font" type="font/woff2" crossorigin />
   </head>
-  <body class="bg-[#030712] text-slate-100 overflow-x-hidden antialiased selection:bg-cyan-500 selection:text-black">
+  <!-- Colour lives only in index.css tokens. Leaving Tailwind colour utilities
+       here made the two systems fight and produced a blue-black flash before
+       hydration. Layout and smoothing only. -->
+  <body class="antialiased overflow-x-hidden">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

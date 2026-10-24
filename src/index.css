@@ -1,105 +1,248 @@
 @import "tailwindcss";
 
-:root {
-  --flora-wine-deep: #140715;
-  --flora-wine: #200d23;
-  --flora-plum: #2e1233;
-  --flora-plum-card: rgba(38, 17, 42, 0.75);
-  --flora-peony: #e11d48;
-  --flora-rose: #f43f5e;
-  --flora-blush: #fb7185;
-  --flora-petal: #fce7f3;
-  --flora-sage: #10b981;
-  --flora-leaf: #059669;
-  --flora-mint: #34d399;
-  --flora-amber: #f59e0b;
-  --flora-gold: #fbbf24;
+/* ===========================================================================
+   DRAFTING TABLE
+   ---------------------------------------------------------------------------
+   A warm-black instrument housing, 1px hairlines, one sheet of paper that is
+   the only soft object on screen. Type carries the personality; colour is
+   reserved for state.
+
+   Tailwind v4: there is no tailwind.config.js. Tokens declared in @theme become
+   utilities (bg-void, text-bone, border-rule-2, font-mono …). Tokens declared
+   in :root are plain CSS variables for use inside hand-written rules.
+
+   Contrast for every ink/surface pair below was measured with a WCAG calculator,
+   not estimated. See docs/redesign/AUDIT.md §5 for the table. Two values differ
+   from the design brief because the brief's own thresholds rejected them.
+   =========================================================================== */
+
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/archivo-400-normal.woff2') format('woff2');
+  /* Archivo ships as separate static files here rather than one variable file,
+     so each weight is declared individually below. */
 }
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/archivo-400-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/archivo-500-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/archivo-600-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/archivo-700-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Instrument Serif';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/instrument-serif-400-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Instrument Serif';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/instrument-serif-400-italic.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/plex-mono-400-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/plex-mono-500-normal.woff2') format('woff2');
+}
+
+@theme {
+  /* --- surfaces --- */
+  --color-void: #0c0d0b;
+  --color-housing: #12140f;
+  --color-housing-2: #191b15;
+
+  /* --- ink --- */
+  --color-bone: #ede8dc;
+  --color-bone-70: rgba(237, 232, 220, 0.64);
+  --color-bone-52: rgba(237, 232, 220, 0.52);
+  --color-bone-32: rgba(237, 232, 220, 0.32);
+
+  /* --- rules. --rule separates; --rule-2 is load-bearing and passes 3:1 --- */
+  --color-rule: rgba(237, 232, 220, 0.12);
+  --color-rule-2: rgba(237, 232, 220, 0.38);
+
+  /* --- materials --- */
+  --color-paper: #fcfbf8;
+  --color-signal: #d8ff3e;
+  --color-alarm: #ff5a1f;
+
+  /* --- type --- */
+  --font-sans: 'Archivo', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: 'Instrument Serif', ui-serif, Georgia, serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, monospace;
+
+  /* --- motion --- */
+  --ease-out-instrument: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-io-instrument: cubic-bezier(0.6, 0, 0.3, 1);
+}
+
+:root {
+  /* Plain vars for hand-written rules below. */
+  --void: #0c0d0b;
+  --housing: #12140f;
+  --housing-2: #191b15;
+  --bone: #ede8dc;
+  --bone-70: rgba(237, 232, 220, 0.64);
+  --bone-52: rgba(237, 232, 220, 0.52);
+  --bone-32: rgba(237, 232, 220, 0.32);
+  --rule: rgba(237, 232, 220, 0.12);
+  --rule-2: rgba(237, 232, 220, 0.38);
+  --paper: #fcfbf8;
+  --signal: #d8ff3e;
+  --alarm: #ff5a1f;
+
+  --t-90: 90ms;
+  --t-140: 140ms;
+  --t-220: 220ms;
+  --t-320: 320ms;
+  --e-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --e-io: cubic-bezier(0.6, 0, 0.3, 1);
+}
+
+/* ---------------------------------------------------------------------------
+   Base
+   --------------------------------------------------------------------------- */
 
 body {
   margin: 0;
   padding: 0;
-  background-color: #160718;
-  color: #fdf2f8;
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--void);
+  color: var(--bone);
+  font-family: 'Archivo', ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  letter-spacing: -0.005em;
   overflow-x: hidden;
-  /* Authentic Layered Canvas Background from user's uploaded painting */
-  background-image: 
-    linear-gradient(135deg, rgba(20, 6, 23, 0.78) 0%, rgba(35, 11, 39, 0.65) 50%, rgba(18, 5, 21, 0.82) 100%),
-    url('/canvas-thread-texture.png'),
-    url('/canvas-bg-widescreen.jpg');
-  background-size: cover, 130px 130px, cover;
-  background-position: center, 0 0, center right;
-  background-attachment: fixed;
-  background-repeat: no-repeat, repeat, no-repeat;
+  -webkit-font-smoothing: antialiased;
+  /* No texture on the page. Grain on the whole viewport was one of the tells;
+     the bench carries a dot grid and nothing else does. */
+  background-image: none;
 }
 
-/* Custom Botanical Velvet scrollbar */
+/* Numerals line up in columns. Every readout in the app is mono. */
+.tabular,
+.font-mono {
+  font-variant-numeric: tabular-nums;
+}
+
+/* One scrollbar, no glow. */
 ::-webkit-scrollbar {
-  width: 7px;
-  height: 7px;
+  width: 10px;
+  height: 10px;
 }
 ::-webkit-scrollbar-track {
-  background: #19081c;
-  border-left: 1px solid rgba(244, 63, 94, 0.1);
+  background: var(--void);
 }
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #f43f5e 0%, #be123c 60%, #701a75 100%);
-  border-radius: 9999px;
-  box-shadow: 0 0 10px rgba(244, 63, 94, 0.35);
+  background: rgba(237, 232, 220, 0.16);
+  border: 2px solid var(--void);
+  border-radius: 0;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(237, 232, 220, 0.28);
 }
 
-/* Botanical Canvas Textured Cards & Panels */
-.flora-panel {
-  background-color: rgba(30, 9, 34, 0.82);
-  background-image: url('/canvas-thread-texture.png');
-  background-size: 130px 130px;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(244, 114, 182, 0.22);
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+/* One focus style, everywhere, never removed. */
+:where(a, button, input, textarea, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
 }
 
-.flora-panel-active {
-  background-color: rgba(45, 15, 52, 0.92);
-  background-image: url('/canvas-thread-texture.png');
-  background-size: 130px 130px;
-  border: 1px solid rgba(251, 113, 133, 0.55);
-  box-shadow: 0 16px 45px rgba(225, 29, 72, 0.25), inset 0 0 15px rgba(244, 63, 94, 0.1);
+::selection {
+  background: var(--signal);
+  color: var(--void);
 }
 
-.canvas-card {
-  background-color: rgba(28, 8, 32, 0.85);
-  background-image: url('/canvas-thread-texture.png');
-  background-size: 120px 120px;
-  border: 1px solid rgba(244, 114, 182, 0.2);
-  border-radius: 0.85rem;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+/* ---------------------------------------------------------------------------
+   Type roles
+   --------------------------------------------------------------------------- */
+
+.dt-display {
+  font-family: 'Archivo', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 2.5rem;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+@media (min-width: 1024px) {
+  .dt-display {
+    font-size: 3.5rem;
+  }
 }
 
-/* Soft Floral Glows */
-.glow-rose {
-  text-shadow: 0 0 12px rgba(251, 113, 133, 0.6), 0 0 24px rgba(225, 29, 72, 0.3);
+/* Mono micro-label. Uppercase, tracked, never a paragraph. */
+.dt-label {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
 }
 
-.glow-sage {
-  text-shadow: 0 0 12px rgba(52, 211, 153, 0.6), 0 0 24px rgba(16, 185, 129, 0.3);
+/* Mono data readout. */
+.dt-data {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 0.75rem;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
 }
 
-.box-glow-rose {
-  box-shadow: 0 0 20px rgba(244, 63, 94, 0.25);
+/* The serif is the human hand in the machine. Exactly two jobs: the wordmark's
+   second word and section numerals. Never body copy. */
+.dt-serif {
+  font-family: 'Instrument Serif', ui-serif, Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: 0;
 }
 
 /* ---------------------------------------------------------------------------
    Skip-to-content link.
-
-   Hidden from sight but still focusable and still in the tab order: the standard
-   technique is clipping to a 1px box rather than display:none, because
-   display:none removes the element from the accessibility tree and the tab
-   order entirely, which would defeat the purpose.
-
-   On focus it is positioned back on screen, top-left, above everything.
+   Hidden from sight but still focusable and still in the tab order: clipping to
+   a 1px box rather than display:none, because display:none removes the element
+   from the accessibility tree and the tab order entirely.
    --------------------------------------------------------------------------- */
+
 .skip-link {
   position: absolute;
   width: 1px;
@@ -121,51 +264,234 @@ body {
   width: auto;
   height: auto;
   margin: 0;
-  padding: 0.625rem 1rem;
+  padding: 0.5rem 0.75rem;
   overflow: visible;
   clip: auto;
   white-space: normal;
-  border-radius: 0.75rem;
-  border: 1px solid rgba(251, 113, 133, 0.55);
-  background-color: #200824;
-  color: #fce7f3;
+  border-radius: 2px;
+  border: 1px solid var(--signal);
+  background-color: var(--housing-2);
+  color: var(--bone);
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: 500;
   letter-spacing: 0.02em;
   text-decoration: none;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 0 2px rgba(244, 63, 94, 0.45);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
   outline: none;
 }
 
-/* The <main> target must not draw a focus ring when the skip link moves focus
-   to it programmatically — it is a region, not a control. */
+/* The <main> target must not draw a ring when the skip link moves focus to it
+   programmatically — it is a region, not a control. */
 #main-content:focus,
 #main-content:focus-visible {
   outline: none;
 }
 
-/* Elegant Paper Container for Clean PDF / DOCX Output (Unchanged for Resume) */
+/* ---------------------------------------------------------------------------
+   The bench: dot grid under the sheet, and nothing else.
+   24px pitch at 2.5% — visible when you look for it, invisible when you don't.
+   --------------------------------------------------------------------------- */
+
+.dt-bench {
+  background-color: var(--void);
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    rgba(237, 232, 220, 0.025) 1px,
+    transparent 0
+  );
+  background-size: 24px 24px;
+  background-position: 0 0;
+}
+
+/* Instrument panel: flat fill, hairline, one soft top highlight. No blur, no
+   shadow-derived depth. */
+.dt-panel {
+  background-color: var(--housing);
+  border: 1px solid var(--rule);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.dt-panel-2 {
+  background-color: var(--housing-2);
+  border: 1px solid var(--rule);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/* ---------------------------------------------------------------------------
+   The sheet. Two-layer shadow, no coloured glow. This is the only soft object
+   on screen, which is why every panel around it has a 0px radius.
+   --------------------------------------------------------------------------- */
+
 .resume-paper {
   width: 210mm;
   min-height: 297mm;
-  background: #ffffff;
-  color: #1e293b;
+  background: #fcfbf8;
+  color: #1a1a17;
   box-sizing: border-box;
-  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.5), 0 0 40px rgba(244, 63, 94, 0.08);
+  box-shadow:
+    0 24px 60px -12px rgba(0, 0, 0, 0.7),
+    0 1px 0 rgba(0, 0, 0, 0.4);
   margin: 0 auto;
   position: relative;
-  transition: all 0.2s ease-in-out;
+  /* No transition here: the sheet must not animate while zooming or printing,
+     or capture comes out soft. */
 }
 
+/* Print-shop furniture around the sheet. All aria-hidden and no-print. */
+.dt-crop {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-color: var(--rule-2);
+  border-style: solid;
+  border-width: 0;
+  pointer-events: none;
+}
+.dt-crop-tl {
+  top: -12px;
+  left: -12px;
+  border-top-width: 1px;
+  border-left-width: 1px;
+}
+.dt-crop-tr {
+  top: -12px;
+  right: -12px;
+  border-top-width: 1px;
+  border-right-width: 1px;
+}
+.dt-crop-bl {
+  bottom: -12px;
+  left: -12px;
+  border-bottom-width: 1px;
+  border-left-width: 1px;
+}
+.dt-crop-br {
+  bottom: -12px;
+  right: -12px;
+  border-bottom-width: 1px;
+  border-right-width: 1px;
+}
+
+/* ---------------------------------------------------------------------------
+   First-load choreography. Runs once, on the real elements, via animation —
+   never a persistent transform. Print forces transform:none and this never
+   applies there because animations do not run in print.
+   --------------------------------------------------------------------------- */
+
+@keyframes dt-rule-in {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes dt-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes dt-sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dt-enter-bar {
+  animation: dt-rule-in var(--t-220) var(--e-out) both;
+  transform-origin: left center;
+}
+.dt-enter-rail {
+  animation: dt-rise var(--t-140) var(--e-out) 80ms both;
+}
+.dt-enter-sheet {
+  animation: dt-sheet-in var(--t-220) var(--e-out) 140ms both;
+}
+
+/* The export sweep. A single 1px lime hairline crossing the bench once. It is
+   an overlay sibling, never a transform on the paper. */
+@keyframes dt-sweep {
+  from {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  to {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+
+.dt-sweep-line {
+  animation: dt-sweep var(--t-320) var(--e-io) both;
+}
+
+/* ---------------------------------------------------------------------------
+   Reduced motion. Not optional. Durations collapse to 1ms, no transforms, no
+   stagger, no counting numerals (the components check the same query).
+   --------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+  .dt-enter-bar,
+  .dt-enter-rail,
+  .dt-enter-sheet {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   PRINT
+   ---------------------------------------------------------------------------
+   This block is the product's actual output. It is functionally unchanged from
+   the pre-redesign version: same @page, same hide list, same scale resets. Only
+   the added chrome needs to be named here.
+
+   The hide list covers header, nav, aside, footer, button, [role=dialog] and
+   .no-print. Every new chrome element in this redesign carries .no-print as
+   well, because a bare <div> for crop marks would not be caught by the tag
+   selectors.
+   --------------------------------------------------------------------------- */
+
 @media print {
-  /* margin:0 is what suppresses Chrome's reserved header/footer strip; the
-     resume templates carry their own padding, so no page margin is needed. */
+  /* margin:0 suppresses Chrome's reserved header/footer strip; the resume
+     templates carry their own padding, so no page margin is needed. */
   @page {
     size: A4 portrait;
     margin: 0mm !important;
   }
 
-  html, body {
+  html,
+  body {
     background: #ffffff !important;
     background-image: none !important;
     color: #000000 !important;
@@ -179,8 +505,7 @@ body {
     print-color-adjust: exact !important;
   }
 
-  /* Completely hide all UI elements, navigation, bars, sidebars, scanlines, and buttons.
-     Every chrome element carries .no-print; the tag selectors and the dialog
+  /* Every chrome element carries .no-print; the tag selectors and the dialog
      rule are belt-and-braces for anything added later. */
   .no-print,
   .skip-link,
@@ -190,7 +515,10 @@ body {
   footer,
   button,
   [role='dialog'],
-  [aria-modal='true'] {
+  [aria-modal='true'],
+  .dt-crop,
+  .dt-bench-furniture,
+  .dt-sweep {
     display: none !important;
     visibility: hidden !important;
   }
@@ -202,6 +530,9 @@ body {
   *::after {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+    /* Kill the entrance animations so nothing prints mid-fade. */
+    animation: none !important;
+    transition: none !important;
   }
 
   /* Reset main layout */
@@ -214,10 +545,25 @@ body {
     background: #ffffff !important;
   }
 
-  /* ResumePreview.jsx scales this node inline (`transform: scale(zoom)`).
-     Print has no clone step — html2pdf's onclone trick is raster-only — so the
-     LIVE node has to be neutralised here or the page prints at whatever zoom
-     the user happens to be at. Reset every form of scaling, not just transform. */
+  /* Everything between the viewport and the sheet, flattened. The bench's dot
+     grid, its padding and any scroll container must not survive into print. */
+  .dt-bench,
+  .dt-print-reset {
+    background: #ffffff !important;
+    background-image: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    display: block !important;
+  }
+
+  /* The preview applies a screen zoom via inline transform. That LIVE node has
+     to be neutralised here or the page prints at whatever zoom the user happens
+     to be at. Reset every form of scaling, not just transform. */
   #resume-print-wrapper {
     transform: none !important;
     transform-origin: top center !important;
@@ -253,12 +599,20 @@ body {
   }
 
   /* Prevent page breaks from cutting section headings or lines awkwardly */
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     page-break-after: avoid !important;
     break-after: avoid !important;
   }
 
-  p, li, tr, blockquote {
+  p,
+  li,
+  tr,
+  blockquote {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
   }
