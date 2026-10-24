@@ -234,15 +234,14 @@ export default function EditorSidebar({
         id={`panel-${activeTab}`}
         aria-labelledby={`tab-${activeTab}`}
       >
-        {/* the active section's number, large, in the corner — the only place
-            the display scale appears inside the rail */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute right-3 top-2 select-none font-mono text-[11px] tabular-nums text-bone-32"
-        >
-          {String(Math.max(activeIdx, 0) + 1).padStart(2, '0')}/
+        {/* Section position as a quiet readout on its own line. It was
+            absolutely positioned in the corner and collided with the template
+            count chip on the Theme tab. */}
+        <p aria-hidden="true" className="dt-data mb-3 text-bone-32">
+          Section {String(Math.max(activeIdx, 0) + 1).padStart(2, '0')} of{' '}
           {String(currentSection.tabs.length).padStart(2, '0')}
-        </div>
+        </p>
+
 
         {activeTab === 'templates' && (
           <ThemeCustomizer theme={theme} onChange={onUpdateTheme} resumeData={resumeData} />

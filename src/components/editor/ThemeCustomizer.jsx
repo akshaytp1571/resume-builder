@@ -7,32 +7,32 @@ import { SectionIndex, Chip } from '../ui/primitives';
 
 const COLOR_PRESETS = [
   {
-    name: 'Executive Slate (Default)',
+    name: 'Slate (default)',
     primary: '#3E5566',
     secondary: '#56707F',
   },
   {
-    name: 'Deep Cyber Navy',
+    name: 'Deep Navy',
     primary: '#1e3a8a',
     secondary: '#2563eb',
   },
   {
-    name: 'Matrix Emerald',
+    name: 'Emerald',
     primary: '#0f766e',
     secondary: '#0d9488',
   },
   {
-    name: 'Cyberpunk Violet',
+    name: 'Violet',
     primary: '#3730a3',
     secondary: '#6366f1',
   },
   {
-    name: 'Obsidian Stealth',
+    name: 'Near Black',
     primary: '#18181b',
     secondary: '#52525b',
   },
   {
-    name: 'Neon Crimson',
+    name: 'Crimson',
     primary: '#881337',
     secondary: '#be123c',
   },
@@ -197,8 +197,12 @@ export default function ThemeCustomizer({ theme, onChange, resumeData }) {
                 }`}
               >
                 <TemplatePlate id={tpl.id} color={tpl.previewColor} />
+                {/* Two lines rather than one truncated line. "EXECUTIVE ..."
+                    tells the user nothing, and every name here is a real
+                    choice they have to distinguish. leading-tight keeps a
+                    two-line label from pushing the grid out of alignment. */}
                 <span
-                  className={`dt-label block truncate text-[9px] ${
+                  className={`dt-label mt-1 block text-[9px] leading-tight ${
                     isSelected ? 'text-signal' : 'text-bone-52'
                   }`}
                   title={tpl.name}

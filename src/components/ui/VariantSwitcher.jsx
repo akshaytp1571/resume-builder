@@ -35,7 +35,10 @@ function formatDate(iso) {
 const PLATE_BTN =
   'inline-flex h-8 cursor-pointer items-center gap-2 rounded-[2px] border border-rule-2 bg-transparent px-2 text-bone-70 transition-colors duration-[90ms] hover:bg-[rgba(237,232,220,0.05)] hover:text-bone';
 const PLATE_ACTION =
-  'flex h-8 flex-1 items-center justify-center gap-1.5 rounded-[2px] border border-rule-2 bg-transparent font-mono text-[10px] uppercase tracking-[0.08em] text-bone-70 transition-colors duration-[90ms] hover:bg-[rgba(237,232,220,0.05)] hover:text-bone disabled:cursor-not-allowed disabled:opacity-40';
+  // No flex-1: these are commands, not segments of a control group. Growing
+  // them to fill the bar made a row of four buttons read as one enormous
+  // segmented widget instead of four separate actions.
+  'inline-flex h-8 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-[2px] border border-rule-2 bg-transparent px-2.5 font-mono text-[10px] uppercase tracking-[0.08em] text-bone-70 transition-colors duration-[90ms] hover:bg-[rgba(237,232,220,0.05)] hover:text-bone disabled:cursor-not-allowed disabled:opacity-40';
 const ICON_ACT =
   'flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-[2px] border border-transparent text-bone-52 transition-colors duration-[90ms] hover:bg-[rgba(237,232,220,0.05)] hover:text-bone disabled:cursor-not-allowed disabled:opacity-40';
 
@@ -156,7 +159,7 @@ export default function VariantSwitcher({
           onCreate?.();
           close();
         }}
-        className={`${PLATE_ACTION} hidden w-auto px-2 sm:flex`}
+        className={`${PLATE_ACTION} max-sm:hidden`}
         title="Create a new resume variant"
       >
         <FilePlus2 size={12} aria-hidden="true" />
@@ -169,7 +172,7 @@ export default function VariantSwitcher({
           sound.playSuccess();
           onExportAll?.();
         }}
-        className={`${PLATE_ACTION} hidden w-auto px-2 sm:flex`}
+        className={`${PLATE_ACTION} max-sm:hidden`}
         title="Export every variant as one JSON backup"
       >
         <Download size={12} aria-hidden="true" />
@@ -179,7 +182,7 @@ export default function VariantSwitcher({
       <button
         type="button"
         onClick={() => fileRef.current?.click()}
-        className={`${PLATE_ACTION} hidden w-auto px-2 sm:flex`}
+        className={`${PLATE_ACTION} max-sm:hidden`}
         title="Import a JSON backup"
       >
         <Upload size={12} aria-hidden="true" />
@@ -194,7 +197,7 @@ export default function VariantSwitcher({
           onOpenJsonResume?.();
           close();
         }}
-        className={`${PLATE_ACTION} hidden w-auto px-2 sm:flex`}
+        className={`${PLATE_ACTION} max-sm:hidden`}
         title="Import or export the open JSON Resume format"
       >
         <FileJson2 size={12} aria-hidden="true" />

@@ -406,7 +406,7 @@ export default function App() {
         Skip to resume editor
       </a>
 
-      {/* Top Atelier Studio Navbar */}
+      {/* Instrument bar */}
       <Navbar
         onDownloadPdf={handleDownloadPdf}
         onDownloadVectorPdf={handleDownloadVectorPdf}
@@ -477,7 +477,7 @@ export default function App() {
         tabIndex={-1}
         className="flex-1 flex flex-col lg:flex-row overflow-hidden relative"
       >
-        {/* Left Form / Settings Cyber Panel */}
+        {/* The rail: document index and section panel */}
         <EditorSidebar
           resumeData={resumeData}
           theme={theme}
@@ -492,7 +492,7 @@ export default function App() {
           onOpenDrive={() => setIsDriveOpen(true)}
         />
 
-        {/* Right Live Holo-Dock Preview */}
+        {/* The bench: the sheet on its mount */}
         <ResumePreview
           resumeData={resumeData}
           theme={theme}
@@ -532,7 +532,7 @@ export default function App() {
         )}
       </main>
 
-      {/* ATS Scanner Hologram Modal */}
+      {/* ATS score breakdown */}
       {isAtsOpen && (
         <AtsScoreModal
           atsResult={atsResult}
