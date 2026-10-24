@@ -4,7 +4,6 @@ import {
   Search,
   KeyRound,
   Send,
-  AlertCircle,
   LoaderCircle,
 } from 'lucide-react';
 import { tailorResumeToJobWithAi } from '../../utils/aiService';
@@ -223,7 +222,8 @@ export default function JobMatchModal({
                   onChange={(e) =>
                     setSearchParams({ ...searchParams, experienceLevel: e.target.value })
                   }
-                  className="w-full rounded-[2px] border border-rule-2 bg-transparent px-2 py-1.5 font-mono text-[11px] text-bone"
+                  className="w-full resize-none border-0 border-b bg-transparent px-0 py-2 text-[16px] leading-[1.45] text-bone focus:outline-none focus-visible:outline-none"
+                  style={{ borderBottomColor: 'var(--rule-2)' }}
                 >
                   {EXPERIENCE_LEVELS.map(([value, label]) => (
                     <option key={value} value={value}>
@@ -234,12 +234,8 @@ export default function JobMatchModal({
               </div>
             </div>
 
-            <Button
-              variant="signal"
-              onClick={handleDiscoverJobs}
-              disabled={loading}
-              className="w-full"
-            >
+            {/* Secondary: the dialog's single signal fill lives in the footer. */}
+            <Button onClick={handleDiscoverJobs} disabled={loading} className="w-full">
               {loading ? (
                 <>
                   <LoaderCircle size={13} aria-hidden="true" className="animate-spin" />

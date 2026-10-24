@@ -134,6 +134,46 @@ const browser = await chromium.launch();
     gauge && Math.abs(gauge.filled - Math.round((Number(gauge.now) / 100) * 40)) <= 1,
     `filled ${gauge?.filled} for ${gauge?.now}%`
   );
+
+  // Close the ATS dialog before touching the navbar's export button.
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(250);
+
+  // ---- the export sweep -------------------------------------------------
+  // Gated on sweepCount, not on isExporting: the vector path resolves in a
+  // single tick, so gating on the busy flag meant React never painted a frame
+  // with the line present and the animation was never seen at all.
+  const sawSweep = page
+    .waitForSelector('.dt-sweep-line', { timeout: 6000 })
+    .then(() => true)
+    .catch(() => false);
+  await page.getByRole('button', { name: /export resume as vector pdf/i }).click();
+  const swept = await sawSweep;
+  check('the export sweep renders', swept);
+
+  if (swept) {
+    const sweep = await page.evaluate(() => {
+      const line = document.querySelector('.dt-sweep-line');
+      const wrap = document.querySelector('#resume-print-wrapper');
+      return {
+        bg: getComputedStyle(line).backgroundColor,
+        anim: getComputedStyle(line).animationName,
+        // THE invariant: the sheet must never be inside the animated node, or
+        // a capture taken mid-animation comes out off-register.
+        paperInsideSweep: Boolean(document.querySelector('.dt-sweep #resume-preview')),
+        // and the wrapper itself carries only the user's zoom
+        wrapTransform: getComputedStyle(wrap).transform,
+      };
+    });
+    check('the sweep is the signal colour', sweep.bg === 'rgb(216, 255, 62)', sweep.bg);
+    check('the sweep actually animates', sweep.anim === 'dt-sweep', sweep.anim);
+    check('the sheet is NOT inside the animated sweep node', !sweep.paperInsideSweep);
+    check(
+      'the print wrapper carries only the user zoom',
+      sweep.wrapTransform === 'matrix(0.85, 0, 0, 0.85, 0, 0)',
+      sweep.wrapTransform
+    );
+  }
 }
 
 // ------------------------------------------------------------- reduced motion

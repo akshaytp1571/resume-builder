@@ -13,7 +13,7 @@ const FRAME_SHAPES = [
 /** The mask preview radius. 0 for the square frame — the default. */
 function frameRadius(shape) {
   if (shape === 'circle') return '50%';
-  if (shape === 'rounded') return '6px';
+  if (shape === 'rounded') return '2px';
   return 0;
 }
 
@@ -223,18 +223,13 @@ export default function ImageCropModal({
 
   return (
     <ModalShell onClose={onClose} labelledBy="image-crop-title" className="max-w-lg">
-      {/* Header */}
-      <div className="flex items-start justify-between border-b border-rule bg-housing px-4 py-3">
-        <div className="min-w-0">
-          <div className="flex items-baseline gap-2.5">
-            <span className="dt-serif text-[13px] text-signal">IMG</span>
-            <h2 id="image-crop-title" className="dt-label text-bone">
-              Photo Framing &amp; Position
-            </h2>
-          </div>
-          <p className="dt-data mt-1 text-bone-32">
-            Drag to pan • Scroll to zoom • Calibrate alignment
-          </p>
+      {/* Header: serif kicker + mono title + 32px close, on a hairline. */}
+      <div className="flex items-center justify-between border-b border-rule bg-housing px-4 py-3">
+        <div className="flex items-baseline gap-2.5">
+          <span className="dt-serif text-[13px] text-signal">CROP</span>
+          <h2 id="image-crop-title" className="dt-label text-bone">
+            Photo Framing &amp; Position
+          </h2>
         </div>
         <button
           type="button"
@@ -251,8 +246,12 @@ export default function ImageCropModal({
 
       {/* Body */}
       <div className="space-y-5 overflow-y-auto p-4 text-[13px] sm:p-5">
-        {/* Frame mask: mono segmented hairline */}
-        <div className="flex items-center justify-between gap-2">
+        <p className="dt-data text-bone-32">
+          Drag to pan • Scroll to zoom • Calibrate alignment
+        </p>
+
+        {/* Frame mask: mono segmented hairline, on a rule */}
+        <div className="flex items-center justify-between gap-2 border-t border-rule pt-3">
           <span className="dt-label text-bone-52">Frame Mask</span>
           <div className="flex items-center overflow-hidden rounded-[2px] border border-rule-2">
             {FRAME_SHAPES.map((s) => (

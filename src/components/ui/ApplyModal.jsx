@@ -377,7 +377,6 @@ export default function ApplyModal({
             sound.playAction();
             onClose();
           }}
-          className="mr-auto"
         >
           {step === 'result' ? 'Close' : 'Cancel'}
         </Button>
@@ -405,12 +404,7 @@ export default function ApplyModal({
                 Click again to confirm
               </span>
             )}
-            <Button
-              variant={confirmSubmit ? 'danger' : 'quiet'}
-              onClick={handleSubmit}
-              disabled={busy}
-              className={confirmSubmit ? 'border-alarm bg-alarm/10' : 'border-alarm/60 text-alarm'}
-            >
+            <Button variant="danger" onClick={handleSubmit} disabled={busy}>
               {busy ? (
                 <LoaderCircle size={12} aria-hidden="true" className="animate-spin" />
               ) : (

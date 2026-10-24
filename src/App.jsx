@@ -502,18 +502,32 @@ export default function App() {
         />
 
         {/* THE SWEEP. One 1px lime hairline crossing the bench on each export,
-            so the wait has a shape. It is a sibling of the preview, never a
-            child — the paper must never be inside an animated element, or a
-            capture taken during the animation comes out off-register.
-            key={sweepCount} remounts it so a second export restarts rather than
-            continuing a finished animation. */}
-        {sweepCount > 0 && isExporting && (
+            so the click has a visible answer.
+ 
+            It is gated on sweepCount alone, NOT on isExporting. The vector path
+            resolves in the same tick, so a gate on the busy flag meant React
+            never painted a frame with the sweep present and the animation was
+            simply never seen. This is acknowledgement, not a progress bar.
+ 
+            It is a sibling of the preview, never a child: the paper must never
+            sit inside an animated element or a capture taken mid-animation
+            comes out off-register. key={sweepCount} remounts it, so a second
+            export restarts the animation instead of joining a finished one. */}
+        {sweepCount > 0 && (
           <div
             key={sweepCount}
             aria-hidden="true"
             className="no-print dt-sweep pointer-events-none absolute inset-y-0 right-0 left-0 z-30 lg:left-[460px] xl:left-[500px]"
           >
-            <div className="dt-sweep-line h-px w-full bg-signal" style={{ boxShadow: '0 0 8px rgba(216,255,62,0.5)' }} />
+            <div
+              className="dt-sweep-line h-px w-full bg-signal"
+              style={{ boxShadow: '0 0 8px rgba(216,255,62,0.5)' }}
+              // CSS animations do not restart on a remount in every engine, so
+              // clear it on animationend: the next export then sets it again.
+              onAnimationEnd={(e) => {
+                e.currentTarget.style.animation = 'none';
+              }}
+            />
           </div>
         )}
       </main>
