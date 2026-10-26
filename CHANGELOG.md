@@ -4,6 +4,81 @@ All notable changes to this project. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning is
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2026-10-25
+
+**DRAFTING TABLE** — a complete visual re-skin. No behaviour, data or contract
+change; the entire 893-test suite passed untouched before, during and after.
+
+### Changed
+- **Every surface.** The neon-magenta / plum / glassmorphism language is gone,
+  replaced by a warm-black instrument housing: `--void #0C0D0B`, bone text on
+  hairlines, 0–2px radii, and one lime signal colour reserved for interactive
+  and positive state. A single sheet of paper is the only soft object on screen,
+  which is why every panel around it has a 0px radius.
+- **Typography.** Archivo (display/UI), IBM Plex Mono (labels, metadata,
+  numerals — all tabular), Instrument Serif italic for exactly two jobs: the
+  wordmark's second word and section numerals. All three **self-hosted**; the
+  app is an offline PWA and was blocking first paint on fonts.googleapis.com.
+- **The navbar is an instrument bar.** The scrolling "BOTANICAL CANVAS STUDIO //
+  TEXTURED EDITION" ticker, the build stamp and the blinking status dot are
+  gone. In their place, three readouts that carry measured state: AI provider
+  with a static LED, the live ATS number, one-page on/off.
+- **The editor rail is a numbered column**, not a 3×5 grid of icon tiles. A grid
+  of nine equal boxes says "nine unrelated things"; a numbered column says "one
+  document, nine parts, in order".
+- **Template picker** is a 3×3 grid of pure-CSS miniatures — each a small
+  bar-layout approximating that template, with no image dependency to keep in
+  sync. Palette swatches show their hex as mono data.
+
+### Added
+- **The plate.** Crop marks 12px out from the sheet corners, `Plate 01 · A4
+  210×297` bottom-left, live `Fit {zoom}%` bottom-right. All `no-print`.
+- **The ATS gauge.** 40 hairline ticks (every fifth tall), the numeral counting
+  up linearly over 320ms, ticks revealing on a 40ms stagger, and `role="meter"`
+  with `aria-valuenow` so a screen reader is not read the animation. A ring is a
+  decoration that happens to encode a number; a calibrated scale is readable
+  without the numeral.
+- **The export sweep.** One 1px lime hairline crossing the bench on export, so
+  the click has a visible answer. Gated on a counter rather than the busy flag —
+  the vector export path resolves in a single tick, so a busy-flag gate meant
+  React never painted a frame with the line present and the animation was never
+  seen at all.
+- **`scripts/verify-motion.mjs`** — 24 browser-checked invariants that a unit
+  test cannot see: no `backdrop-filter` anywhere, no filter on the sheet or its
+  wrapper, exactly one background image on the bench, gauge fill matching its
+  value, the sweep not containing the sheet, reduced motion collapsing every
+  transition to ≤1ms and disabling the entrance outright, and print hiding every
+  chrome surface with zero text leakage.
+- **`docs/redesign/{AUDIT,DECISIONS,CONTRACTS}.md`** — the contract inventory
+  with the file and line that enforces each, every decision with its reasoning,
+  and the verification commands per class of change.
+- **11 primitives** in `src/components/ui/primitives/` so the same twenty
+  Tailwind classes are not hand-written in forty files.
+
+### Removed
+- 597 KB of canvas textures (`canvas-painting.jpg`, `canvas-thread-texture.png`).
+  The bench is now a 24px CSS dot grid at 2.5% — visible when you look for it,
+  invisible when you don't.
+- The floating "Atelier Dock", which duplicated the navbar's PDF and DOCX
+  buttons and sat over the sheet.
+- The "Celebrate" confetti button in the ATS modal.
+- The Google Fonts CDN links, the `#030712` body class, and the
+  `NEXUS RESUME PROTOCOL // Quantum Cyber-Studio` page title.
+
+### Fixed
+- **Two `<input type="color">` swatches had no accessible name.** The `<span>`
+  beside each was a sibling, not a label, so the control announced as an
+  unlabelled colour picker. Found by a keyboard sweep of the built app.
+- **A horizontal overflow at 375px** introduced while fixing the variant
+  buttons: `inline-flex` in a shared base class outranked a later `hidden`, so
+  the buttons never hid. Now uses `max-sm:hidden`.
+
+### Notes
+- `#140715` remains in `<meta theme-color>` and the manifest while the shell
+  renders `#0C0D0B`. Browser chrome is not page colour, and `pwa.test.js` pins
+  the value; a mobile status bar stays one plum shade off by design.
+- `src/components/templates/**` was deliberately not restyled. Those files are
+  the exported artifact and the ATS scorer measures them.
 ## [2.5.0] - 2026-10-23
 
 Open-source hygiene, and a security audit that found a real hole.
