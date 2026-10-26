@@ -272,8 +272,11 @@ export default function ThemeCustomizer({ theme, onChange, resumeData }) {
         <div className="mt-3 flex flex-wrap items-center gap-4 border-t border-rule pt-3">
           <div className="flex items-center gap-2">
             <span className="dt-label text-bone-32">Primary</span>
+            {/* A bare <input type="color"> is a control with no accessible name:
+                the <span> beside it is a sibling, not a label. */}
             <input
               type="color"
+              aria-label="Primary colour"
               value={theme.primaryColor || '#3E5566'}
               onChange={(e) => handleUpdate('primaryColor', e.target.value)}
               className="h-6 w-6 cursor-pointer rounded-[2px] border border-rule-2 bg-transparent"
@@ -285,6 +288,7 @@ export default function ThemeCustomizer({ theme, onChange, resumeData }) {
             <span className="dt-label text-bone-32">Secondary</span>
             <input
               type="color"
+              aria-label="Secondary colour"
               value={theme.secondaryColor || '#56707F'}
               onChange={(e) => handleUpdate('secondaryColor', e.target.value)}
               className="h-6 w-6 cursor-pointer rounded-[2px] border border-rule-2 bg-transparent"
