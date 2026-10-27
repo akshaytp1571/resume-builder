@@ -107,6 +107,18 @@ export default function App() {
   // before it existed.
   resetHistoryRef.current = resetHistory;
 
+  // Sheet size is a theme property, but CSS has no way to read it — so the
+  // attribute on <html> is the bridge. index.css keys the sheet dimensions,
+  // the @page rule and the print override off [data-paper], so changing this
+  // one attribute reflows the screen sheet, the print page AND the budget the
+  // ATS scorer uses.
+  useEffect(() => {
+    const size = theme?.paperSize === 'letter' ? 'letter' : 'a4';
+    const root = document.documentElement;
+    if (root.getAttribute('data-paper') === size) return;
+    root.setAttribute('data-paper', size);
+  }, [theme?.paperSize]);
+
   // --- save status + "set as default" --------------------------------------
   // Autosave already runs inside useResumeStore. This adds the observable half:
   // a status the user can see, an explicit Save, and a way to pin the current
@@ -279,7 +291,7 @@ export default function App() {
   const handleDownloadPdf = () =>
     runExport({
       start: 'SYNTHESIZING HIGH-RESOLUTION PDF...',
-      run: () => exportToPdf('resume-preview', resumeData),
+      run: () => exportToPdf('resume-preview', resumeData, { paperSize: theme?.paperSize }),
       success: 'PDF EXPORT COMPILED SUCCESSFULLY!',
       failure: 'PDF Export encountered error. Use Print fallback.',
     });

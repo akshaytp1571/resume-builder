@@ -12,7 +12,7 @@ export default function ModernTemplate({ data, theme }) {
 
   return (
     <div
-      className="flex min-h-[297mm] font-sans bg-white text-gray-800"
+      className="flex font-sans bg-white text-gray-800"
       style={{
         fontFamily: theme?.fontFamily || "'Inter', system-ui, sans-serif",
       }}

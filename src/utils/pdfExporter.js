@@ -18,6 +18,13 @@ import html2pdf from 'html2pdf.js';
 const A4_WIDTH_PX = 794;
 
 /**
+ * US Letter at 96dpi: 8.5in × 96. Both sizes are captured at their true CSS
+ * pixel width so text stays vector-crisp instead of upsampling a scaled
+ * snapshot, and so the jsPDF page dimensions match the sheet.
+ */
+const LETTER_WIDTH_PX = 816;
+
+/**
  * `Jane Doe` -> `Jane_Doe`.
  *
  * A name written entirely in a non-Latin script sanitises to an empty string,
@@ -123,7 +130,8 @@ export async function exportToPdf(elementId, resumeData, options) {
 
   // A4 at 96dpi is ~794x1123 CSS px. Capturing at that width keeps text
   // vector-crisp instead of upsampling a scaled-down snapshot.
-  const captureWidth = A4_WIDTH_PX;
+  const isLetter = options?.paperSize === 'letter';
+  const captureWidth = isLetter ? LETTER_WIDTH_PX : A4_WIDTH_PX;
 
   const opt = {
     margin: 0,
@@ -149,7 +157,8 @@ export async function exportToPdf(elementId, resumeData, options) {
     },
     jsPDF: {
       unit: 'mm',
-      format: 'a4',
+      // jsPDF accepts a named format; both are real page sizes it knows.
+      format: isLetter ? 'letter' : 'a4',
       orientation: 'portrait',
       compress: true,
     },

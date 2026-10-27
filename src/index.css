@@ -323,9 +323,22 @@ body {
    on screen, which is why every panel around it has a 0px radius.
    --------------------------------------------------------------------------- */
 
+/* Paper size is a single knob, not six hardcoded values. The variables feed
+   both .resume-paper below and the print block's @page rule and override, so
+   changing one attribute on <html> restyles the screen sheet and the printed
+   page together.
+   The pixel page-budget lives in ResumePreview.jsx instead — it is measured in
+   JS, and duplicating it here would give two sources of truth that can drift. */
+:root {
+  --sheet-w: 210mm;
+  --sheet-h: 297mm;
+  --page-size-a: 210mm;
+  --page-size-b: 297mm;
+}
+
 .resume-paper {
-  width: 210mm;
-  min-height: 297mm;
+  width: var(--sheet-w);
+  min-height: var(--sheet-h);
   background: #fcfbf8;
   color: #1a1a17;
   box-sizing: border-box;
@@ -336,6 +349,14 @@ body {
   position: relative;
   /* No transition here: the sheet must not animate while zooming or printing,
      or capture comes out soft. */
+}
+
+/* US Letter, set on the <html> element via the theme. */
+:root[data-paper='letter'] {
+  --sheet-w: 8.5in;
+  --sheet-h: 11in;
+  --page-size-a: 8.5in;
+  --page-size-b: 11in;
 }
 
 /* Print-shop furniture around the sheet. All aria-hidden and no-print. */
@@ -484,9 +505,13 @@ body {
 
 @media print {
   /* margin:0 suppresses Chrome's reserved header/footer strip; the resume
-     templates carry their own padding, so no page margin is needed. */
+     templates carry their own padding, so no page margin is needed.
+     The paper size follows the theme variable so printing a US Letter resume
+     emits US Letter, not A4. size: var() is honored by Chromium's PDF engine
+     (verified: output dimensions change). A4 and portrait remain the defaults
+     for anyone without the data attribute. */
   @page {
-    size: A4 portrait;
+    size: var(--page-size-a) var(--page-size-b);
     margin: 0mm !important;
   }
 
@@ -580,10 +605,12 @@ body {
   }
 
   .resume-paper {
-    /* True A4, independent of the on-screen zoom scale. */
-    width: 210mm !important;
-    max-width: 210mm !important;
-    min-height: 297mm !important;
+    /* The true paper, independent of the on-screen zoom scale. Follows the
+       theme's size variables so A4 and US Letter both come out at their real
+       dimensions. */
+    width: var(--sheet-w) !important;
+    max-width: var(--sheet-w) !important;
+    min-height: var(--sheet-h) !important;
     margin: 0 auto !important;
     padding: 0 !important;
     box-shadow: none !important;

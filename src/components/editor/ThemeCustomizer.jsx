@@ -298,6 +298,54 @@ export default function ThemeCustomizer({ theme, onChange, resumeData }) {
         </div>
       </div>
 
+      {/* paper size */}
+      <div className="border-t border-rule pt-4">
+        <div className="mb-2 flex items-baseline justify-between gap-2">
+          <span className="dt-label text-bone-52">Paper Size</span>
+          <span className="dt-data text-bone-32">
+            {theme.paperSize === 'letter' ? '8.5 × 11 in' : '210 × 297 mm'}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            { id: 'a4', label: 'A4', hint: 'Rest of the world. 210 × 297mm.' },
+            { id: 'letter', label: 'US Letter', hint: 'US and Canada. 8.5 × 11in.' },
+          ].map((opt) => {
+            const active = (theme.paperSize || 'a4') === opt.id;
+            return (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => {
+                  sound.playAction();
+                  onChange({ ...theme, paperSize: opt.id });
+                }}
+                aria-pressed={active}
+                className={`cursor-pointer rounded-[2px] border p-2.5 text-left transition-colors duration-[90ms] ${
+                  active ? 'border-signal/50' : 'border-rule hover:border-rule-2'
+                }`}
+              >
+                <span
+                  className={`dt-label mb-1 block ${
+                    active ? 'text-signal' : 'text-bone-52'
+                  }`}
+                >
+                  {opt.label}
+                </span>
+                <p className="text-[11px] leading-snug text-bone-32">{opt.hint}</p>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* A page that is the wrong size for the employer is rejected before it
+            is read, so this is not cosmetic. Say so. */}
+        <p className="mt-2 text-[11px] leading-snug text-bone-32">
+          Match the size the employer expects. A US posting usually wants Letter.
+        </p>
+      </div>
+
       {/* page budget */}
       <div className="border-t border-rule pt-4">
         <div className="mb-2 flex items-baseline justify-between gap-2">

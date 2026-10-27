@@ -147,6 +147,10 @@ export const DEFAULT_THEME = {
   secondaryColor: "#56707F", // Exact border/subheading color from original docx
   accentColor: "#2563eb",
   fontFamily: "Calibri",
+  /* A4 is the default everywhere the original document was built on A4. This
+     is also the value the sheet, the @page rule and the PDF exporter read — see
+     the data-paper attribute wiring in App.jsx. */
+  paperSize: "a4", // 'a4' | 'letter'
   fontSize: "compact", // 'compact', 'normal', 'relaxed'
   sectionSpacing: "compact",
   singlePage: true, // 1-page fit optimization

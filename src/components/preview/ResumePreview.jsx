@@ -31,7 +31,15 @@ import { safeTheme } from '../templates/templateData';
  */
 
 /** A4 at 96dpi — the budget the page-budget badge has always used. */
-const PAGE_BUDGET_PX = 1123;
+const PAGE_BUDGET_A4_PX = 1123;
+
+/** US Letter at 96dpi: 11in × 96. A4 is 297mm ≈ 1123px, Letter is 11 × 96 = 1056. */
+const PAGE_BUDGET_LETTER_PX = 1056;
+
+/** The budget for the active paper size. Mirrors index.css' --budget-px. */
+function budgetFor(paperSize) {
+  return paperSize === 'letter' ? PAGE_BUDGET_LETTER_PX : PAGE_BUDGET_A4_PX;
+}
 
 /**
  * How long to wait for the layout to settle before reporting it upward.
@@ -62,8 +70,7 @@ export default function ResumePreview({
       const height = el.offsetHeight;
       if (!height || height === lastReportedHeight.current) return;
       lastReportedHeight.current = height;
-      onLayoutMeasured?.({ pageHeightPx: height, pageBudgetPx: PAGE_BUDGET_PX });
-    };
+      onLayoutMeasured?.({ pageHeightPx: height, pageBudgetPx: budgetFor(theme?.paperSize) });    };
 
     let timer = null;
     const scheduleReport = () => {
@@ -133,8 +140,10 @@ export default function ResumePreview({
     }
   };
 
-  const budgetPct = pageHeight > 0 ? Math.round((pageHeight / PAGE_BUDGET_PX) * 100) : 0;
-  const overBudget = pageHeight > PAGE_BUDGET_PX + 2;
+  const paperBudgetPx = budgetFor(theme?.paperSize);
+  const isLetter = theme?.paperSize === 'letter';
+  const budgetPct = pageHeight > 0 ? Math.round((pageHeight / paperBudgetPx) * 100) : 0;
+  const overBudget = pageHeight > paperBudgetPx + 2;
 
   return (
     <div className="relative flex h-full flex-1 flex-col overflow-hidden select-none">
@@ -143,13 +152,13 @@ export default function ResumePreview({
         <div className="flex items-center gap-2.5">
           <span className="dt-label text-bone-52">Proof</span>
           <span aria-hidden="true" className="h-3 w-px bg-[var(--rule)]" />
-          <span className="dt-data text-bone-32">A4 · 210×297</span>
+          <span className="dt-data text-bone-32">{isLetter ? 'Letter · 8.5×11' : 'A4 · 210×297'}</span>
           {pageHeight > 0 && (
             <>
               <span aria-hidden="true" className="h-3 w-px bg-[var(--rule)]" />
               <span
                 className={`dt-data ${overBudget ? 'text-alarm' : 'text-bone-70'}`}
-                title={`Rendered height ${pageHeight}px against a ${PAGE_BUDGET_PX}px A4 budget`}
+                title={`Rendered height ${pageHeight}px against a ${paperBudgetPx}px budget`}
               >
                 {budgetPct}% {overBudget ? '· spills' : '· fits'}
               </span>
@@ -237,7 +246,7 @@ export default function ResumePreview({
           aria-hidden="true"
           className="dt-bench-furniture no-print pointer-events-none absolute bottom-3 left-4 font-mono text-[10px] uppercase tracking-[0.08em] text-bone-32"
         >
-          Plate 01 · A4 210×297
+          Plate 01 · {isLetter ? 'Letter 8.5×11' : 'A4 210×297'}
         </div>
 
         {/* fit readout, bottom-right — reflects the real zoom */}
