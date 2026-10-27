@@ -5,6 +5,7 @@ import VariantSwitcher from './components/ui/VariantSwitcher';
 import EditorSidebar from './components/editor/EditorSidebar';
 import ResumePreview from './components/preview/ResumePreview';
 import AtsScoreModal from './components/ui/AtsScoreModal';
+import AtsTextViewModal from './components/ui/AtsTextViewModal';
 import AiConfigModal from './components/ui/AiConfigModal';
 import AiRefineModal from './components/ui/AiRefineModal';
 import JobMatchModal from './components/ui/JobMatchModal';
@@ -150,6 +151,7 @@ export default function App() {
   // must restart the animation, and a boolean would need a reset in between.
   const [sweepCount, setSweepCount] = useState(0);
   const [isAtsOpen, setIsAtsOpen] = useState(false);
+  const [isAtsTextOpen, setIsAtsTextOpen] = useState(false);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
 
   // Quarantined copies from a store that could not be parsed. Read once per
@@ -358,6 +360,12 @@ export default function App() {
           run: () => setIsAtsOpen(true),
         },
         {
+          id: 'open-ats-text',
+          title: 'Show what the ATS parser reads',
+          category: 'Navigate',
+          run: () => setIsAtsTextOpen(true),
+        },
+        {
           id: 'open-job-match',
           title: 'Match resume to a job description',
           category: 'Navigate',
@@ -538,7 +546,16 @@ export default function App() {
           atsResult={atsResult}
           resumeData={resumeData}
           onClose={() => setIsAtsOpen(false)}
+          onShowText={() => {
+            setIsAtsOpen(false);
+            setIsAtsTextOpen(true);
+          }}
         />
+      )}
+
+      {/* Plain-text projection: the single column an ATS actually extracts. */}
+      {isAtsTextOpen && (
+        <AtsTextViewModal resumeData={resumeData} onClose={() => setIsAtsTextOpen(false)} />
       )}
 
       {/* AI Configuration Modal */}

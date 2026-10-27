@@ -35,7 +35,7 @@ const SECTION_LABELS = {
   customSections: 'Custom',
 };
 
-export default function AtsScoreModal({ atsResult, onClose, resumeData }) {
+export default function AtsScoreModal({ atsResult, onClose, resumeData, onShowText }) {
   const { score, rating, breakdown, suggestions } = atsResult;
 
   // --- local job-description matcher (no AI, no network) --------------------
@@ -98,17 +98,35 @@ export default function AtsScoreModal({ atsResult, onClose, resumeData }) {
               ATS Readiness &amp; Score Breakdown
             </h2>
           </div>
-          <button
-            type="button"
-            aria-label="Close ATS score dialog"
-            onClick={() => {
-              sound.playAction();
-              onClose();
-            }}
-            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-[2px] border border-transparent text-bone-52 transition-colors duration-[90ms] hover:bg-[rgba(237,232,220,0.05)] hover:text-bone"
-          >
-            <X size={15} aria-hidden="true" />
-          </button>
+          <div className="flex items-center gap-1">
+            {/* The score is a verdict; the plain-text projection is the evidence
+                behind it. So the entry point belongs here, next to the number,
+                not buried in a settings menu. */}
+            {onShowText && (
+              <button
+                type="button"
+                onClick={() => {
+                  sound.playAction();
+                  onShowText();
+                }}
+                title="Show the single column of text an ATS actually extracts"
+                className="inline-flex h-8 cursor-pointer items-center rounded-[2px] border border-rule-2 px-[10px] font-mono text-[10px] uppercase tracking-[0.08em] text-bone-70 transition-colors duration-[90ms] hover:bg-[rgba(237,232,220,0.05)] hover:text-bone"
+              >
+                Parser view
+              </button>
+            )}
+            <button
+              type="button"
+              aria-label="Close ATS score dialog"
+              onClick={() => {
+                sound.playAction();
+                onClose();
+              }}
+              className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-[2px] border border-transparent text-bone-52 transition-colors duration-[90ms] hover:bg-[rgba(237,232,220,0.05)] hover:text-bone"
+            >
+              <X size={15} aria-hidden="true" />
+            </button>
+          </div>
         </div>
 
         {/* Body */}
