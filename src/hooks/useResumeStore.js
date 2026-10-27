@@ -8,6 +8,10 @@ import {
   addVariant,
   duplicateVariant,
   removeVariant,
+  restoreVariant,
+  purgeVariant,
+  emptyTrash,
+  getTrash,
   setActiveVariant,
   createVariant,
   exportStoreJson,
@@ -193,10 +197,44 @@ export default function useResumeStore({ showToast, resetHistoryRef } = {}) {
       const next = removeVariant(store, id);
       setStore(next);
       resetHistory?.(next);
-      showToastRef.current?.('success', 'VARIANT DELETED');
+      showToastRef.current?.('success', 'MOVED TO TRASH — RECOVERABLE FOR 30 DAYS');
     },
     [store, resetHistory]
   );
+
+  /** Put a trashed resume back. Gets a fresh id, see restoreVariant. */
+  const handleRestoreVariant = useCallback(
+    (id) => {
+      const next = restoreVariant(store, id);
+      if (next === store) return;
+      sound.playAction();
+      setStore(next);
+      resetHistory?.(next);
+      showToastRef.current?.('success', 'RESUME RESTORED');
+    },
+    [store, resetHistory]
+  );
+
+  /** Destroy one trashed resume for good. */
+  const handlePurgeVariant = useCallback(
+    (id) => {
+      const next = purgeVariant(store, id);
+      if (next === store) return;
+      sound.playAction();
+      setStore(next);
+      showToastRef.current?.('info', 'DELETED PERMANENTLY');
+    },
+    [store]
+  );
+
+  /** Destroy the whole trash. */
+  const handleEmptyTrash = useCallback(() => {
+    const count = getTrash(store).length;
+    if (count === 0) return;
+    sound.playAction();
+    setStore(emptyTrash(store));
+    showToastRef.current?.('info', `EMPTIED TRASH — ${count} DELETED`);
+  }, [store]);
 
   const handleExportAllVariants = useCallback(() => {
     try {
@@ -268,6 +306,10 @@ export default function useResumeStore({ showToast, resetHistoryRef } = {}) {
     handleDuplicateVariant,
     handleRenameVariant,
     handleDeleteVariant,
+    handleRestoreVariant,
+    handlePurgeVariant,
+    handleEmptyTrash,
+    trash: getTrash(store),
     handleExportAllVariants,
     handleImportVariants,
     handleResetDefault,

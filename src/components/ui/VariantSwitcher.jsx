@@ -53,8 +53,13 @@ export default function VariantSwitcher({
   onExportAll,
   onImportFile,
   onOpenJsonResume,
+  trash = [],
+  onRestore,
+  onPurge,
+  onEmptyTrash,
 }) {
   const [open, setOpen] = useState(false);
+  const [showTrash, setShowTrash] = useState(false);
   const [renamingId, setRenamingId] = useState(null);
   const [draftName, setDraftName] = useState('');
 
@@ -332,7 +337,9 @@ export default function VariantSwitcher({
                             close();
                           }}
                           className={`${ICON_ACT} hover:text-alarm`}
-                          title="Delete"
+                          // The accessible name stays "Delete …" because tests
+                          // match it; the tooltip carries the safety message.
+                          title="Move to trash (recoverable for 30 days)"
                           aria-label={`Delete ${variant.name || 'this variant'}`}
                         >
                           <Trash2 size={12} aria-hidden="true" />
@@ -344,6 +351,89 @@ export default function VariantSwitcher({
               );
             })}
           </ul>
+
+          {/* ---- Trash ----------------------------------------------------
+              A collapsed section rather than a second modal: the user is
+              already in the variant list, and restoring is the same shape of
+              action as selecting. Only rendered when something is trashed. */}
+          {trash.length > 0 && (
+            <div className="border-t border-rule">
+              <button
+                type="button"
+                onClick={() => {
+                  sound.playTab();
+                  setShowTrash((v) => !v);
+                }}
+                aria-expanded={showTrash}
+                aria-controls="variant-trash-list"
+                className="flex w-full cursor-pointer items-baseline justify-between gap-2 bg-housing px-3 py-2 text-left"
+              >
+                <span className="dt-label flex items-center gap-1.5 text-bone-52">
+                  <Trash2 size={11} aria-hidden="true" />
+                  Trash
+                </span>
+                <span className="flex items-center gap-2">
+                  <span className="dt-data text-bone-32">{trash.length}</span>
+                  <ChevronDown
+                    size={12}
+                    aria-hidden="true"
+                    className={`text-bone-32 transition-transform duration-[90ms] ${
+                      showTrash ? 'rotate-180' : ''
+                    }`}
+                  />
+                </span>
+              </button>
+
+              {showTrash && (
+                <div id="variant-trash-list" className="bg-void">
+                  <p className="dt-data border-b border-rule px-3 py-1.5 text-bone-32">
+                    Recoverable for 30 days, then deleted.
+                  </p>
+                  <ul className="max-h-48 divide-y divide-[var(--rule)] overflow-y-auto">
+                    {trash.map((entry) => (
+                      <li key={entry.id} className="flex items-center gap-2 px-3 py-2">
+                        <div className="min-w-0 flex-1">
+                          <span className="block truncate font-sans text-[13px] text-bone-70">
+                            {entry.name || 'Untitled resume'}
+                          </span>
+                          <span className="dt-data block text-bone-32">
+                            Deleted {formatDate(entry.deletedAt)}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onRestore?.(entry.id);
+                            close();
+                          }}
+                          className="dt-label shrink-0 cursor-pointer rounded-[2px] border border-signal/50 px-1.5 py-0.5 text-signal transition-colors duration-[90ms] hover:bg-signal/10"
+                          aria-label={`Restore ${entry.name || 'this resume'}`}
+                        >
+                          Restore
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onPurge?.(entry.id)}
+                          className={`${ICON_ACT} hover:text-alarm`}
+                          title="Delete permanently"
+                          aria-label={`Delete ${entry.name || 'this resume'} permanently`}
+                        >
+                          <X size={12} aria-hidden="true" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                  <button
+                    type="button"
+                    onClick={() => onEmptyTrash?.()}
+                    className="dt-label w-full cursor-pointer border-t border-rule px-3 py-2 text-left text-bone-32 transition-colors duration-[90ms] hover:text-alarm"
+                  >
+                    Empty trash
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

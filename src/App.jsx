@@ -89,6 +89,9 @@ export default function App() {
     handleDuplicateVariant,
     handleRenameVariant,
     handleDeleteVariant,
+    handleRestoreVariant,
+    handlePurgeVariant,
+    handleEmptyTrash,
     handleExportAllVariants,
     handleImportVariants,
     handleResetDefault,
@@ -472,6 +475,10 @@ export default function App() {
         onExportAll={handleExportAllVariants}
         onImportFile={handleImportVariants}
         onOpenJsonResume={() => setIsJsonResumeOpen(true)}
+        trash={store.trash || []}
+        onRestore={handleRestoreVariant}
+        onPurge={handlePurgeVariant}
+        onEmptyTrash={handleEmptyTrash}
       />
 
       {/* Main Workspace.

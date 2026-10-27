@@ -222,7 +222,28 @@ export function loadStore() {
           const activeId = variants.some((v) => v.id === parsed.activeId)
             ? parsed.activeId
             : variants[0].id;
-          return { activeId, variants };
+
+          // Trash is normalised like variants and returned as a separate array,
+          // so `variants` keeps meaning exactly what it did before soft delete.
+          // Purged here rather than on a timer: load is the only moment we are
+          // guaranteed to run.
+          const trash = purgeExpiredTrash(
+            Array.isArray(parsed.trash)
+              ? parsed.trash
+                  .filter((v) => v && typeof v === 'object')
+                  .map((v) => ({
+                    ...v,
+                    id: typeof v.id === 'string' && v.id ? v.id : makeVariantId(),
+                    name: asString(v.name) || 'Untitled resume',
+                    data: normalizeResume(v.data),
+                    theme: normalizeTheme(v.theme),
+                    letter: normalizeCoverLetter(v.letter),
+                    deletedAt: asString(v.deletedAt) || new Date().toISOString(),
+                  }))
+              : []
+          );
+
+          return { activeId, variants, trash };
         }
       }
     } catch (e) {
@@ -379,7 +400,17 @@ export function saveStore(store) {
     }
 
     if (adopted > 0) {
-      toWrite = { ...store, variants: combined };
+      // Trash is merged too, or a delete in one tab is silently resurrected by
+      // the next save from another. Union by id, newest first, then purge.
+      const otherTrash = Array.isArray(onDisk.trash) ? onDisk.trash : [];
+      const myTrash = getTrash(store);
+      const seen = new Set(myTrash.filter(Boolean).map((t) => t.id));
+      const trash = purgeExpiredTrash([
+        ...myTrash.filter(Boolean),
+        ...otherTrash.filter(Boolean).filter((t) => !seen.has(t.id)),
+      ]);
+
+      toWrite = { ...store, variants: combined, trash };
       merged = toWrite;
     }
   }
@@ -432,8 +463,40 @@ export function duplicateVariant(store, variantId, nameSuffix = 'copy') {
 }
 
 /**
- * Remove a variant. Refuses to remove the last one so the app always has
- * something to edit. Returns the new store, or the original if refused.
+ * How long a deleted resume stays recoverable.
+ *
+ * 30 days. Long enough that a misclick on a phone is a shrug, short enough that
+ * a stale trash cannot quietly fill localStorage — a resume is ~8 KB, so 30 days
+ * of accidental deletes is still smaller than one photo data URL.
+ */
+export const TRASH_RETENTION_DAYS = 30;
+
+const TRASH_RETENTION_MS = TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+
+/** Drop trash entries past retention. Malformed dates are kept, not dropped. */
+export function purgeExpiredTrash(trash) {
+  if (!Array.isArray(trash)) return [];
+  const cutoff = Date.now() - TRASH_RETENTION_MS;
+  return trash.filter((entry) => {
+    if (!entry || typeof entry !== 'object') return false;
+    const at = new Date(entry.deletedAt).getTime();
+    if (!Number.isFinite(at)) return true;
+    return at > cutoff;
+  });
+}
+
+/** The trash array, always an array. */
+export function getTrash(store) {
+  return Array.isArray(store?.trash) ? store.trash : [];
+}
+
+/**
+ * Remove a variant — but only from `variants`. It moves to `trash` so the
+ * removal is undoable, and `trash` is a separate array precisely so nothing
+ * downstream has to learn to filter deleted rows.
+ *
+ * Still refuses to remove the last variant so the app always has something to
+ * edit. Returns the new store, or the original if refused.
  *
  * An imported backup can contain duplicate ids. Filtering by id would then
  * remove every copy, leaving an empty list and crashing the next read, so
@@ -445,6 +508,7 @@ export function removeVariant(store, variantId) {
   const index = store.variants.findIndex((v) => v && v.id === variantId);
   if (index === -1) return store;
 
+  const removed = store.variants[index];
   const variants = store.variants.filter((_, i) => i !== index);
   // Defensive: filter above can only shrink by one, but never hand back an
   // empty list to the rest of the app.
@@ -452,7 +516,53 @@ export function removeVariant(store, variantId) {
 
   const activeStillExists = variants.some((v) => v && v.id === store.activeId);
   const activeId = activeStillExists ? store.activeId : variants[0].id;
-  return { activeId, variants };
+
+  const trash = [
+    { ...removed, deletedAt: new Date().toISOString() },
+    ...getTrash(store),
+  ];
+
+  return { ...store, activeId, variants, trash: purgeExpiredTrash(trash) };
+}
+
+/**
+ * Put a trashed variant back. Assigns a fresh id: the id may have been reused
+ * by a new resume created after the delete, and two variants sharing an id
+ * breaks every by-id lookup in the app.
+ */
+export function restoreVariant(store, variantId) {
+  const trash = getTrash(store);
+  const index = trash.findIndex((v) => v && v.id === variantId);
+  if (index === -1) return store;
+
+  const entry = trash[index];
+  const restored = {
+    ...entry,
+    id: makeVariantId(),
+    updatedAt: new Date().toISOString(),
+  };
+  delete restored.deletedAt;
+
+  return {
+    ...store,
+    activeId: restored.id,
+    variants: [...store.variants, restored],
+    trash: trash.filter((_, i) => i !== index),
+  };
+}
+
+/** Destroy one trashed variant for good. */
+export function purgeVariant(store, variantId) {
+  const trash = getTrash(store);
+  const next = trash.filter((v) => v && v.id !== variantId);
+  if (next.length === trash.length) return store;
+  return { ...store, trash: next };
+}
+
+/** Destroy everything in the trash. */
+export function emptyTrash(store) {
+  if (getTrash(store).length === 0) return store;
+  return { ...store, trash: [] };
 }
 
 /** Switch the active variant. */
