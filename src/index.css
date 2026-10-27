@@ -490,6 +490,310 @@ body {
   }
 }
 
+/* ===========================================================================
+   LANDING PAGE
+   ---------------------------------------------------------------------------
+   Same materials as the editor — warm black, bone ink, hairlines, one lime
+   signal — used at display scale. The page should feel like the instrument is
+   switched on, not like a brochure about it.
+
+   Every animation here is opacity or transform only, and every one of them has
+   a reduced-motion path that resolves to the final state rather than a faster
+   version of the same movement.
+   =========================================================================== */
+
+.landing {
+  background-color: var(--void);
+  color: var(--bone);
+  /* The bench grid, at a pitch wide enough to read as a drafting surface
+     rather than a texture. */
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    rgba(237, 232, 220, 0.035) 1px,
+    transparent 0
+  );
+  background-size: 32px 32px;
+}
+
+/* --- type at display scale ------------------------------------------------ */
+
+.landing-display {
+  font-family: 'Archivo', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: clamp(2.5rem, 7.2vw, 5.75rem);
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+  text-wrap: balance;
+}
+
+.landing-h2 {
+  font-family: 'Archivo', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: clamp(1.75rem, 3.6vw, 2.75rem);
+  line-height: 1.06;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+
+/* The serif is the human hand: one word per page, never a sentence. */
+.landing-serif {
+  font-family: 'Instrument Serif', ui-serif, Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
+.landing-eyebrow {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--bone-52);
+}
+
+/* --- entrance ------------------------------------------------------------
+   A single shared easing and a short stagger. Elements start hidden and are
+   marked .is-in by the reveal observer. */
+
+.landing-rise {
+  opacity: 0;
+  transform: translateY(14px);
+  transition:
+    opacity 620ms var(--e-out),
+    transform 620ms var(--e-out);
+}
+.landing-rise.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* A rule that draws itself from the left. scaleX only. */
+.landing-rule {
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 780ms var(--e-out);
+}
+.landing-rule.is-in {
+  transform: scaleX(1);
+}
+
+/* Stagger: six steps is plenty. Beyond that the last item feels broken. */
+.landing-rise[data-step='1'] { transition-delay: 70ms; }
+.landing-rise[data-step='2'] { transition-delay: 140ms; }
+.landing-rise[data-step='3'] { transition-delay: 210ms; }
+.landing-rise[data-step='4'] { transition-delay: 280ms; }
+.landing-rise[data-step='5'] { transition-delay: 350ms; }
+.landing-rise[data-step='6'] { transition-delay: 420ms; }
+
+/* --- the hero sheet ------------------------------------------------------
+   A miniature of the real thing, tilted in 3D. The tilt is on the outer
+   wrapper so the inner sheet stays flat and its text stays crisp. */
+
+.landing-hero-sheet {
+  transform-style: preserve-3d;
+  animation: landing-tilt 1200ms var(--e-out) both;
+}
+
+@keyframes landing-tilt {
+  from {
+    opacity: 0;
+    transform: perspective(1800px) rotateX(9deg) rotateZ(-1.4deg) translateY(26px) scale(0.965);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(1800px) rotateX(0deg) rotateZ(0deg) translateY(0) scale(1);
+  }
+}
+
+/* The scan line that crosses the hero sheet once on load — the same gesture as
+   the app's export sweep, so the landing page and the product share a verb. */
+.landing-scan {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 1px;
+  background: var(--signal);
+  box-shadow: 0 0 14px rgba(216, 255, 62, 0.55);
+  animation: landing-scan 1900ms var(--e-io) 700ms both;
+}
+
+@keyframes landing-scan {
+  0% { transform: translateY(0); opacity: 0; }
+  12% { opacity: 1; }
+  88% { opacity: 1; }
+  100% { transform: translateY(var(--scan-travel, 420px)); opacity: 0; }
+}
+
+/* --- ticker --------------------------------------------------------------
+   An infinite marquee of capability labels. Paused on hover so a reader can
+   stop it, and duplicated content so the loop has no seam. */
+
+.landing-ticker {
+  display: flex;
+  width: max-content;
+  animation: landing-ticker 42s linear infinite;
+}
+.landing-ticker:hover,
+.landing-ticker:focus-within {
+  animation-play-state: paused;
+}
+
+@keyframes landing-ticker {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+/* --- the spec table ------------------------------------------------------
+   Rows that light a hairline on hover. The rule grows from the left, which is
+   the only movement — no lift, no shadow, no colour fill. */
+
+.landing-row {
+  position: relative;
+  transition: background-color 180ms var(--e-out);
+}
+.landing-row::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--signal);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 320ms var(--e-out);
+}
+.landing-row:hover::after,
+.landing-row:focus-within::after {
+  transform: scaleX(1);
+}
+
+/* --- magnetic button -----------------------------------------------------
+   The primary CTA: the fill wipes in from the bottom on hover, and the label
+   shifts a hair. Both are transform/colour only. */
+
+.landing-cta {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid var(--signal);
+  background: var(--signal);
+  color: var(--void);
+  transition: color 260ms var(--e-out);
+}
+.landing-cta::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--void);
+  transform: translateY(101%);
+  transition: transform 360ms var(--e-io);
+}
+.landing-cta:hover::before,
+.landing-cta:focus-visible::before {
+  transform: translateY(0);
+}
+.landing-cta:hover,
+.landing-cta:focus-visible {
+  color: var(--signal);
+}
+
+/* Secondary: hairline that fills from the left. */
+.landing-cta-ghost {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid var(--rule-2);
+  color: var(--bone-70);
+  transition: color 260ms var(--e-out), border-color 260ms var(--e-out);
+}
+.landing-cta-ghost::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: rgba(237, 232, 220, 0.07);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 360ms var(--e-io);
+}
+.landing-cta-ghost:hover::before,
+.landing-cta-ghost:focus-visible::before {
+  transform: scaleX(1);
+}
+.landing-cta-ghost:hover,
+.landing-cta-ghost:focus-visible {
+  color: var(--bone);
+  border-color: var(--rule-2);
+}
+
+/* --- the gauge in the hero readout --------------------------------------- */
+
+.landing-tick {
+  flex: 1;
+  background: var(--bone-32);
+  transform-origin: bottom center;
+  transform: scaleY(0.35);
+  transition:
+    transform 520ms var(--e-out),
+    background-color 520ms var(--e-out);
+}
+.landing-tick.is-on {
+  background: var(--signal);
+  transform: scaleY(1);
+}
+
+/* --- scroll progress ------------------------------------------------------ */
+
+.landing-progress {
+  position: fixed;
+  inset-inline: 0;
+  top: 0;
+  height: 2px;
+  z-index: 60;
+  background: var(--signal);
+  transform-origin: left center;
+  will-change: transform;
+}
+
+/* --- reduced motion ------------------------------------------------------
+   Not a shorter animation: no animation. Everything resolves to its final
+   state, because the content is the point and the movement is the garnish. */
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-rise,
+  .landing-rule {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+    transition-delay: 0ms !important;
+  }
+  .landing-hero-sheet {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .landing-scan {
+    display: none !important;
+  }
+  .landing-ticker {
+    animation: none !important;
+    /* Without the marquee the strip must still be readable, so let it scroll
+       horizontally by hand instead of looping. */
+    overflow-x: auto;
+  }
+  .landing-tick {
+    transform: none !important;
+    transition: none !important;
+  }
+  .landing-cta::before,
+  .landing-cta-ghost::before,
+  .landing-row::after {
+    transition: none !important;
+  }
+}
+
 /* ---------------------------------------------------------------------------
    PRINT
    ---------------------------------------------------------------------------

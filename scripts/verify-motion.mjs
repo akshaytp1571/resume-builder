@@ -75,7 +75,7 @@ const browser = await chromium.launch();
 {
   console.log('\nnormal motion');
   const page = await (await browser.newContext({ viewport: { width: 1440, height: 900 } })).newPage();
-  await page.goto('http://127.0.0.1:4180/', { waitUntil: 'networkidle' });
+  await page.goto('http://127.0.0.1:4180/#/app', { waitUntil: 'networkidle' });
   await page.waitForTimeout(800);
 
   const glass = await page.evaluate(() => {
@@ -181,7 +181,7 @@ const browser = await chromium.launch();
   console.log('\nprefers-reduced-motion: reduce');
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' });
   const page = await ctx.newPage();
-  await page.goto('http://127.0.0.1:4180/', { waitUntil: 'networkidle' });
+  await page.goto('http://127.0.0.1:4180/#/app', { waitUntil: 'networkidle' });
   await page.waitForTimeout(500);
 
   const durations = await page.evaluate(() => {
@@ -230,7 +230,7 @@ const browser = await chromium.launch();
 {
   console.log('\nprint');
   const page = await (await browser.newContext({ viewport: { width: 1440, height: 900 } })).newPage();
-  await page.goto('http://127.0.0.1:4180/', { waitUntil: 'networkidle' });
+  await page.goto('http://127.0.0.1:4180/#/app', { waitUntil: 'networkidle' });
   await page.waitForTimeout(800);
   await page.emulateMedia({ media: 'print' });
   await page.waitForTimeout(300);
@@ -278,6 +278,96 @@ const browser = await chromium.launch();
     `paper ${print.paperTransform} / wrap ${print.wrapTransform}`
   );
   check('no chrome text leaks onto the page', print.leaks.length === 0, print.leaks.join(', '));
+}
+
+// ---------------------------------------------------------------- landing page
+// The landing page is a second surface with its own motion, and it is the one
+// a visitor sees first. It gets the same treatment: entrances must actually
+// start hidden, the reduced-motion path must resolve rather than merely speed
+// up, and the hero gauge must count.
+{
+  console.log('\nlanding page');
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const page = await ctx.newPage();
+
+  const res = await page.goto('http://127.0.0.1:4180/#/', { waitUntil: 'networkidle' });
+  check('the landing page serves', res?.status() === 200, String(res?.status()));
+
+  const bare = await page.evaluate(() => window.location.hash);
+  check('a bare URL normalises to an explicit #/ route', bare === '#/', bare);
+
+  // Entrances start hidden, so they must actually be hidden before they fire.
+  // Elements already carrying .is-in are excluded on purpose: the hero readout
+  // group starts visible because the gauge inside it runs its own observer, and
+  // a parent at opacity:0 would stop that observer from ever firing.
+  const beforeReveal = await page.evaluate(() => {
+    const els = [...document.querySelectorAll('.landing-rise')].filter(
+      (e) => !e.classList.contains('is-in')
+    );
+    return { total: els.length, hidden: els.filter((e) => getComputedStyle(e).opacity === '0').length };
+  });
+  check('entrance elements exist', beforeReveal.total > 0, String(beforeReveal.total));
+  check(
+    'entrances start hidden rather than already settled',
+    beforeReveal.hidden === beforeReveal.total,
+    `${beforeReveal.hidden}/${beforeReveal.total} hidden`
+  );
+
+  await page.waitForTimeout(2200);
+  const afterReveal = await page.evaluate(() => {
+    const els = [...document.querySelectorAll('.landing-rise')];
+    return els.filter((e) => getComputedStyle(e).opacity !== '0').length;
+  });
+  check('hero entrances resolve without scrolling', afterReveal > 0, String(afterReveal));
+
+  // THE regression this guarded: the count-up sits at y=870 in a 900px viewport,
+  // so any bottom rootMargin inset excluded it and the gauge sat at 0 forever.
+  const gauge = await page.evaluate(() => {
+    const el = document.querySelector('[role="img"][aria-label*="ATS score"]');
+    return {
+      present: Boolean(el),
+      value: Number((el?.getAttribute('aria-label') || '').match(/(\d+) out of/)?.[1] ?? -1),
+      litTicks: el ? [...el.querySelectorAll('.landing-tick')].filter((t) => t.classList.contains('is-on')).length : 0,
+    };
+  });
+  check('the hero gauge exists', gauge.present);
+  check('the hero gauge counted up to its target', gauge.value === 92, String(gauge.value));
+  check('the gauge lit ticks to match', gauge.litTicks > 25, String(gauge.litTicks));
+
+  const ticker = await page.evaluate(() => {
+    const t = document.querySelector('.landing-ticker');
+    return t ? getComputedStyle(t).animationName : null;
+  });
+  check('the capability ticker is running', ticker === 'landing-ticker', String(ticker));
+
+  // Reduced motion: resolved, not accelerated.
+  const rctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, reducedMotion: 'reduce' });
+  const rpage = await rctx.newPage();
+  await rpage.goto('http://127.0.0.1:4180/#/', { waitUntil: 'networkidle' });
+  await rpage.waitForTimeout(500);
+  const reduced = await rpage.evaluate(() => {
+    const els = [...document.querySelectorAll('.landing-rise')];
+    const t = document.querySelector('.landing-ticker');
+    const g = document.querySelector('[role="img"][aria-label*="ATS score"]');
+    return {
+      allShown: els.length > 0 && els.every((e) => getComputedStyle(e).opacity === '1'),
+      anyTransition: els.some((e) => parseFloat(getComputedStyle(e).transitionDuration) > 0.002),
+      tickerAnim: t ? getComputedStyle(t).animationName : 'none',
+      gauge: Number((g?.getAttribute('aria-label') || '').match(/(\d+) out of/)?.[1] ?? -1),
+      scanHidden: (() => {
+        const s = document.querySelector('.landing-scan');
+        return s ? getComputedStyle(s).display === 'none' : true;
+      })(),
+    };
+  });
+  check('reduced motion shows every entrance immediately', reduced.allShown);
+  check('reduced motion removes entrance transitions entirely', !reduced.anyTransition);
+  check('reduced motion stops the ticker', reduced.tickerAnim === 'none', String(reduced.tickerAnim));
+  check('reduced motion hides the decorative scan line', reduced.scanHidden);
+  check('reduced motion still shows the real gauge value', reduced.gauge === 92, String(reduced.gauge));
+
+  await rctx.close();
+  await ctx.close();
 }
 
 await browser.close();
