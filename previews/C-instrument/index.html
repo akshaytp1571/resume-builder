@@ -1,0 +1,491 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Resume Studio — client-side résumé instrument</title>
+<meta name="description" content="A résumé builder that runs entirely in the browser tab. ATS scoring, keyword match, parser view, cover letters, tracker, apply agent. Free, MIT, no account, no upload." />
+<link rel="preload" href="../../public/fonts/plex-mono-400-normal.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="../../public/fonts/archivo-600-normal.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div class="frame" aria-hidden="true">
+  <span class="frame__corner frame__corner--tl"></span>
+  <span class="frame__corner frame__corner--tr"></span>
+  <span class="frame__corner frame__corner--bl"></span>
+  <span class="frame__corner frame__corner--br"></span>
+  <span class="frame__zone frame__zone--a">A</span>
+  <span class="frame__zone frame__zone--b">B</span>
+  <span class="frame__zone frame__zone--c">C</span>
+</div>
+
+<header class="masthead">
+  <a class="masthead__mark" href="#top">
+    <svg viewBox="0 0 22 22" width="18" height="18" aria-hidden="true" class="mark">
+      <path d="M11 1v20M1 11h20" />
+      <circle cx="11" cy="11" r="4.5" />
+    </svg>
+    <span>RESUME<br />STUDIO</span>
+  </a>
+  <p class="masthead__meta">
+    DOC. RS&#8209;2026&#8209;04<br />
+    INSTRUMENT SERIES / SHEET 01<br />
+    SCALE 1:1 · REV C
+  </p>
+</header>
+
+<main id="top">
+
+  <section class="hero" aria-labelledby="h1">
+    <div class="hero__text">
+      <p class="tag"><span class="tag__n">01</span> SCOPE OF WORK</p>
+      <h1 id="h1">
+        Everything a résumé needs.<br />
+        None of it leaves the tab.
+      </h1>
+      <p class="deck">
+        Structured editor, live A4 page, ten layouts, ATS score out of 100, keyword
+        match against a real posting, parser view, cover letters, tracker, apply agent.
+        No account. No server. No upload. Four point six megabytes, running client-side.
+      </p>
+
+      <dl class="specstrip">
+        <div><dt>Page</dt><dd>1123 px</dd></div>
+        <div><dt>Gauge</dt><dd>40 lines</dd></div>
+        <div><dt>Requests</dt><dd>0</dd></div>
+        <div><dt>Licence</dt><dd>MIT</dd></div>
+      </dl>
+
+      <p class="cta">
+        <a class="btn btn--live" href="https://github.com/akshaytp1571/resume-builder">
+          OPEN THE BUILDER
+        </a>
+        <a class="btn btn--ghost" href="https://github.com/akshaytp1571/resume-builder">
+          SOURCE <svg class="btn__arrow" viewBox="0 0 10 10" width="9" height="9" aria-hidden="true"><path d="M2 8L8 2M8 2H3.2M8 2V6.8"/></svg>
+        </a>
+        <span class="cta__note">v3.0.0 · nothing to sign up for</span>
+      </p>
+    </div>
+
+    <div class="console" aria-label="Live instrument readout">
+      <p class="console__bar">
+        <span class="dot" aria-hidden="true"></span> INSTRUMENT · SELF-TEST
+      </p>
+      <pre class="terminal__body" aria-label="Status readout"><span data-type="ATS 92/100 · LOCAL
+NETWORK: NONE
+PARSE BACK: 2 WARNINGS
+PAGE BUDGET: 1 / 1
+RENDER: 794×1123 px @ 96 dpi
+EXPORT: PDF · DOCX · JSON">ATS 92/100 · LOCAL
+NETWORK: NONE
+PARSE BACK: 2 WARNINGS
+PAGE BUDGET: 1 / 1
+RENDER: 794×1123 px @ 96 dpi
+EXPORT: PDF · DOCX · JSON</span><span class="caret" aria-hidden="true"></span></pre>
+
+      <div class="console__gauge">
+        <p class="gauge__head">
+          <span>ATS SCORE</span>
+          <span class="gauge__val"><b>92</b> / 100</span>
+        </p>
+        <div class="gauge" data-gauge role="img" aria-label="ATS gauge: 92 of 100, drawn as 40 hairlines"></div>
+        <dl class="weights">
+          <div><dt>Contact</dt><dd>25</dd></div>
+          <div><dt>Summary</dt><dd>12</dd></div>
+          <div><dt>Skills</dt><dd>12</dd></div>
+          <div><dt>Experience</dt><dd>22</dd></div>
+          <div><dt>Education</dt><dd>08</dd></div>
+          <div><dt>Projects</dt><dd>08</dd></div>
+          <div><dt>Layout</dt><dd>13</dd></div>
+          <div><dt>Total</dt><dd>100</dd></div>
+        </dl>
+        <p class="gauge__foot">40 hairlines, one per 2.5 points. Filled 1–37.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="figure" id="fig1" aria-labelledby="fig1c">
+    <div class="sectionhead">
+      <p class="tag"><span class="tag__n">02</span> FIG. 1</p>
+      <h2 id="fig1c">Résumé page, annotated</h2>
+      <p class="sectionhead__note">Drawn 1:6. Every callout is a scored category. The number after it is its weight out of 100.</p>
+    </div>
+
+    <div class="figure__grid">
+      <aside class="notes" aria-label="Drawing notes">
+        <p class="notes__head">NOTES</p>
+        <ol>
+          <li><span>01</span>Hairlines are 1 px. Nothing on this sheet is filled for effect.</li>
+          <li><span>02</span>Dimension values are the app's own render constants at 96 dpi.</li>
+          <li><span>03</span>Weights come from <code>atsScorer.js</code>. Not invented for the page.</li>
+          <li><span>04</span>Page budget is a hard stop: 1123 px, one sheet.</li>
+          <li><span>05</span>The gauge in the header is the app's real readout.</li>
+        </ol>
+      </aside>
+
+      <div class="figure__stage">
+
+    <div class="schematic" data-schematic>
+      <svg class="drawing" viewBox="240 0 990 740" role="img" aria-labelledby="figdesc">
+        <desc id="figdesc">Technical drawing of an A4 résumé page with vertical and horizontal dimension lines, corner crosshairs, and leader lines to header, experience, skills and page-budget callouts.</desc>
+
+        <!-- corner crosshairs -->
+        <g class="cross">
+          <path d="M366 40h-22M380 26v-18" />
+          <path d="M834 40h22M820 26v-18" />
+          <path d="M366 662h-22M380 676v18" />
+          <path d="M834 662h22M820 676v18" />
+        </g>
+
+        <!-- page -->
+        <g class="page">
+          <rect class="page__sheet" x="380" y="40" width="440" height="622" />
+
+          <!-- header block -->
+          <g class="b b--strong">
+            <rect x="444" y="80" width="232" height="11" />
+            <rect x="444" y="98" width="148" height="6" />
+          </g>
+          <g class="b">
+            <rect x="444" y="116" width="70" height="5" />
+            <rect x="522" y="116" width="86" height="5" />
+            <rect x="616" y="116" width="54" height="5" />
+          </g>
+          <path class="rule" d="M444 138h312" />
+
+          <!-- summary -->
+          <g class="b">
+            <rect x="444" y="156" width="312" height="5" />
+            <rect x="444" y="170" width="306" height="5" />
+            <rect x="444" y="184" width="296" height="5" />
+            <rect x="444" y="198" width="188" height="5" />
+          </g>
+          <path class="rule" d="M444 216h312" />
+
+          <!-- experience group 1 -->
+          <rect class="b b--label" x="444" y="234" width="88" height="7" />
+          <g class="b">
+            <rect x="444" y="252" width="202" height="7" />
+            <rect x="444" y="266" width="138" height="5" />
+            <rect x="462" y="284" width="292" height="4" />
+            <rect x="462" y="296" width="278" height="4" />
+            <rect x="462" y="308" width="256" height="4" />
+            <rect x="444" y="326" width="180" height="5" />
+            <rect x="462" y="342" width="286" height="4" />
+            <rect x="462" y="354" width="240" height="4" />
+          </g>
+          <g class="dots">
+            <circle cx="455" cy="286" r="1.8" />
+            <circle cx="455" cy="298" r="1.8" />
+            <circle cx="455" cy="310" r="1.8" />
+            <circle cx="455" cy="344" r="1.8" />
+            <circle cx="455" cy="356" r="1.8" />
+          </g>
+          <path class="rule" d="M444 374h312" />
+
+          <!-- skills -->
+          <rect class="b b--label" x="444" y="392" width="62" height="7" />
+          <g class="b">
+            <rect x="444" y="410" width="58" height="13" />
+            <rect x="508" y="410" width="70" height="13" />
+            <rect x="584" y="410" width="48" height="13" />
+            <rect x="638" y="410" width="64" height="13" />
+            <rect x="444" y="430" width="90" height="13" />
+            <rect x="540" y="430" width="52" height="13" />
+          </g>
+          <path class="rule" d="M444 460h312" />
+
+          <!-- education -->
+          <rect class="b b--label" x="444" y="478" width="76" height="7" />
+          <g class="b">
+            <rect x="444" y="496" width="164" height="5" />
+            <rect x="444" y="510" width="120" height="4" />
+          </g>
+          <path class="rule" d="M444 534h312" />
+
+          <!-- footer band -->
+          <g class="b b--faint">
+            <rect x="444" y="560" width="96" height="4" />
+            <rect x="660" y="560" width="96" height="4" />
+          </g>
+
+          <!-- safe margin frame -->
+          <rect class="margin" x="420" y="66" width="360" height="570" stroke-dasharray="3 4" />
+        </g>
+
+        <!-- margin of the sheet: dimension kit -->
+        <g class="dim">
+          <path class="dim__line" d="M344 40v622" />
+          <path class="dim__tick" d="M336 40h16M336 662h16" />
+          <path class="dim__arrow" d="M340 48l4 -8 4 8M340 654l4 8 4 -8" />
+          <text class="dim__label" x="322" y="351" transform="rotate(-90 322 351)">1123 px · 297 mm</text>
+
+          <path class="dim__line" d="M380 700h440" />
+          <path class="dim__tick" d="M380 692v16M820 692v16" />
+          <path class="dim__arrow" d="M388 696l-8 4 8 4M812 696l8 4 -8 4" />
+          <text class="dim__label" x="600" y="726" text-anchor="middle">794 px · 210 mm · A4</text>
+        </g>
+
+        <!-- callouts, right -->
+        <g class="call call--right">
+          <path class="call__leader" d="M700 92H860" />
+          <circle class="call__nub" cx="700" cy="92" r="1.7" />
+          <text class="call__idx" x="872" y="86">01</text>
+          <text class="call__text" x="894" y="86">HEADER</text>
+          <text class="call__sub" x="894" y="100">name · role · contact — 25 pts</text>
+
+          <path class="call__leader" d="M712 300H860" />
+          <circle class="call__nub" cx="712" cy="300" r="1.7" />
+          <text class="call__idx" x="872" y="296">02</text>
+          <text class="call__text" x="894" y="296">EXPERIENCE</text>
+          <text class="call__sub" x="894" y="310">verb-first bullets — 22 pts</text>
+
+          <path class="call__leader" d="M700 416H860" />
+          <circle class="call__nub" cx="700" cy="416" r="1.7" />
+          <text class="call__idx" x="872" y="412">03</text>
+          <text class="call__text" x="894" y="412">SKILLS</text>
+          <text class="call__sub" x="894" y="426">keyword-scored — 12 pts</text>
+
+          <path class="call__leader" d="M724 520H860" />
+          <circle class="call__nub" cx="724" cy="520" r="1.7" />
+          <text class="call__idx" x="872" y="516">04</text>
+          <text class="call__text" x="894" y="516">PARSE RULES</text>
+          <text class="call__sub" x="894" y="530">no columns · no tables</text>
+        </g>
+
+        <!-- revision cloud / note -->
+        <g class="call__note">
+          <path class="note__rev" d="M978 596h150l7 9-7 9H978l-7-9z" />
+          <text x="988" y="611">REV C — gauge widened</text>
+        </g>
+      </svg>
+
+      <div class="readout readout--xy" aria-hidden="true">
+        <span data-xy>x: ----  y: ----</span>
+      </div>
+    </div>
+
+    <!-- Narrow viewport: same drawing, redrawn for 390px rather than squeezed. -->
+    <div class="schematic__mobile" data-schematic>
+      <svg class="mob-svg" viewBox="0 0 360 410" role="img" aria-labelledby="figdesc2">
+        <desc id="figdesc2">Reduced technical drawing of the résumé page with a width dimension and three category callouts.</desc>
+
+        <g class="page">
+          <rect class="page__sheet" x="28" y="24" width="148" height="262" />
+          <rect class="margin" x="40" y="34" width="124" height="242" stroke-dasharray="3 4" />
+
+          <g class="b b--strong">
+            <rect x="50" y="50" width="80" height="7" />
+            <rect x="50" y="62" width="52" height="4" />
+          </g>
+          <g class="b">
+            <rect x="50" y="76" width="24" height="3" />
+            <rect x="78" y="76" width="30" height="3" />
+            <rect x="112" y="76" width="18" height="3" />
+          </g>
+          <path class="rule" d="M50 88h104" />
+          <g class="b">
+            <rect x="50" y="98" width="104" height="3" />
+            <rect x="50" y="106" width="94" height="3" />
+            <rect x="50" y="114" width="62" height="3" />
+          </g>
+          <path class="rule" d="M50 126h104" />
+
+          <rect class="b b--label" x="50" y="136" width="34" height="4" />
+          <g class="b">
+            <rect x="50" y="148" width="70" height="4" />
+            <rect x="50" y="158" width="42" height="3" />
+            <rect x="56" y="170" width="96" height="3" />
+            <rect x="56" y="178" width="88" height="3" />
+            <rect x="56" y="186" width="72" height="3" />
+            <rect x="50" y="198" width="60" height="4" />
+            <rect x="56" y="210" width="90" height="3" />
+            <rect x="56" y="218" width="76" height="3" />
+          </g>
+          <g class="dots">
+            <circle cx="52" cy="171.5" r="1.3" />
+            <circle cx="52" cy="179.5" r="1.3" />
+            <circle cx="52" cy="187.5" r="1.3" />
+            <circle cx="52" cy="211.5" r="1.3" />
+            <circle cx="52" cy="219.5" r="1.3" />
+          </g>
+          <path class="rule" d="M50 232h104" />
+
+          <rect class="b b--label" x="50" y="242" width="26" height="4" />
+          <g class="b">
+            <rect x="50" y="254" width="24" height="7" />
+            <rect x="78" y="254" width="28" height="7" />
+            <rect x="50" y="266" width="36" height="7" />
+          </g>
+        </g>
+
+        <g class="dim">
+          <path class="dim__line" d="M28 296h148" />
+          <path class="dim__tick" d="M28 290v12M176 290v12" />
+          <path class="dim__arrow" d="M32 292l-4 4 4 4M172 292l4 4 -4 4" />
+          <text class="dim__label" x="102" y="314" text-anchor="middle" style="font-size:10px;letter-spacing:.1em">794 &#215; 1123 px</text>
+        </g>
+
+        <g class="call call--right">
+          <path class="call__leader" d="M112 53H186" />
+          <circle class="call__nub" cx="112" cy="53" r="1.5" />
+          <text class="call__text" x="196" y="50" style="font-size:12px">HEADER</text>
+          <text class="call__sub" x="196" y="63" style="font-size:10px">01 &#183; 25 pts</text>
+
+          <path class="call__leader" d="M150 174H186" />
+          <circle class="call__nub" cx="150" cy="174" r="1.5" />
+          <text class="call__text" x="196" y="171" style="font-size:12px">EXPERIENCE</text>
+          <text class="call__sub" x="196" y="184" style="font-size:10px">02 &#183; 22 pts</text>
+
+          <path class="call__leader" d="M140 258H186" />
+          <circle class="call__nub" cx="140" cy="258" r="1.5" />
+          <text class="call__text" x="196" y="255" style="font-size:12px">SKILLS</text>
+          <text class="call__sub" x="196" y="268" style="font-size:10px">03 &#183; 12 pts</text>
+
+        </g>
+
+        <g class="call__note">
+          <path class="note__rev" d="M196 330h142l7 10-7 10H196l-7-10z" />
+          <text x="208" y="346" style="font-size:9.5px">REV C &#8212; GAUGE WIDENED</text>
+        </g>
+
+        <text class="call__sub" x="28" y="392" style="font-size:9.5px;letter-spacing:.14em">FIG. 1 &#8212; REDUCED</text>
+      </svg>
+      </div>
+    </div>
+  </section>
+
+  <section class="parser" aria-labelledby="parserc">
+    <div class="sectionhead">
+      <p class="tag"><span class="tag__n">03</span> FIG. 2 — PARSER VIEW</p>
+      <h2 id="parserc">What the machine actually reads</h2>
+      <p class="sectionhead__note">Left: the page as designed. Right: the same bytes flattened to text, the way applicant tracking software ingests it. The app shows both, side by side, always.</p>
+    </div>
+
+    <div class="parse">
+      <div class="parse__col">
+        <p class="parse__head">RENDERED <span>794 x 1123 px</span></p>
+        <ol class="parse__doc">
+          <li class="parse__name">PRIYA RAGHAVAN</li>
+          <li class="parse__role">Backend engineer — distributed systems</li>
+          <li class="parse__rule" aria-hidden="true"></li>
+          <li><b>EXPERIENCE</b></li>
+          <li>Staff Engineer, Meridian Labs — 2022 to now</li>
+          <li class="parse__bullet">Cut p99 checkout latency 840 ms to 210 ms by replacing the write path.</li>
+          <li class="parse__bullet">Led a four-person migration off a single Postgres primary.</li>
+          <li class="parse__rule" aria-hidden="true"></li>
+          <li><b>SKILLS</b></li>
+          <li>Go — Postgres — Kafka — Terraform — on-call</li>
+        </ol>
+      </div>
+
+      <div class="parse__arrow" aria-hidden="true">
+        <svg viewBox="0 0 40 120" width="40" height="120">
+          <path d="M2 60h30" />
+          <path d="M26 54l8 6-8 6" />
+        </svg>
+        <span>FLATTEN</span>
+      </div>
+
+      <div class="parse__col parse__col--out">
+        <p class="parse__head">PARSED <span>TEXT ONLY</span></p>
+        <pre class="parse__text">PRIYA RAGHAVAN
+Backend engineer — distributed systems
+
+EXPERIENCE
+Staff Engineer, Meridian Labs — 2022 to now
+- Cut p99 checkout latency 840 ms to 210 ms by
+  replacing the write path.
+- Led a four-person migration off a single
+  Postgres primary.
+
+SKILLS
+Go — Postgres — Kafka — Terraform — on-call</pre>
+        <ul class="parse__warn">
+          <li><span aria-hidden="true">!</span> 2 warnings — one section heading sits inside a styled block, and one bullet uses a non-ASCII marker. Both fixable in place.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="ledger" aria-labelledby="ledgerc">
+    <div class="sectionhead">
+      <p class="tag"><span class="tag__n">04</span> BILL OF MATERIALS</p>
+      <h2 id="ledgerc">Eight assemblies, all of them shipped</h2>
+    </div>
+
+    <ol class="parts">
+      <li><span class="parts__n">01</span><h3>Structured editor</h3><p>Fields, not a canvas. Reordering is drag or keyboard. Undo is unlimited.</p><span class="parts__spec">AUTO-SAVE · INDEXEDDB</span></li>
+      <li><span class="parts__n">02</span><h3>Ten layouts</h3><p>Same content, ten typographic systems. Switch without losing a line.</p><span class="parts__spec">A4 · ONE PAGE</span></li>
+      <li><span class="parts__n">03</span><h3>ATS scorer</h3><p>Seven categories, 100 points, and the exact line that lost you each one.</p><span class="parts__spec">24 VERBS CHECKED</span></li>
+      <li><span class="parts__n">04</span><h3>Keyword match</h3><p>Paste the posting. Get the terms you missed, ranked, with a count of where each belongs.</p><span class="parts__spec">NO AI CALL</span></li>
+      <li><span class="parts__n">05</span><h3>Parser view</h3><p>Your résumé as the tracking software flattens it. If it reads as noise, you see the noise.</p><span class="parts__spec">TEXT-ONLY RENDER</span></li>
+      <li><span class="parts__n">06</span><h3>Cover letters</h3><p>Same document model, same exports. Clipped to the posting you are answering.</p><span class="parts__spec">MATCHED TO JD</span></li>
+      <li><span class="parts__n">07</span><h3>Application tracker</h3><p>Stages, dates, contacts, notes. Stored locally; exportable as JSON whenever.</p><span class="parts__spec">EXPORT · JSON</span></li>
+      <li><span class="parts__n">08</span><h3>Apply agent</h3><p>Fills the form and attaches the file in a real browser. You press submit, twice.</p><span class="parts__spec">npm run jobs:api</span></li>
+    </ol>
+  </section>
+
+  <section class="quote" aria-label="Design note">
+    <p class="quote__line">
+      Nothing is uploaded,<br />
+      <em>so nothing can leak.</em>
+    </p>
+    <p class="quote__by">The whole app is one static bundle. Open it from a folder if you like — it works offline after first load.</p>
+  </section>
+
+  <section class="apply" aria-labelledby="applyc">
+    <div class="sectionhead">
+      <p class="tag"><span class="tag__n">05</span> FIG. 3 — APPLY CHAIN</p>
+      <h2 id="applyc">The one thing that needs a process</h2>
+    </div>
+    <div class="apply__grid">
+      <div class="apply__col">
+        <p>The agent is a local service on port 3457. It drives Chromium, matches fields to your record, attaches the PDF, and stops.</p>
+        <p class="apply__warn"><span aria-hidden="true">!</span> It does not submit unless <code>submit</code> and <code>confirmSubmit</code> are both true. Two clicks, both yours.</p>
+        <p class="apply__cmd"><span aria-hidden="true">$</span> npm run jobs:api</p>
+      </div>
+      <ol class="chain">
+        <li><span>INPUT</span>Posting URL pasted from Greenhouse, Lever, Ashby or Workable.</li>
+        <li><span>MATCH</span>Form fields mapped to the stored record; unmatched fields flagged.</li>
+        <li><span>ATTACH</span>Current PDF export attached from disk. Nothing re-uploaded.</li>
+        <li><span>HOLD</span>Filled form left open. Submit waits for both confirmations.</li>
+      </ol>
+    </div>
+  </section>
+
+  <footer class="titleblock">
+    <p class="tb__left">
+      <strong>Resume Studio</strong>
+      SHEET 01 — OVERALL. THIS PAGE IS THE DRAWING, NOT THE PRODUCT.<br />
+      THE BUILDER IS THE LINK AT THE TOP.
+    </p>
+    <div class="tb__grid">
+      <div class="tb__row">
+        <div class="tb__cell"><span>PROJECT</span><strong>RESUME STUDIO</strong></div>
+        <div class="tb__cell"><span>DRAWN</span><strong>RS DESIGN</strong></div>
+        <div class="tb__cell"><span>CHECKED</span><strong>—</strong></div>
+      </div>
+      <div class="tb__row">
+        <div class="tb__cell"><span>SHEET</span><strong>01 / 01</strong></div>
+        <div class="tb__cell"><span>SCALE</span><strong>1 : 1</strong></div>
+        <div class="tb__cell"><span>REV</span><strong>C</strong></div>
+      </div>
+      <div class="tb__row tb__row--last">
+        <div class="tb__cell"><span>DATE</span><strong>2026-10-27</strong></div>
+        <div class="tb__cell"><span>LICENCE</span><strong>MIT</strong></div>
+        <div class="tb__cell"><span>PROCESS</span><strong>ALL CLIENT</strong></div>
+      </div>
+    </div>
+    <p class="tb__foot">
+      <a href="https://github.com/akshaytp1571/resume-builder">github.com/akshaytp1571/resume-builder</a>
+      <span>No cookies. No analytics. One font request, then never again.</span>
+    </p>
+  </footer>
+</main>
+
+<script src="motion.js" defer></script>
+</body>
+</html>

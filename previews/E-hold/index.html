@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Resume Studio — a résumé you can hold</title>
+<meta name="description" content="A résumé builder that runs in your tab. Grab the sheet — turn it over to see what happens after it is read.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="mast">
+  <a class="mark" href="#top">
+    <svg width="15" height="17" viewBox="0 0 15 17" fill="none" aria-hidden="true">
+      <rect x=".5" y=".5" width="14" height="16" stroke="currentColor"/>
+      <path d="M3.5 4.5h8M3.5 7.5h8M3.5 10.5h5" stroke="currentColor"/>
+    </svg>
+    <span>Resume<b>Studio</b></span>
+  </a>
+  <nav class="mast__nav" aria-label="Sections">
+    <a href="#flip">Front &amp; back</a>
+    <a href="#facts">What it is</a>
+    <a href="#open">Open it</a>
+  </nav>
+  <a class="mast__src" href="https://github.com/akshaytp1571/resume-builder" rel="noreferrer">Source</a>
+</header>
+
+<main id="main">
+
+  <!-- ============================ hero ============================ -->
+  <section class="hero" id="top">
+    <div class="hero__copy">
+      <p class="eyebrow"><span class="dot" aria-hidden="true"></span>Runs in the tab · nothing uploaded</p>
+
+      <h1 class="display">
+        <span class="ln"><span class="ln__i">Hold your</span></span>
+        <span class="ln"><span class="ln__i">résumé.</span></span>
+        <span class="ln"><span class="ln__i">Turn it</span></span>
+        <span class="ln"><span class="ln__i"><em>over.</em></span></span>
+      </h1>
+
+      <p class="deck">
+        Grab the sheet and spin it. The front is what you wrote. The back is
+        what the machine reads — the same text, flattened, scored, truthful.
+      </p>
+
+      <div class="acts">
+        <button class="btn btn--run" type="button" data-flip><span data-split>Flip it</span></button>
+        <a class="btn btn--quiet" href="https://github.com/akshaytp1571/resume-builder" rel="noreferrer"><span data-split>Read the source</span></a>
+      </div>
+
+      <dl class="figures">
+        <div><dt>Drag</dt><dd>rotate</dd></div>
+        <div><dt>Flick</dt><dd>inertia</dd></div>
+        <div><dt>Release</dt><dd>it lands</dd></div>
+        <div><dt>Back</dt><dd>the parse</dd></div>
+      </dl>
+    </div>
+
+    <!-- the card -->
+    <div class="stage" id="flip">
+      <div class="stage__bg" aria-hidden="true"></div>
+
+      <div class="card" data-card role="group" aria-label="Interactive résumé, drag to rotate" tabindex="0">
+        <!-- the rotation wrapper stays AND carries the front/back flip -->
+        <div class="card__rot">
+          <!-- face: the designed résumé -->
+          <div class="card__face card__face--front">
+            <div class="card__scale">
+              <header class="sheet__hd">
+                <p class="sheet__k">Résumé · front</p>
+                <h2 class="sheet__nm">Tomas Lindqvist</h2>
+                <p class="sheet__rl">Platform Engineer · distributed systems, payments</p>
+                <p class="sheet__ct">Stockholm, SE · t.lindqvist@hey.com · github.com/tlqv</p>
+              </header>
+              <div class="sheet__body">
+                <div class="sheet__main">
+                  <h3 class="sheet__h">Profile</h3>
+                  <p class="sheet__p">Eleven years building payment rails that cannot lose money. Led the ledger rewrite at Klarna-scale volume. I care about idempotency, boring migrations, and on-call that nobody dreads.</p>
+                  <h3 class="sheet__h">Experience</h3>
+                  <div class="sheet__job">
+                    <p class="sheet__jt">Staff Engineer<span class="sep">·</span><span class="sheet__co">Nordpay</span></p>
+                    <p class="sheet__yr">2021 — Present · Stockholm</p>
+                    <ul class="sheet__ul">
+                      <li>Rebuilt settlement as an append-only ledger; reconciliation errors fell from 1 in 4,000 to 1 in 900,000.</li>
+                      <li>Cut p99 authorisation latency from 340ms to 61ms.</li>
+                      <li>Ran the migration of 41M accounts with zero downtime.</li>
+                    </ul>
+                  </div>
+                  <div class="sheet__job">
+                    <p class="sheet__jt">Senior Engineer<span class="sep">·</span><span class="sheet__co">Tink</span></p>
+                    <p class="sheet__yr">2017 — 2021 · Stockholm</p>
+                    <ul class="sheet__ul">
+                      <li>Owned the open-banking connector for six banks at &gt;99.97% availability.</li>
+                      <li>Contract tests caught 19 breaking upstream changes before release.</li>
+                    </ul>
+                  </div>
+                </div>
+                <aside class="sheet__side">
+                  <h3 class="sheet__h">Stack</h3>
+                  <table class="sheet__tbl">
+                    <tbody>
+                      <tr><th>Languages</th><td>Go, Kotlin, TypeScript, SQL</td></tr>
+                      <tr><th>Data</th><td>Postgres, Kafka, ClickHouse</td></tr>
+                      <tr><th>Infra</th><td>Kubernetes, Terraform, AWS</td></tr>
+                      <tr><th>Practice</th><td>Event sourcing, CQRS</td></tr>
+                    </tbody>
+                  </table>
+                  <h3 class="sheet__h">Education</h3>
+                  <p class="sheet__p--tight">MSc Computer Science · KTH, 2013</p>
+                  <h3 class="sheet__h">Languages</h3>
+                  <p class="sheet__p--tight">Swedish · English · German</p>
+                </aside>
+              </div>
+            </div>
+          </div>
+
+          <!-- back: the machine's view -->
+          <div class="card__face card__face--back">
+            <div class="card__scale">
+              <p class="sheet__k">Back · what the parser reads</p>
+              <pre class="card__parse">CONTACT
+Tomas Lindqvist · Platform Engineer · Stockholm, SE
+t.lindqvist@hey.com · github.com/tlqv
+
+PROFILE
+Eleven years building payment rails that cannot lose money.
+
+EXPERIENCE
+Staff Engineer | Nordpay | 2021 - Present
+- Rebuilt settlement as an append-only ledger.
+- Cut p99 authorisation latency from 340ms to 61ms.
+- Ran the migration of 41M accounts with zero downtime.
+Senior Engineer | Tink | 2017 - 2021
+- Open-banking connector, &gt;99.97% availability.
+- Contract tests caught 19 breaking upstream changes.
+
+STACK
+Go, Kotlin, TypeScript, SQL · Postgres, Kafka, ClickHouse
+
+EDUCATION
+MSc Computer Science · KTH · 2013
+
+SCORE 91/100 · LOCAL · NO UPLOAD</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- edge highlight, on the wrapper so it stays put under rotation -->
+        <div class="card__glare" aria-hidden="true"></div>
+      </div>
+
+      <div class="stage__status" data-status aria-live="polite">
+        <span class="stage__xy" data-xy>ry 0°</span>
+        <span class="stage__side" data-side>front</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ facts ============================ -->
+  <section class="facts" id="facts" aria-labelledby="facts-h">
+    <div class="facts__hd">
+      <p class="eyebrow">What it is</p>
+      <h2 class="h2" id="facts-h">A résumé has two sides.<br><em>You only write one.</em></h2>
+    </div>
+
+    <ol class="facts__list">
+      <li data-reveal>
+        <span class="facts__n">01</span>
+        <div>
+          <h3>The front is yours</h3>
+          <p>Nine templates, real A4 and US Letter, export to vector PDF, DOCX and JSON.</p>
+        </div>
+      </li>
+      <li data-reveal>
+        <span class="facts__n">02</span>
+        <div>
+          <h3>The back is theirs</h3>
+          <p>The parser view flattens your page into the single column a tracking tool extracts, and shows every field it reads.</p>
+        </div>
+      </li>
+      <li data-reveal>
+        <span class="facts__n">03</span>
+        <div>
+          <h3>Scored in your tab</h3>
+          <p>The ATS score is computed locally from your actual rendered page — weightings you can inspect.</p>
+        </div>
+      </li>
+      <li data-reveal>
+        <span class="facts__n">04</span>
+        <div>
+          <h3>Nothing leaves</h3>
+          <p>No account, no server, no upload. Backup to your own Google Drive if you want to.</p>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ============================ close ============================ -->
+  <section class="close" id="open">
+    <h2 class="h2 close__h">Turn it over yourself.<br><em>Then go fix the back.</em></h2>
+    <div class="acts acts--center">
+      <a class="btn btn--run" href="https://github.com/akshaytp1571/resume-builder" rel="noreferrer"><span data-split>Open the studio</span></a>
+      <a class="btn btn--quiet" href="#facts"><span data-split>What it is</span></a>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <span>Resume Studio · MIT</span>
+  <span>The back side is the honest one.</span>
+</footer>
+
+<script src="motion.js" defer></script>
+</body>
+</html>

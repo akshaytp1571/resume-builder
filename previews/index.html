@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Landing page directions — pick one</title>
+    <style>
+      @font-face {
+        font-family: 'Archivo';
+        font-weight: 600;
+        font-display: swap;
+        src: url('../public/fonts/archivo-600-normal.woff2') format('woff2');
+      }
+      @font-face {
+        font-family: 'Plex Mono';
+        font-weight: 500;
+        font-display: swap;
+        src: url('../public/fonts/plex-mono-500-normal.woff2') format('woff2');
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        background: #0c0d0b;
+        color: #ede8dc;
+        font-family: 'Plex Mono', ui-monospace, monospace;
+        padding: 40px 32px 64px;
+      }
+      h1 {
+        font-family: 'Archivo', system-ui, sans-serif;
+        font-size: clamp(26px, 3.4vw, 44px);
+        font-weight: 600;
+        letter-spacing: -0.03em;
+        line-height: 1.05;
+      }
+      .eyebrow {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        color: rgba(237, 232, 220, 0.4);
+      }
+      .lede {
+        margin-top: 14px;
+        max-width: 62ch;
+        font-size: 13px;
+        line-height: 1.6;
+        color: rgba(237, 232, 220, 0.6);
+      }
+      .grid {
+        margin-top: 40px;
+        display: grid;
+        gap: 1px;
+        background: rgba(237, 232, 220, 0.14);
+        border: 1px solid rgba(237, 232, 220, 0.14);
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      }
+      .card {
+        background: #0c0d0b;
+        padding: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .card h2 {
+        font-family: 'Archivo', system-ui, sans-serif;
+        font-size: 17px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+      }
+      .card .k {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        color: #d8ff3e;
+      }
+      .card p {
+        font-size: 12px;
+        line-height: 1.65;
+        color: rgba(237, 232, 220, 0.52);
+      }
+      .swatches { display: flex; gap: 4px; margin-top: 2px; }
+      .swatches span { width: 22px; height: 22px; border: 1px solid rgba(237, 232, 220, 0.2); }
+      .card a {
+        margin-top: auto;
+        display: inline-flex;
+        align-items: center;
+        height: 32px;
+        padding: 0 14px;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        border: 1px solid rgba(237, 232, 220, 0.38);
+        color: #ede8dc;
+        text-decoration: none;
+        transition: background 140ms, color 140ms;
+      }
+      .card a:hover { background: #d8ff3e; border-color: #d8ff3e; color: #0c0d0b; }
+      .full { grid-column: 1 / -1; }
+      .shot {
+        display: block;
+        width: 100%;
+        height: auto;
+        border: 1px solid rgba(237, 232, 220, 0.14);
+        margin-top: 4px;
+      }
+      footer {
+        margin-top: 44px;
+        font-size: 11px;
+        color: rgba(237, 232, 220, 0.32);
+        display: flex;
+        gap: 18px;
+        flex-wrap: wrap;
+      }
+      code { color: #d8ff3e; }
+    </style>
+  </head>
+  <body>
+    <p class="eyebrow">Resume Studio · landing page exploration</p>
+    <h1>Six directions. Nothing merged yet.</h1>
+    <p class="lede">
+      Each is a separate self-contained page with its own palette, type, and motion
+      language. All three share one constraint: the copy has to be true of the
+      running app. Open them full-screen, then tell me which — or which parts of
+      which — to merge into the project.
+    </p>
+
+    <div class="grid">
+      <div class="card">
+        <span class="k">Direction A</span>
+        <h2>Printed matter</h2>
+        <p>
+          A letterpress broadsheet. Paper, ink, one vermilion spot. Serif at
+          broadsheet display size, a folio, a colophon, deliberate misregistration.
+          The argument is that a résumé is printed matter, and the page is printed
+          matter.
+        </p>
+        <div class="swatches">
+          <span style="background: #f4f0e6"></span>
+          <span style="background: #12100c"></span>
+          <span style="background: #b33a1e"></span>
+        </div>
+        <a href="A-letterpress/index.html">Open A →</a>
+      </div>
+
+      <div class="card">
+        <span class="k">Direction B</span>
+        <h2>Kinetic poster</h2>
+        <p>
+          Swiss poster that moves. A visible 12-column grid, numerals at 200px
+          half-bleeding off the edge, a counter-scrolling headline, mask wipes,
+          a magnetic button, an angled ticker.
+        </p>
+        <div class="swatches">
+          <span style="background: #0a0a0a"></span>
+          <span style="background: #f2f2ed"></span>
+          <span style="background: #e8ff3b"></span>
+        </div>
+        <a href="B-kinetic/index.html">Open B →</a>
+      </div>
+
+      <div class="card">
+        <span class="k">Direction C</span>
+        <h2>Technical drawing</h2>
+        <p>
+          An engineering blueprint. All-mono body type, dimension lines, a title
+          block, leader lines into an annotated schematic. SVG paths draw
+          themselves as you scroll; a crosshair reads out coordinates.
+        </p>
+        <div class="swatches">
+          <span style="background: #0b1420"></span>
+          <span style="background: #e8edf0"></span>
+          <span style="background: #ffb020"></span>
+        </div>
+        <a href="C-instrument/index.html">Open C →</a>
+      </div>
+
+      <div class="card">
+        <span class="k">Direction D — you liked B, this is further</span>
+        <h2>The reading</h2>
+        <p>
+          The page performs an ATS parse. Drag the beam: left of it is the text a
+          machine extracted, right of it is the design you made. Two layers, one
+          custom property, pixel-locked at any drag speed. Losses surface as the
+          beam passes them.
+        </p>
+        <div class="swatches">
+          <span style="background: #0b0c0a"></span>
+          <span style="background: #fbfaf6"></span>
+          <span style="background: #d6ff3b"></span>
+          <span style="background: #7de2c3"></span>
+        </div>
+        <a href="D-reading/index.html">Open D →</a>
+      </div>
+
+      <div class="card">
+        <span class="k">Direction E — you liked B, this is further</span>
+        <h2>Pick it up</h2>
+        <p>
+          The résumé as a physical card. Drag to rotate in 3D, flick and it keeps
+          turning on real angular momentum, release and a spring-damper settles it.
+          Front is the design; turn it over and the back is the parse.
+        </p>
+        <div class="swatches">
+          <span style="background: #0a0a09"></span>
+          <span style="background: #fbfaf6"></span>
+          <span style="background: #d6ff3b"></span>
+          <span style="background: #7de2c3"></span>
+        </div>
+        <a href="E-hold/index.html">Open E →</a>
+      </div>
+
+      <div class="card">
+        <span class="k">Direction F — made it richer</span>
+        <h2>Studio</h2>
+        <p>
+          Versatile by tone: dark instrument sections and paper sections alternate,
+          and the mast inverts with the paper. Tiltable drag specimen, a nine-card
+          template plate, a peel that uncovers the parse, a 40-tick gauge, magnetic
+          buttons, a custom cursor. Six mechanisms, all on one page.
+        </p>
+        <div class="swatches">
+          <span style="background: #0b0c0a"></span>
+          <span style="background: #f4f0e6"></span>
+          <span style="background: #d6ff3b"></span>
+          <span style="background: #f4f0e6"></span>
+        </div>
+        <a href="F-studio/index.html">Open F →</a>
+      </div>      <div class="card full">
+        <span class="k">How these were built</span>
+        <p>
+          A, B and C came from three agents on one brief each. D and E were built
+          directly, with a higher bar: each is organised around a single hard
+          interaction rather than a motion language — a drag-tracked dual
+          <code>clip-path</code> lens in D, a spring-damper with real angular
+          momentum in E. Shared rules across all five: motion on
+          transform/opacity/clip-path/stroke only, full
+          <code>prefers-reduced-motion</code> resolution, no horizontal overflow at
+          320–1920, no decorative gradients, and a ban on the usual tells (centred
+          hero with a blob, three icon cards, "Seamlessly", glassmorphism).
+          All five pass <code>node previews/audit.mjs</code> — 10 checks each.
+        </p>
+      </div>
+    </div>
+
+    <footer>
+      <span>Nothing in <code>src/</code> was touched.</span>
+      <span>Compare at the same viewport, especially at 390px.</span>
+    </footer>
+  </body>
+</html>

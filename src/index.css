@@ -8,11 +8,11 @@
    reserved for state.
 
    Tailwind v4: there is no tailwind.config.js. Tokens declared in @theme become
-   utilities (bg-void, text-bone, border-rule-2, font-mono …). Tokens declared
+   utilities (bg-void, text-bone, border-rule-2, font-mono â€¦). Tokens declared
    in :root are plain CSS variables for use inside hand-written rules.
 
    Contrast for every ink/surface pair below was measured with a WCAG calculator,
-   not estimated. See docs/redesign/AUDIT.md §5 for the table. Two values differ
+   not estimated. See docs/redesign/AUDIT.md Â§5 for the table. Two values differ
    from the design brief because the brief's own thresholds rejected them.
    =========================================================================== */
 
@@ -282,7 +282,7 @@ body {
 }
 
 /* The <main> target must not draw a ring when the skip link moves focus to it
-   programmatically — it is a region, not a control. */
+   programmatically â€” it is a region, not a control. */
 #main-content:focus,
 #main-content:focus-visible {
   outline: none;
@@ -290,7 +290,7 @@ body {
 
 /* ---------------------------------------------------------------------------
    The bench: dot grid under the sheet, and nothing else.
-   24px pitch at 2.5% — visible when you look for it, invisible when you don't.
+   24px pitch at 2.5% â€” visible when you look for it, invisible when you don't.
    --------------------------------------------------------------------------- */
 
 .dt-bench {
@@ -327,7 +327,7 @@ body {
    both .resume-paper below and the print block's @page rule and override, so
    changing one attribute on <html> restyles the screen sheet and the printed
    page together.
-   The pixel page-budget lives in ResumePreview.jsx instead — it is measured in
+   The pixel page-budget lives in ResumePreview.jsx instead â€” it is measured in
    JS, and duplicating it here would give two sources of truth that can drift. */
 :root {
   --sheet-w: 210mm;
@@ -395,7 +395,7 @@ body {
 }
 
 /* ---------------------------------------------------------------------------
-   First-load choreography. Runs once, on the real elements, via animation —
+   First-load choreography. Runs once, on the real elements, via animation â€”
    never a persistent transform. Print forces transform:none and this never
    applies there because animations do not run in print.
    --------------------------------------------------------------------------- */
@@ -490,95 +490,437 @@ body {
   }
 }
 
-/* ===========================================================================
-   LANDING PAGE
-   ---------------------------------------------------------------------------
-   Same materials as the editor — warm black, bone ink, hairlines, one lime
-   signal — used at display scale. The page should feel like the instrument is
-   switched on, not like a brochure about it.
 
-   Every animation here is opacity or transform only, and every one of them has
-   a reduced-motion path that resolves to the final state rather than a faster
-   version of the same movement.
+/* ---------------------------------------------------------------------------
+
+/* ===========================================================================
+   LANDING PAGE â€” THE STUDIO
+   ---------------------------------------------------------------------------
+   A bench, not a brochure. The mast inverts over paper sections, the cursor is
+   a dot and a lagging ring, the hero holds a resume you can pick up and tilt,
+   and the parser section peels between the designed sheet and the extracted
+   text it becomes.
+
+   Layout rule carried from the preview audit: a dense grid, so no band of the
+   page reads as void. Section heads are three columns so the right margin
+   carries a note instead of air. Padding scales DOWN with viewport width,
+   never up into 120px seams.
+
+   Every animation is opacity/transform/clip-path only. Every one resolves
+   under reduced motion. The two continuous loops (cursor, sheet) skip their
+   style write when nothing moved, so an idle page is free.
    =========================================================================== */
 
 .landing {
+  --dt-grove: #3f6340;
+  --dt-readout: #7de2c3;
+  --dt-paper: #f4f0e6;
+  --dt-paper-2: #ece6d6;
+  --dt-ink: #14150f;
+  --dt-ink-2: #5c5a4d;
+  --dt-ink-rule: rgba(20, 21, 15, 0.16);
+  --dt-ink-rule-2: rgba(20, 21, 15, 0.34);
+  --dt-pad: clamp(30px, 2.9vw, 46px);
   background-color: var(--void);
   color: var(--bone);
-  /* The bench grid, at a pitch wide enough to read as a drafting surface
-     rather than a texture. */
-  background-image: radial-gradient(
-    circle at 1px 1px,
-    rgba(237, 232, 220, 0.035) 1px,
-    transparent 0
-  );
-  background-size: 32px 32px;
 }
 
-/* --- type at display scale ------------------------------------------------ */
+/* --- custom cursor ---------------------------------------------------------
+   Position and scale are on SEPARATE nodes - put both on the ring's own
+   transform and the 1.7x hover scale fights the translate. The outer node
+   translates; the inner <i> scales. */
 
-.landing-display {
-  font-family: 'Archivo', system-ui, sans-serif;
-  font-weight: 600;
-  font-size: clamp(2.5rem, 7.2vw, 5.75rem);
-  line-height: 0.98;
-  letter-spacing: -0.045em;
-  text-wrap: balance;
+.dt-cursor {
+  position: fixed; inset: 0; z-index: 90; pointer-events: none;
+  display: none; opacity: 0; transition: opacity 220ms var(--e-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .dt-cursor { display: block; }
+}
+.dt-cursor.is-live { opacity: 1; }
+.dt-cursor__dot, .dt-cursor__ring { position: absolute; top: 0; left: 0; }
+.dt-cursor__dot { width: 5px; height: 5px; margin: -2.5px 0 0 -2.5px; border-radius: 50%; background: var(--signal); }
+.dt-cursor__ring { width: 26px; height: 26px; margin: -13px 0 0 -13px; }
+.dt-cursor__ring i { position: absolute; inset: -1px; border-radius: 50%; border: 1px solid var(--rule-2); transition: transform 260ms var(--e-out), border-color 200ms var(--e-out); }
+.dt-cursor.is-hot .dt-cursor__ring i { transform: scale(1.75); border-color: var(--signal); }
+.dt-cursor.is-down .dt-cursor__ring i { transform: scale(0.7); border-color: var(--signal); }
+.landing[data-tone='paper'] .dt-cursor__ring i { border-color: var(--dt-ink-rule-2); }
+.landing[data-tone='paper'] .dt-cursor__dot { background: var(--dt-grove); }
+@media (hover: hover) and (pointer: fine) {
+  .landing, .landing a, .landing button, .landing .dt-sheet { cursor: none; }
 }
 
-.landing-h2 {
-  font-family: 'Archivo', system-ui, sans-serif;
-  font-weight: 600;
-  font-size: clamp(1.75rem, 3.6vw, 2.75rem);
-  line-height: 1.06;
-  letter-spacing: -0.035em;
-  text-wrap: balance;
+/* --- scroll progress ------------------------------------------------------ */
+
+.landing-progress {
+  position: fixed; inset-inline: 0; top: 0; height: 2px; z-index: 95;
+  background: var(--signal); transform-origin: left center; will-change: transform;
 }
 
-/* The serif is the human hand: one word per page, never a sentence. */
-.landing-serif {
-  font-family: 'Instrument Serif', ui-serif, Georgia, serif;
-  font-style: italic;
-  font-weight: 400;
-  letter-spacing: -0.01em;
+/* --- the mast --------------------------------------------------------------
+   Sticky. Inverts to ink-on-paper via JS-measured data-tone on .landing, so
+   it never reads as a black bar pasted over a light section. */
+
+.dt-mast { position: sticky; top: 0; z-index: 60; border-bottom: 1px solid transparent; background: transparent; }
+.dt-mast.is-stuck { border-bottom-color: var(--rule); background: rgba(12, 13, 11, 0.92); }
+.dt-mast--paper.is-stuck { border-bottom-color: var(--dt-ink-rule); background: rgba(244, 240, 230, 0.94); }
+.dt-mast--paper.is-stuck .dt-mark { color: var(--dt-ink); }
+.dt-mast--paper.is-stuck .dt-mark b { color: var(--dt-grove); }
+.dt-mast--paper.is-stuck .dt-mark svg { color: var(--dt-ink-2); }
+.dt-mast--paper.is-stuck .dt-mast__nav a { color: var(--dt-ink-2); }
+.dt-mast--paper.is-stuck .dt-mast__nav a:hover { color: var(--dt-ink); }
+.dt-mast--paper.is-stuck .dt-mast__nav a::after { background: var(--dt-grove); }
+.dt-mast--paper.is-stuck .dt-mast__src { color: var(--dt-ink-2); border-color: var(--dt-ink-rule-2); }
+.dt-mast--paper.is-stuck .dt-mast__stat { color: var(--dt-ink-2); }
+
+.dt-mast__in { display: flex; align-items: center; gap: 22px; max-width: 1560px; margin: 0 auto; padding: 12px clamp(16px, 3.2vw, 52px); }
+.dt-mark { display: flex; align-items: center; gap: 9px; color: var(--bone); text-decoration: none; font-size: 14px; font-weight: 600; letter-spacing: -0.02em; }
+.dt-mark b { font-family: var(--font-serif); font-style: italic; font-weight: 400; font-size: 16px; color: var(--signal); }
+.dt-mark svg { color: var(--bone-52); flex: none; }
+
+.dt-mast__stat { display: flex; align-items: center; gap: 8px; margin: 0 0 0 6px; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--bone-52); font-variant-numeric: tabular-nums; }
+@media (max-width: 1120px) { .dt-mast__stat { display: none; } }
+
+.dt-mast__nav { display: flex; gap: 18px; margin-left: auto; font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.13em; }
+.dt-mast__nav a { position: relative; color: var(--bone-52); text-decoration: none; padding-bottom: 3px; transition: color 200ms var(--e-out); }
+.dt-mast__nav a::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--signal); transform: scaleX(0); transform-origin: left center; transition: transform 280ms var(--e-out); }
+.dt-mast__nav a:hover { color: var(--bone); }
+.dt-mast__nav a:hover::after { transform: scaleX(1); }
+.dt-mast__end { display: flex; align-items: center; gap: 10px; }
+.dt-mast__src { font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.13em; color: var(--bone-52); text-decoration: none; border: 1px solid var(--rule-2); padding: 6px 12px; transition: color 200ms var(--e-out), border-color 200ms var(--e-out); }
+.dt-mast__src:hover { color: var(--bone); border-color: var(--rule-2); }
+@media (max-width: 980px) { .dt-mast__nav { display: none; } .dt-mast__end { margin-left: auto; } }
+
+/* --- the pip ---------------------------------------------------------------- */
+
+.dt-pip { width: 5px; height: 5px; border-radius: 50%; background: var(--dt-readout); box-shadow: 0 0 9px var(--dt-readout); flex: none; }
+@media (prefers-reduced-motion: no-preference) { .dt-pip { animation: dt-pip 2.6s ease-in-out infinite; } }
+@keyframes dt-pip { 0%, 100% { opacity: 1; box-shadow: 0 0 9px var(--dt-readout); } 50% { opacity: 0.4; box-shadow: 0 0 3px var(--dt-readout); } }
+
+/* --- buttons ---------------------------------------------------------------- */
+
+.dt-btn {
+  position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+  height: 40px; padding: 0 18px; border: 1px solid var(--rule-2); background: transparent; color: var(--bone);
+  font-size: 0.65rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.11em;
+  text-decoration: none; overflow: hidden; isolation: isolate;
+  transition: color 200ms var(--e-out), border-color 200ms var(--e-out);
+}
+.dt-btn--lg { height: 50px; padding: 0 24px; font-size: 0.7rem; }
+.dt-btn::before { content: ''; position: absolute; inset: 0; z-index: 0; background: var(--signal); transform: translateY(101%); transition: transform 340ms var(--e-out); }
+.dt-btn:hover, .dt-btn:focus-visible { color: var(--void); border-color: var(--signal); }
+.dt-btn:hover::before, .dt-btn:focus-visible::before { transform: translateY(0); }
+.dt-btn > * { position: relative; z-index: 2; }
+.dt-btn--solid { background: var(--signal); border-color: var(--signal); color: var(--void); }
+.dt-btn--solid::before { background: var(--void); }
+.dt-btn--solid:hover, .dt-btn--solid:focus-visible { color: var(--signal); }
+.dt-magnetic { transform: translate(var(--mx, 0px), var(--my, 0px)); }
+
+/* --- typography ------------------------------------------------------------- */
+
+.dt-tag { display: inline-flex; align-items: center; gap: 8px; margin: 0 0 16px; font-size: 0.625rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.17em; color: var(--bone-52); }
+.dt-mega { margin: 0; font-weight: 600; font-size: clamp(40px, 6.6vw, 92px); line-height: 0.92; letter-spacing: -0.05em; text-wrap: balance; }
+.dt-mega em { font-family: var(--font-serif); font-style: italic; font-weight: 400; color: var(--signal); letter-spacing: -0.01em; }
+
+/* Line masks. Hidden state and revealed state MUST differ in specificity: a
+   plain `.is-hot .ln__i` at (0,2,0) loses to this hidden state at (0,2,1) and
+   the headline stays parked outside its own overflow box - invisible, forever.
+   The revealed rule wins on merit. JS adds .is-hot to the owning section. */
+.ln { display: block; }
+.ln__i { display: block; }
+.landing .ln { overflow: hidden; }
+.landing .ln__i { transform: translateY(105%); transition: transform 820ms var(--e-out); }
+.landing section.is-hot .ln__i { transform: translateY(0); }
+.landing .ln:nth-child(2) .ln__i { transition-delay: 90ms; }
+.landing .ln:nth-child(3) .ln__i { transition-delay: 180ms; }
+
+.dt-h2 { margin: 0; font-weight: 600; font-size: clamp(25px, 3.2vw, 44px); line-height: 1.05; letter-spacing: -0.04em; text-wrap: balance; }
+.dt-h2 em { font-family: var(--font-serif); font-style: italic; font-weight: 400; color: var(--signal); }
+.dt-kick { margin: 0 0 8px; font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.17em; color: var(--bone-52); }
+.dt-deck { margin: 0 0 22px; max-width: 46ch; font-size: 0.9rem; line-height: 1.7; color: var(--bone-70); }
+
+/* --- the hero ---------------------------------------------------------------- */
+
+.dt-hero {
+  display: grid; grid-template-columns: 40px minmax(0, 1.06fr) minmax(0, 0.94fr);
+  gap: clamp(18px, 2.4vw, 44px); align-items: center;
+  max-width: 1560px; margin: 0 auto;
+  padding: clamp(16px, 2.4vw, 32px) clamp(16px, 3.2vw, 52px) clamp(18px, 2.4vw, 30px);
+}
+@media (max-width: 1080px) { .dt-hero { grid-template-columns: 1fr; } }
+
+/* The vertical spec rail. Hidden ON ONE RULE below the base display:flex, not
+   inside the width query: a display:none in the query sat ABOVE the base and
+   lost the cascade, shipping a phantom column on phones. */
+.dt-hero__rail { display: none; }
+@media (min-width: 1081px) {
+  .dt-hero__rail {
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    align-self: stretch; padding: 6px 0;
+    font-size: 0.5625rem; text-transform: uppercase; letter-spacing: 0.2em; color: var(--bone-32);
+  }
+  .dt-hero__rail > span { writing-mode: vertical-rl; }
+  .dt-hero__railrule { flex: 1; width: 1px; background: var(--rule); }
 }
 
-.landing-eyebrow {
-  font-family: 'IBM Plex Mono', ui-monospace, monospace;
-  font-size: 0.6875rem;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: var(--bone-52);
-}
+.dt-hero__main { padding-top: 4px; }
+.dt-acts { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 26px; }
+.dt-acts--c { justify-content: center; }
 
-/* --- entrance ------------------------------------------------------------
-   A single shared easing and a short stagger. Elements start hidden and are
-   marked .is-in by the reveal observer. */
+.dt-figs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; margin: 0; border-top: 1px solid var(--rule); padding-top: 14px; }
+.dt-figs dt { font-size: 0.5625rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--bone-32); margin-bottom: 3px; }
+.dt-figs dd { margin: 0; font-size: 0.875rem; color: var(--bone); font-variant-numeric: tabular-nums; }
+@media (max-width: 520px) { .dt-figs { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 12px; } }
 
-.landing-rise {
-  opacity: 0;
-  transform: translateY(14px);
-  transition:
-    opacity 620ms var(--e-out),
-    transform 620ms var(--e-out);
-}
-.landing-rise.is-in {
-  opacity: 1;
-  transform: none;
-}
+/* --- the specimen sheet ------------------------------------------------------ */
 
-/* A rule that draws itself from the left. scaleX only. */
-.landing-rule {
-  transform: scaleX(0);
-  transform-origin: left center;
-  transition: transform 780ms var(--e-out);
+.dt-specimen { position: relative; perspective: 1400px; }
+.dt-specimen__shadow { position: absolute; left: 10%; right: 10%; bottom: -12px; height: 24px; background: #000; opacity: 0.55; filter: blur(14px); border-radius: 50%; }
+.dt-sheet {
+  position: relative; width: 100%; max-width: 540px; margin-inline: auto;
+  aspect-ratio: 1 / 1.12; background: var(--dt-paper); color: var(--dt-ink);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.4), 0 26px 54px -22px rgba(0, 0, 0, 0.95);
+  transform-style: preserve-3d; will-change: transform;
+  overflow: hidden; display: flex; flex-direction: column; touch-action: none;
 }
-.landing-rule.is-in {
-  transform: scaleX(1);
-}
+.dt-sheet__in { padding: clamp(14px, 1.6vw, 22px); display: flex; flex-direction: column; flex: 1; }
+.dt-sheet__k { margin: 0 0 6px; font-size: 0.47rem; text-transform: uppercase; letter-spacing: 0.16em; color: var(--dt-ink-2); }
+.dt-sheet__nm { margin: 0; font-size: clamp(15px, 1.35vw, 20px); font-weight: 700; letter-spacing: -0.03em; }
+.dt-sheet__rl { margin: 2px 0 0; font-size: clamp(8px, 0.7vw, 10px); color: var(--dt-ink-2); }
+.dt-sheet__ct { margin: 4px 0 0; font-size: clamp(6.5px, 0.52vw, 8px); color: var(--dt-ink-2); }
+.dt-sheet__h { margin: 10px 0 4px; font-size: clamp(6.5px, 0.54vw, 8px); font-weight: 500; text-transform: uppercase; letter-spacing: 0.14em; color: var(--dt-grove); }
+.dt-sheet__jt { margin: 0; font-size: clamp(8px, 0.66vw, 10px); font-weight: 600; }
+.dt-sheet__co { color: var(--dt-ink-2); font-weight: 400; }
+.dt-sheet__yr { margin: 0 0 3px; font-size: clamp(6px, 0.5vw, 7.5px); color: var(--dt-ink-2); }
+.dt-sheet__ul { margin: 0; padding-left: 12px; font-size: clamp(7px, 0.6vw, 9px); line-height: 1.55; color: #2c2e25; }
+.dt-sheet__ul li { margin-bottom: 3px; }
+.dt-sheet__p { margin: 0; font-size: clamp(7px, 0.6vw, 9px); line-height: 1.55; color: #2c2e25; }
+.dt-sheet__li2 { margin: 0 0 2px; font-size: clamp(7px, 0.6vw, 9px); color: #2c2e25; }
+.dt-sheet__li2 b { font-weight: 600; color: var(--dt-ink); }
+.dt-sheet__foot { margin-top: auto; padding-top: 10px; border-top: 1px solid var(--dt-ink-rule); }
+.dt-sheet__fill { display: block; height: 3px; background: var(--dt-ink-rule); }
+.dt-sheet__fill i { display: block; height: 100%; width: var(--f); background: var(--dt-grove); }
+.dt-sheet__fillk { display: block; margin-top: 5px; font-size: clamp(6px, 0.5vw, 7.5px); text-transform: uppercase; letter-spacing: 0.12em; color: var(--dt-ink-2); }
+.dt-sheet__glare { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(105deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 45%); mix-blend-mode: soft-light; opacity: 0.55; transform: translateZ(1px); }
+.dt-specimen__hint { margin: 18px 0 0; text-align: center; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--bone-32); }
+.dt-specimen__verdict { display: flex; align-items: baseline; gap: 9px; margin: 12px 0 0; justify-content: center; flex-wrap: wrap; text-align: center; font-size: 0.72rem; line-height: 1.5; color: var(--bone-52); }
+.dt-specimen__stamp { flex: none; font-size: 0.53rem; text-transform: uppercase; letter-spacing: 0.16em; color: var(--void); background: var(--dt-readout); padding: 2px 7px; }
 
-/* Stagger: six steps is plenty. Beyond that the last item feels broken. */
+/* --- the ticker --------------------------------------------------------------- */
+
+.dt-tape { border-block: 1px solid var(--rule); overflow: hidden; }
+.dt-tape__t { display: flex; width: max-content; padding: 11px 0; }
+.dt-tape__set { display: flex; align-items: center; gap: 22px; padding-right: 22px; font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.16em; color: var(--bone-52); white-space: nowrap; }
+.dt-tape__s { color: var(--signal); font-size: 7px; }
+@media (prefers-reduced-motion: no-preference) {
+  .dt-tape__t { animation: dt-tape 44s linear infinite; }
+  .dt-tape:hover .dt-tape__t { animation-play-state: paused; }
+}
+@keyframes dt-tape { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+/* --- section shells ----------------------------------------------------------- */
+
+.dt-section { padding: var(--dt-pad) 0; }
+.dt-section--dark { background: var(--void); border-top: 1px solid var(--rule); }
+.dt-section--paper { background: var(--dt-paper); color: var(--dt-ink); }
+.dt-section--bound { border-top: 1px solid var(--dt-ink-rule); }
+.dt-wrap { max-width: 1560px; margin: 0 auto; padding: 0 clamp(16px, 3.2vw, 52px); }
+
+/* --- section heads ------------------------------------------------------------ */
+
+.dt-sechead { display: grid; grid-template-columns: 56px minmax(0, 1.12fr) minmax(0, 0.88fr); gap: clamp(16px, 2.4vw, 40px); align-items: end; margin-bottom: clamp(24px, 3.2vw, 40px); }
+.dt-sechead__note { margin: 0; font-size: 0.78rem; line-height: 1.75; color: var(--bone-52); border-left: 1px solid var(--rule-2); padding-left: 16px; }
+.dt-sechead--ink .dt-sechead__note { color: var(--dt-ink-2); border-left-color: var(--dt-ink-rule-2); }
+@media (max-width: 900px) {
+  .dt-sechead { grid-template-columns: 40px minmax(0, 1fr); }
+  .dt-sechead__note { grid-column: 2; margin-top: 4px; }
+}
+.dt-secnum { font-family: var(--font-serif); font-style: italic; font-size: 15px; color: var(--signal); padding-bottom: 4px; }
+.dt-sechead--ink .dt-secnum { color: var(--dt-grove); }
+.dt-sechead--ink .dt-kick { color: var(--dt-ink-2); }
+.dt-sechead--ink .dt-h2 em { color: var(--dt-grove); }
+
+/* --- the score ---------------------------------------------------------------- */
+
+.dt-score__grid {
+  display: grid; grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+  grid-template-areas: 'gauge weights' 'aside weights' 'aside deductions';
+  gap: clamp(16px, 2vw, 28px) clamp(24px, 3vw, 48px); align-items: start;
+}
+@media (max-width: 860px) {
+  .dt-score__grid { grid-template-columns: 1fr; grid-template-areas: 'gauge' 'deductions' 'weights' 'aside'; }
+}
+.dt-gaugebox { grid-area: gauge; border: 1px solid var(--rule); background: var(--housing); padding: 18px 20px 16px; }
+.dt-gauge__top { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
+.dt-gauge__num { font-size: 0.8rem; color: var(--bone); }
+.dt-gauge__num b { font-size: 30px; font-weight: 500; letter-spacing: -0.03em; }
+.dt-gauge__num i { font-style: normal; color: var(--bone-52); }
+.dt-gauge { display: flex; align-items: flex-end; gap: 3px; height: 58px; }
+.dt-gauge span { flex: 1; background: var(--bone-32); transform: scaleY(0.28); transform-origin: bottom; transition: transform 420ms var(--e-out), background-color 300ms var(--e-out); }
+.dt-gauge span.is-on { background: var(--signal); transform: scaleY(1); }
+.dt-gauge__foot { margin: 12px 0 0; font-size: 0.6rem; line-height: 1.6; text-transform: uppercase; letter-spacing: 0.1em; color: var(--bone-32); }
+.dt-gauge__band { display: flex; justify-content: space-between; margin: 12px 0 0; font-size: 0.53rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--bone-32); }
+.dt-gauge__marks { display: flex; justify-content: space-between; margin-top: 5px; }
+.dt-gauge__marks i { width: 1px; height: 5px; background: var(--rule-2); }
+.dt-gauge__marks i:nth-child(2) { height: 8px; background: var(--signal); }
+
+.dt-weights { grid-area: weights; list-style: none; margin: 0; padding: 0; }
+.dt-weights li {
+  display: grid; grid-template-columns: 132px minmax(0, 1fr) 34px; gap: 14px; align-items: center;
+  padding: 10px 0; border-bottom: 1px solid var(--rule); font-size: 0.7rem;
+}
+.dt-weights .w__k { color: var(--bone-70); text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.6rem; }
+.dt-weights .w__bar { height: 3px; background: rgba(237, 232, 220, 0.12); }
+.dt-weights .w__bar i { display: block; height: 100%; width: 0; background: var(--signal); transition: width 900ms var(--e-out); }
+.dt-weights.is-in .w__bar i { width: var(--p); }
+.dt-weights .w__v { text-align: right; color: var(--bone); font-variant-numeric: tabular-nums; }
+.dt-weights .weights__sum { border-bottom: 1px solid var(--rule-2); }
+.dt-weights .weights__sum .w__k { color: var(--bone); }
+.dt-weights .w__bar--solid { height: 1px; background: var(--rule-2); }
+.dt-weights .w__bar--solid i { background: var(--bone-52); }
+@media (max-width: 560px) { .dt-weights li { grid-template-columns: 96px minmax(0, 1fr) 28px; gap: 10px; } }
+
+.dt-score__aside { grid-area: aside; }
+.dt-score__note { margin: 0; border-left: 2px solid var(--rule-2); padding-left: 14px; font-size: 0.78rem; line-height: 1.75; color: var(--bone-52); }
+.dt-score__facts { margin-top: 16px; display: grid; gap: 1px; background: var(--rule); border: 1px solid var(--rule); }
+.dt-score__facts > div { display: flex; align-items: baseline; gap: 12px; background: var(--void); padding: 9px 12px; }
+.dt-score__facts b { flex: none; min-width: 62px; font-size: 0.8rem; font-weight: 500; color: var(--signal); font-variant-numeric: tabular-nums; }
+.dt-score__facts span { font-size: 0.72rem; line-height: 1.5; color: var(--bone-52); }
+
+.dt-deductions { grid-area: deductions; border: 1px solid var(--rule); background: var(--housing); padding: 16px 18px; }
+.dt-deductions__h { margin: 0 0 10px; font-size: 0.56rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--bone-52); }
+.dt-deductions__l { list-style: none; margin: 0; padding: 0; }
+.dt-deductions__l li { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 10px; align-items: baseline; padding: 7px 0; border-top: 1px solid var(--rule); font-size: 0.72rem; line-height: 1.55; color: var(--bone-52); }
+.dt-deductions__l span { font-size: 0.7rem; color: #ff8f6b; font-variant-numeric: tabular-nums; }
+
+/* --- the gaps -------------------------------------------------------------------- */
+
+.dt-gaps__grid {
+  list-style: none; margin: 0; padding: 0;
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px; background: var(--dt-ink-rule); border: 1px solid var(--dt-ink-rule);
+}
+@media (max-width: 900px) { .dt-gaps__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .dt-gaps__grid { grid-template-columns: 1fr; } }
+.dt-gap { position: relative; display: flex; flex-direction: column; background: var(--dt-paper); padding: 20px 20px 18px; transition: background-color 240ms var(--e-out); }
+.dt-gap:hover { background: var(--dt-paper-2); }
+.dt-gap__n { font-size: 0.6rem; letter-spacing: 0.16em; color: var(--dt-grove); margin-bottom: 12px; }
+.dt-gap__h { margin: 0 0 7px; font-size: 0.94rem; font-weight: 600; letter-spacing: -0.02em; line-height: 1.25; }
+.dt-gap__p { margin: 0 0 16px; font-size: 0.78rem; line-height: 1.7; color: var(--dt-ink-2); }
+.dt-gap__fix { margin-top: auto; display: inline-flex; align-items: center; gap: 7px; font-size: 0.56rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--dt-ink-2); padding-top: 11px; border-top: 1px solid var(--dt-ink-rule); transition: color 220ms var(--e-out); }
+.dt-gap:hover .dt-gap__fix { color: var(--dt-grove); }
+
+/* --- the plates -------------------------------------------------------------------- */
+
+.dt-plates { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px; background: var(--dt-ink-rule); border: 1px solid var(--dt-ink-rule); }
+@media (max-width: 1100px) { .dt-plates { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 860px) { .dt-plates { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .dt-plates { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 400px) { .dt-plates { grid-template-columns: 1fr; } }
+.dt-plate { background: var(--dt-paper); padding: 12px 12px 14px; }
+.dt-plate__box { position: relative; aspect-ratio: 1 / 1.29; background: #fff; border: 1px solid var(--dt-ink-rule); overflow: hidden; }
+.dt-plate--blank .dt-plate__box { display: grid; place-items: center; border-style: dashed; background: var(--dt-paper-2); }
+.dt-plate__blank { font-size: 26px; color: var(--dt-ink-rule-2); font-weight: 300; }
+
+.dt-plate__mini { position: absolute; inset: 10%; display: block; }
+.dt-plate__mini::before, .dt-plate__mini::after { content: ''; position: absolute; left: 0; right: 0; }
+.m1::before { top: 0; height: 13%; background: #3e5566; }
+.m1::after { top: 18%; height: 62%; background: repeating-linear-gradient(#cfd6d9 0 3px, transparent 3px 9px); }
+.m2::before { top: 0; bottom: 0; left: 0; right: 34%; background: #0f766e; }
+.m2::after { top: 6%; bottom: 6%; right: 4%; left: 70%; background: repeating-linear-gradient(#cfd6d9 0 3px, transparent 3px 9px); }
+.m3::before { top: 0; height: 8%; background: #1f2937; }
+.m3::after { top: 14%; height: 66%; background: repeating-linear-gradient(#d7dbdd 0 2px, transparent 2px 8px); }
+.m4::before { top: 0; height: 16%; background: #047857; }
+.m4::after { top: 22%; height: 58%; background: repeating-linear-gradient(#c9e5d6 0 3px, transparent 3px 9px); }
+.m5::before { top: 12%; height: 2px; background: #9ca3af; }
+.m5::after { top: 20%; height: 56%; left: 18%; right: 18%; background: repeating-linear-gradient(#d9dbdc 0 2px, transparent 2px 10px); }
+.m6::before { inset: 0; background-image: linear-gradient(to right, #e5e7eb 1px, transparent 1px), linear-gradient(to bottom, #e5e7eb 1px, transparent 1px); background-size: 14px 14px; }
+.m6::after { top: 8%; left: 8%; width: 44%; height: 10%; background: #111827; }
+.m7::before { top: 0; height: 10%; background: #111827; }
+.m7::after { top: 15%; height: 65%; background: repeating-linear-gradient(#d1d5db 0 2px, transparent 2px 6px); }
+.m8::before { top: 0; height: 12%; background: #78350f; }
+.m8::after { top: 17%; height: 66%; background: repeating-linear-gradient(#e3d9c9 0 2px, transparent 2px 7px); }
+.m9::before { top: 0; height: 20%; background: #ea580c; }
+.m9::after { top: 26%; height: 52%; background: repeating-linear-gradient(#d8d8d6 0 3px, transparent 3px 9px); }
+
+.dt-plate__n { margin: 10px 0 0; font-size: 0.72rem; font-weight: 600; letter-spacing: -0.01em; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.dt-plate__d { margin: 2px 0 0; font-size: 0.66rem; color: var(--dt-ink-2); }
+.dt-plate__tag { font-size: 0.47rem; text-transform: uppercase; letter-spacing: 0.13em; color: var(--dt-ink-2); border: 1px solid var(--dt-ink-rule-2); padding: 1px 5px; }
+.dt-plate__tag--safe { color: var(--dt-grove); border-color: var(--dt-grove); }
+
+/* --- the peel ------------------------------------------------------------------------ */
+
+.dt-peel { position: relative; display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--rule-2); overflow: hidden; touch-action: pan-y; }
+.dt-peel__side { padding: clamp(16px, 2vw, 26px); min-height: 300px; display: flex; flex-direction: column; }
+.dt-peel__side--proof > :last-child { margin-bottom: 0; }
+.dt-peel__foot { margin-top: auto; padding-top: 12px; border-top: 1px solid var(--dt-ink-rule); font-size: 0.47rem; text-transform: uppercase; letter-spacing: 0.16em; color: var(--dt-ink-2); }
+.dt-peel__side--proof { background: var(--dt-paper); color: var(--dt-ink); }
+.dt-peel__side--read { background: #0d110c; color: var(--dt-readout); clip-path: inset(0 0 0 calc(var(--peel) * 1%)); }
+@media (max-width: 760px) {
+  .dt-peel { grid-template-columns: 1fr; }
+  .dt-peel__side--read { position: absolute; inset: 0; clip-path: inset(calc(var(--peel) * 1%) 0 0 0); }
+}
+.dt-peel__k { margin: 0 0 10px; font-size: 0.5rem; text-transform: uppercase; letter-spacing: 0.18em; color: var(--dt-ink-2); }
+.dt-peel__side--read .dt-peel__k { color: rgba(125, 226, 195, 0.72); }
+.dt-peel__nm { margin: 0; font-size: 17px; font-weight: 700; letter-spacing: -0.02em; }
+.dt-peel__rl { margin: 2px 0 12px; font-size: 0.62rem; color: var(--dt-ink-2); }
+.dt-peel__sum { margin: 0 0 12px; font-size: 0.6rem; line-height: 1.55; color: #2c2e25; }
+.dt-peel__cols { display: grid; grid-template-columns: 1.4fr 1fr; gap: 14px; }
+.dt-peel__h { margin: 0 0 4px; font-size: 0.47rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--dt-grove); }
+.dt-peel__h--2 { margin-top: 10px; }
+.dt-peel__li { margin: 0 0 3px; font-size: 0.56rem; line-height: 1.5; color: #2c2e25; }
+.dt-peel__yr { margin: 0 0 3px; font-size: 0.47rem; color: var(--dt-ink-2); }
+.dt-peel__tbl { width: 100%; border-collapse: collapse; font-size: 0.53rem; }
+.dt-peel__tbl th { text-align: left; font-weight: 500; color: var(--dt-ink-2); padding-right: 6px; white-space: nowrap; }
+.dt-peel__pre { margin: 0; font-size: clamp(9.5px, 0.8vw, 11px); line-height: 1.7; white-space: pre-wrap; }
+.dt-peel__delta { margin: auto 0 0; padding: 12px 0 22px; border-top: 1px solid rgba(125, 226, 195, 0.22); font-size: 0.56rem; text-transform: uppercase; letter-spacing: 0.11em; color: rgba(125, 226, 195, 0.72); }
+.dt-peel__delta b { color: var(--dt-readout); font-weight: 500; }
+.dt-peel__handle {
+  position: absolute; left: 50%; bottom: 0; transform: translateX(-50%);
+  display: inline-flex; align-items: center; gap: 7px; height: 26px; padding: 0 14px;
+  background: var(--signal); color: var(--void); border: 0;
+  font-size: 0.56rem; text-transform: uppercase; letter-spacing: 0.14em;
+  transition: background-color 200ms var(--e-out);
+}
+.dt-peel__handle:hover { background: #e8ff7a; }
+
+.dt-parser__notes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-top: 0; }
+@media (max-width: 760px) { .dt-parser__notes { grid-template-columns: 1fr; } }
+.dt-parser__notes p { margin: 0; background: var(--void); padding: 14px 16px; font-size: 0.75rem; line-height: 1.65; color: var(--bone-52); }
+.dt-parser__notes b { color: var(--bone); font-weight: 600; }
+
+/* --- the ledger ------------------------------------------------------------------------ */
+
+.dt-sheets { margin: 0; border-top: 1px solid var(--dt-ink-rule-2); }
+.dt-sheetrow { position: relative; display: grid; grid-template-columns: 160px minmax(0, 1fr); gap: 18px; padding: 13px 6px; border-bottom: 1px solid var(--dt-ink-rule); transition: background-color 220ms var(--e-out), padding-left 220ms var(--e-out); }
+.dt-sheetrow:hover { background: var(--dt-paper-2); padding-left: 16px; }
+.dt-sheetrow dt { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--dt-ink-2); padding-top: 3px; }
+.dt-sheetrow dd { margin: 0; font-size: 0.84rem; line-height: 1.6; }
+.dt-sheetrow::after { content: ''; position: absolute; left: 0; bottom: -1px; height: 1px; width: 100%; background: var(--dt-grove); transform: scaleX(0); transform-origin: left center; transition: transform 300ms var(--e-out); }
+.dt-sheetrow:hover::after { transform: scaleX(1); }
+@media (max-width: 560px) { .dt-sheetrow { grid-template-columns: 1fr; gap: 3px; } }
+
+/* --- the close --------------------------------------------------------------------------- */
+
+.dt-close { text-align: center; }
+.dt-close__h { max-width: 17ch; margin: 0 auto 30px; }
+.dt-close__note { margin: 18px 0 0; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--bone-32); }
+.dt-close__strip { margin-top: clamp(30px, 4vw, 52px); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); text-align: left; }
+@media (max-width: 720px) { .dt-close__strip { grid-template-columns: 1fr; } }
+.dt-close__strip > div { background: var(--void); padding: 16px 18px; }
+.dt-close__strip b { display: block; margin-bottom: 4px; font-size: 0.56rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--signal); font-weight: 500; }
+.dt-close__strip span { font-size: 0.78rem; line-height: 1.6; color: var(--bone-52); }
+
+/* --- the foot ------------------------------------------------------------------------------- */
+
+.dt-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; padding: 16px clamp(16px, 3.2vw, 52px); border-top: 1px solid var(--rule); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--bone-32); }
+
+/* --- reveals ----------------------------------------------------------------------------------
+   The masked headlines use .ln above; everything else rises plain. Elements
+   start hidden and are marked .is-in by the observer. */
+
+.landing-rise, .dt-rise { opacity: 0; transform: translateY(14px); transition: opacity 560ms var(--e-out), transform 560ms var(--e-out); }
+.landing-rise.is-in, .dt-rise.is-in { opacity: 1; transform: none; }
 .landing-rise[data-step='1'] { transition-delay: 70ms; }
 .landing-rise[data-step='2'] { transition-delay: 140ms; }
 .landing-rise[data-step='3'] { transition-delay: 210ms; }
@@ -586,212 +928,26 @@ body {
 .landing-rise[data-step='5'] { transition-delay: 350ms; }
 .landing-rise[data-step='6'] { transition-delay: 420ms; }
 
-/* --- the hero sheet ------------------------------------------------------
-   A miniature of the real thing, tilted in 3D. The tilt is on the outer
-   wrapper so the inner sheet stays flat and its text stays crisp. */
-
-.landing-hero-sheet {
-  transform-style: preserve-3d;
-  animation: landing-tilt 1200ms var(--e-out) both;
-}
-
-@keyframes landing-tilt {
-  from {
-    opacity: 0;
-    transform: perspective(1800px) rotateX(9deg) rotateZ(-1.4deg) translateY(26px) scale(0.965);
-  }
-  to {
-    opacity: 1;
-    transform: perspective(1800px) rotateX(0deg) rotateZ(0deg) translateY(0) scale(1);
-  }
-}
-
-/* The scan line that crosses the hero sheet once on load — the same gesture as
-   the app's export sweep, so the landing page and the product share a verb. */
-.landing-scan {
-  position: absolute;
-  inset-inline: 0;
-  top: 0;
-  height: 1px;
-  background: var(--signal);
-  box-shadow: 0 0 14px rgba(216, 255, 62, 0.55);
-  animation: landing-scan 1900ms var(--e-io) 700ms both;
-}
-
-@keyframes landing-scan {
-  0% { transform: translateY(0); opacity: 0; }
-  12% { opacity: 1; }
-  88% { opacity: 1; }
-  100% { transform: translateY(var(--scan-travel, 420px)); opacity: 0; }
-}
-
-/* --- ticker --------------------------------------------------------------
-   An infinite marquee of capability labels. Paused on hover so a reader can
-   stop it, and duplicated content so the loop has no seam. */
-
-.landing-ticker {
-  display: flex;
-  width: max-content;
-  animation: landing-ticker 42s linear infinite;
-}
-.landing-ticker:hover,
-.landing-ticker:focus-within {
-  animation-play-state: paused;
-}
-
-@keyframes landing-ticker {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
-}
-
-/* --- the spec table ------------------------------------------------------
-   Rows that light a hairline on hover. The rule grows from the left, which is
-   the only movement — no lift, no shadow, no colour fill. */
-
-.landing-row {
-  position: relative;
-  transition: background-color 180ms var(--e-out);
-}
-.landing-row::after {
-  content: '';
-  position: absolute;
-  inset-inline: 0;
-  bottom: 0;
-  height: 1px;
-  background: var(--signal);
-  transform: scaleX(0);
-  transform-origin: left center;
-  transition: transform 320ms var(--e-out);
-}
-.landing-row:hover::after,
-.landing-row:focus-within::after {
-  transform: scaleX(1);
-}
-
-/* --- magnetic button -----------------------------------------------------
-   The primary CTA: the fill wipes in from the bottom on hover, and the label
-   shifts a hair. Both are transform/colour only. */
-
-.landing-cta {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
-  border: 1px solid var(--signal);
-  background: var(--signal);
-  color: var(--void);
-  transition: color 260ms var(--e-out);
-}
-.landing-cta::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: var(--void);
-  transform: translateY(101%);
-  transition: transform 360ms var(--e-io);
-}
-.landing-cta:hover::before,
-.landing-cta:focus-visible::before {
-  transform: translateY(0);
-}
-.landing-cta:hover,
-.landing-cta:focus-visible {
-  color: var(--signal);
-}
-
-/* Secondary: hairline that fills from the left. */
-.landing-cta-ghost {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
-  border: 1px solid var(--rule-2);
-  color: var(--bone-70);
-  transition: color 260ms var(--e-out), border-color 260ms var(--e-out);
-}
-.landing-cta-ghost::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: rgba(237, 232, 220, 0.07);
-  transform: scaleX(0);
-  transform-origin: left center;
-  transition: transform 360ms var(--e-io);
-}
-.landing-cta-ghost:hover::before,
-.landing-cta-ghost:focus-visible::before {
-  transform: scaleX(1);
-}
-.landing-cta-ghost:hover,
-.landing-cta-ghost:focus-visible {
-  color: var(--bone);
-  border-color: var(--rule-2);
-}
-
-/* --- the gauge in the hero readout --------------------------------------- */
-
-.landing-tick {
-  flex: 1;
-  background: var(--bone-32);
-  transform-origin: bottom center;
-  transform: scaleY(0.35);
-  transition:
-    transform 520ms var(--e-out),
-    background-color 520ms var(--e-out);
-}
-.landing-tick.is-on {
-  background: var(--signal);
-  transform: scaleY(1);
-}
-
-/* --- scroll progress ------------------------------------------------------ */
-
-.landing-progress {
-  position: fixed;
-  inset-inline: 0;
-  top: 0;
-  height: 2px;
-  z-index: 60;
-  background: var(--signal);
-  transform-origin: left center;
-  will-change: transform;
-}
-
-/* --- reduced motion ------------------------------------------------------
-   Not a shorter animation: no animation. Everything resolves to its final
-   state, because the content is the point and the movement is the garnish. */
+/* --- reduced motion ---------------------------------------------------------------------------
+    Not a shorter animation: no animation. Everything resolves to its final
+    state, because the content is the point and the movement is the garnish. */
 
 @media (prefers-reduced-motion: reduce) {
   .landing-rise,
+  .dt-rise,
   .landing-rule {
     opacity: 1 !important;
     transform: none !important;
     transition: none !important;
     transition-delay: 0ms !important;
   }
-  .landing-hero-sheet {
-    animation: none !important;
-    opacity: 1 !important;
-    transform: none !important;
-  }
-  .landing-scan {
-    display: none !important;
-  }
-  .landing-ticker {
-    animation: none !important;
-    /* Without the marquee the strip must still be readable, so let it scroll
-       horizontally by hand instead of looping. */
-    overflow-x: auto;
-  }
-  .landing-tick {
-    transform: none !important;
-    transition: none !important;
-  }
-  .landing-cta::before,
-  .landing-cta-ghost::before,
-  .landing-row::after {
-    transition: none !important;
-  }
+  .landing .ln__i { transform: none !important; transition: none !important; }
+  .landing .ln { overflow: visible !important; }
+  .dt-tape__t { animation: none !important; }
+  .dt-gauge span { transform: scaleY(1) !important; transition: none !important; }
+  .dt-weights .w__bar i { width: var(--p) !important; transition: none !important; }
+  .dt-sheet__glare, .dt-specimen__shadow { display: none !important; }
+  .dt-pip { box-shadow: none !important; animation: none !important; }
 }
 
 /* ---------------------------------------------------------------------------

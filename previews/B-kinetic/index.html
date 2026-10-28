@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Resume Studio — a résumé builder that runs in your tab</title>
+<meta name="description" content="Nine templates, live ATS scoring, keyword matching against the posting, and a parser view. Free, MIT, open source. No account. No upload.">
+<meta name="theme-color" content="#0A0A0A">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="cursor" aria-hidden="true"></div>
+<div class="rules" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+<div class="marks" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+
+<header class="masthead">
+  <a class="brand" href="#top"><span class="brand__mark" aria-hidden="true"></span>Resume Studio</a>
+  <nav class="nav" aria-label="Sections">
+    <a href="#parser">Parser</a>
+    <a href="#function">Function</a>
+    <a href="#open">Open</a>
+    <a href="../../README.md">Source</a>
+  </nav>
+  <p class="masthead__meta">v2.1 <span aria-hidden="true">/</span> MIT <span aria-hidden="true">/</span> free</p>
+</header>
+
+<main id="main">
+
+  <section class="hero" id="top" aria-labelledby="hero-title">
+    <span class="hero__num" aria-hidden="true">01</span>
+    <div class="hero__word" aria-hidden="true" data-parallax>Resume</div>
+
+    <div class="grid hero__grid">
+      <div class="hero__main">
+        <p class="label"><span class="label__n">01</span> The tab</p>
+        <h1 class="display" id="hero-title">
+          <span class="line"><span class="line__i">A résumé</span></span>
+          <span class="line"><span class="line__i">studio that</span></span>
+          <span class="line"><span class="line__i">never leaves</span></span>
+          <span class="line"><span class="line__i">your <em>tab</em>.</span></span>
+        </h1>
+        <p class="hero__sub">Nine templates. A live ATS score. Keyword matching against the posting itself. And a parser view that shows what the software reads before a person does.</p>
+        <div class="hero__cta">
+          <a class="btn" href="../../index.html" data-magnetic><span class="btn__label">Open the studio</span><span class="btn__arrow" aria-hidden="true">→</span></a>
+          <a class="link" href="../../README.md">Read the source</a>
+        </div>
+      </div>
+
+      <aside class="rail" aria-label="What it does not do">
+        <p class="rail__head">Nothing is sent anywhere.</p>
+        <dl class="rail__list">
+          <div class="rail__row"><dt>Files uploaded</dt><dd>0</dd></div>
+          <div class="rail__row"><dt>Accounts created</dt><dd>0</dd></div>
+          <div class="rail__row"><dt>Server calls</dt><dd>0</dd></div>
+        </dl>
+        <p class="rail__note">Built, scored and exported in the browser. DOCX and PDF, straight to disk.</p>
+      </aside>
+    </div>
+  </section>
+
+  <div class="ticker-wrap">
+    <div class="ticker" aria-hidden="true">
+      <div class="ticker__track">
+        <div class="ticker__set">
+          <span>No account</span><b>/</b><span>No upload</span><b>/</b><span>No server</span><b>/</b><span>Nine templates</span><b>/</b><span>DOCX + PDF</span><b>/</b><span>MIT licence</span><b>/</b><span>783 tests</span><b>/</b>
+        </div>
+        <div class="ticker__set">
+          <span>No account</span><b>/</b><span>No upload</span><b>/</b><span>No server</span><b>/</b><span>Nine templates</span><b>/</b><span>DOCX + PDF</span><b>/</b><span>MIT licence</span><b>/</b><span>783 tests</span><b>/</b>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="stats" aria-label="Resume Studio in numbers">
+    <div class="grid stats__grid">
+      <div class="stat"><p class="stat__n" data-count="9" data-pad="2">09</p><p class="stat__l">Templates</p></div>
+      <div class="stat"><p class="stat__n" data-count="783">783</p><p class="stat__l">Tests in the repo</p></div>
+      <div class="stat"><p class="stat__n" data-count="0">0</p><p class="stat__l">Files uploaded</p></div>
+      <div class="stat"><p class="stat__n" data-count="1">1</p><p class="stat__l">Tab required</p></div>
+    </div>
+  </section>
+
+  <section class="parser" id="parser" aria-labelledby="parser-title">
+    <span class="ghost" aria-hidden="true">02</span>
+    <p class="label"><span class="label__n">02</span> Parser view</p>
+    <h2 class="display display--h2" id="parser-title">
+      <span class="line"><span class="line__i">Hired by a person.</span></span>
+      <span class="line"><span class="line__i">Filtered by a script.</span></span>
+    </h2>
+
+    <div class="grid compare">
+      <article class="pane pane--written">
+        <p class="pane__label">As written</p>
+        <div class="sheet">
+          <p class="sheet__name">Maya Okonkwo</p>
+          <p class="sheet__role">Product Designer — Lisbon</p>
+          <ul class="sheet__list">
+            <li>Led a team of four.</li>
+            <li>Cut onboarding from nine screens to three.</li>
+            <li>Shipped the design system in six weeks.</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="pane pane--parsed">
+        <p class="pane__label">As parsed</p>
+        <pre class="dump">MAYA OKONKWO
+PRODUCT DESIGNERLISBON PT
+LEAD TEAM 4 ONBOARD 9 SCREEN 3
+SHIPPED THE DESIGN SYSTEM 6 WEEK
+EXPERIENCE 2021 2024</pre>
+        <p class="pane__flag">Two bullets flattened. Title merged with city. One employer missing.</p>
+      </article>
+    </div>
+
+    <p class="parser__foot">Same file. Two readers. Only the second one decides whether the first ever sees it. <span class="parser__foot-em">The parser view is a tab in the editor, not an add-on.</span></p>
+  </section>
+
+  <section class="position" aria-labelledby="position-title">
+    <div class="slab">
+      <p class="slab__mono">Position</p>
+      <p class="slab__line" id="position-title">Nothing leaves this tab.</p>
+      <p class="slab__note">No account. No upload. No analytics. No queue. The file you hand over was built in front of you, from your own keystrokes.</p>
+    </div>
+  </section>
+
+  <section class="function" id="function" aria-labelledby="function-title">
+    <span class="ghost ghost--right" aria-hidden="true">03</span>
+    <p class="label"><span class="label__n">03</span> Function</p>
+    <h2 class="display display--h2" id="function-title">
+      <span class="line"><span class="line__i">Six things,</span></span>
+      <span class="line"><span class="line__i">all of them real.</span></span>
+    </h2>
+
+    <ol class="rows">
+      <li class="row">
+        <span class="row__n">01</span>
+        <h3 class="row__t">ATS scoring</h3>
+        <p class="row__d">Layout-aware. It reads structure — section order, headings, columns — not just a keyword list. It names the line that costs you points.</p>
+        <span class="row__k">Live</span>
+      </li>
+      <li class="row">
+        <span class="row__n">02</span>
+        <h3 class="row__t">Keyword match</h3>
+        <p class="row__d">Paste the posting. Get the terms you are missing, and how often the filter expects them. No guessing at synonyms.</p>
+        <span class="row__k">Per job</span>
+      </li>
+      <li class="row">
+        <span class="row__n">03</span>
+        <h3 class="row__t">Parser view</h3>
+        <p class="row__d">The document as flattened text. See the fields that vanish before a human ever opens the file.</p>
+        <span class="row__k">Built in</span>
+      </li>
+      <li class="row">
+        <span class="row__n">04</span>
+        <h3 class="row__t">Cover letters</h3>
+        <p class="row__d">One per variant, drafted from your own summary and most recent role. Exports as a business letter, not a résumé with a paragraph on top.</p>
+        <span class="row__k">Paired</span>
+      </li>
+      <li class="row">
+        <span class="row__n">05</span>
+        <h3 class="row__t">Application tracker</h3>
+        <p class="row__d">Every application, its stage and its date. Stored in the browser, beside the résumés it refers to.</p>
+        <span class="row__k">Local</span>
+      </li>
+      <li class="row">
+        <span class="row__n">06</span>
+        <h3 class="row__t">Apply agent</h3>
+        <p class="row__d">An optional Playwright agent that fills the form from your profile. You read it, you correct it, you submit. It never presses the last button.</p>
+        <span class="row__k">Optional</span>
+      </li>
+    </ol>
+  </section>
+
+  <section class="open" id="open" aria-labelledby="open-title">
+    <span class="ghost" aria-hidden="true">04</span>
+    <p class="label"><span class="label__n">04</span> Open</p>
+    <h2 class="display display--xl" id="open-title">
+      <span class="line"><span class="line__i">Open it. Close</span></span>
+      <span class="line"><span class="line__i">the tab. Lose</span></span>
+      <span class="line"><span class="line__i">nothing.</span></span>
+    </h2>
+    <div class="open__foot">
+      <a class="btn btn--lg" href="../../index.html" data-magnetic><span class="btn__label">Open the studio</span><span class="btn__arrow" aria-hidden="true">→</span></a>
+      <p class="open__note">No sign-up. No email. Nothing to install.<br>MIT licensed — fork it, host it, read every line.</p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="foot">
+  <div class="grid foot__grid">
+    <div class="foot__col foot__col--brand">
+      <p class="foot__brand">Resume Studio</p>
+      <p class="foot__meta">v2.1 <span aria-hidden="true">/</span> MIT <span aria-hidden="true">/</span> 2026</p>
+    </div>
+    <div class="foot__col">
+      <p class="foot__h">Product</p>
+      <a href="#parser">Parser view</a>
+      <a href="#function">Function</a>
+      <a href="../../index.html">Open the editor</a>
+    </div>
+    <div class="foot__col">
+      <p class="foot__h">Paperwork</p>
+      <a href="../../README.md">README</a>
+      <a href="../../CHANGELOG.md">Changelog</a>
+      <a href="../../LICENSE">Licence</a>
+    </div>
+    <div class="foot__col foot__col--end">
+      <p class="foot__h">Signal</p>
+      <p class="foot__note">No cookies. No analytics. No account. One accent colour, one typeface, and nothing to sign.</p>
+    </div>
+  </div>
+</footer>
+
+<script src="motion.js" defer></script>
+</body>
+</html>

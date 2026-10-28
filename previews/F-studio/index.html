@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Resume Studio — the résumé that survives the machine</title>
+<meta name="description" content="A résumé builder that runs in your tab. Nine templates, a local ATS score, and a parser view that shows what the machine actually reads.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+<div class="cursor" data-cursor aria-hidden="true"><span class="cursor__dot"></span><span class="cursor__ring"><i></i></span></div>
+<div class="progress" data-progress aria-hidden="true"></div>
+
+<header class="mast" data-mast>
+  <a class="mark" href="#top">
+    <svg width="16" height="18" viewBox="0 0 16 18" fill="none" aria-hidden="true">
+      <rect x=".5" y=".5" width="15" height="17" stroke="currentColor"/>
+      <path d="M4 5h8M4 8h8M4 11h5" stroke="currentColor"/>
+    </svg>
+    <span>Resume<b>Studio</b></span>
+  </a>
+  <p class="mast__stat" aria-hidden="true"><span class="pip"></span>Bench open · <span data-clock>00:00</span></p>
+  <nav class="mast__nav" aria-label="Sections">
+    <a href="#score">Score</a>
+    <a href="#gaps">Gaps</a>
+    <a href="#templates">Templates</a>
+    <a href="#parser">Parser</a>
+    <a href="#ledger">Ledger</a>
+  </nav>
+  <div class="mast__end">
+    <a class="mast__src" href="https://github.com/akshaytp1571/resume-builder" rel="noreferrer">Source</a>
+    <a class="btn btn--solid" href="https://github.com/akshaytp1571/resume-builder" rel="noreferrer"><span data-split>Open</span></a>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- ================================================== HERO -->
+  <section class="hero" id="top">
+    <div class="hero__rail" aria-hidden="true">
+      <span>Specimen 01 · A4 · 96 dpi</span>
+      <span class="hero__railrule"></span>
+      <span>Issued for review</span>
+    </div>
+
+    <div class="hero__main">
+      <p class="tag reveal-tag"><span class="pip" aria-hidden="true"></span>Local-first · MIT · no account</p>
+      <h1 class="mega">
+        <span class="ln"><span class="ln__i">Make a résumé</span></span>
+        <span class="ln"><span class="ln__i">the machine</span></span>
+        <span class="ln"><span class="ln__i"><em>can read.</em></span></span>
+      </h1>
+      <p class="deck">
+        Nine templates. A live ATS score computed in your tab. A parser view
+        that shows the single column the tracking software extracts — before
+        a human ever opens it.
+      </p>
+      <div class="acts">
+        <a class="btn btn--solid btn--lg magnetic" href="https://github.com/akshaytp1571/resume-builder" rel="noreferrer">
+          <span data-split>Open the studio</span>
+          <span class="btn__ico" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 7h11M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.5"/></svg></span>
+        </a>
+        <a class="btn btn--line btn--lg magnetic" href="#score"><span data-split>How it scores</span></a>
+      </div>
+      <dl class="figs">
+        <div><dt>Accounts</dt><dd data-count="0">0</dd></div>
+        <div><dt>Requests</dt><dd data-count="0">0</dd></div>
+        <div><dt>Templates</dt><dd data-count="9">9</dd></div>
+        <div><dt>Licence</dt><dd>MIT</dd></div>
+      </dl>
+    </div>
+
+    <!-- the specimen, draggable -->
+    <div class="specimen" data-spec>
+      <div class="specimen__shadow" aria-hidden="true"></div>
+      <div class="sheet" data-sheet role="group" tabindex="0" aria-label="Résumé specimen, drag or use arrow keys to tilt">
+        <div class="sheet__inner">
+          <p class="sheet__k">Specimen · front</p>
+          <h2 class="sheet__nm">Tomas Lindqvist</h2>
+          <p class="sheet__rl">Platform Engineer · payments, distributed systems</p>
+          <p class="sheet__ct">Stockholm · t.lindqvist@hey.com · github.com/tlqv · +46 70 118 44 02</p>
+
+          <h3 class="sheet__h">Summary</h3>
+          <p class="sheet__p">Payments infrastructure at scale — ledgers, authorisation, and the migration paths between them. Eleven years, three regulated markets, two zero-downtime replatforms.</p>
+
+          <h3 class="sheet__h">Experience</h3>
+          <p class="sheet__jt">Staff Engineer <span class="sheet__co">Nordpay · Stockholm</span></p>
+          <p class="sheet__yr">2021 — Present</p>
+          <ul class="sheet__ul">
+            <li>Rebuilt the ledger append-only; reconciliation errors 1 in 4,000 → 1 in 900,000.</li>
+            <li>p99 authorisation 340ms → 61ms by moving risk scoring off the write path.</li>
+            <li>Migrated 41M accounts with zero downtime and no dual-write window.</li>
+            <li>Cut on-call pages 62% by making the retry path idempotent end to end.</li>
+          </ul>
+
+          <p class="sheet__jt">Senior Engineer <span class="sheet__co">Klarna · Stockholm</span></p>
+          <p class="sheet__yr">2018 — 2021</p>
+          <ul class="sheet__ul">
+            <li>Owned the settlement service through a 4× volume increase.</li>
+            <li>Introduced contract tests across nine services; integration breaks down 71%.</li>
+          </ul>
+
+          <p class="sheet__jt">Engineer <span class="sheet__co">Tink · Stockholm</span></p>
+          <p class="sheet__yr">2016 — 2018</p>
+          <ul class="sheet__ul">
+            <li>Built the account-aggregation connector for four Nordic banks.</li>
+          </ul>
+
+          <h3 class="sheet__h">Skills</h3>
+          <p class="sheet__p">Go, Kotlin, TypeScript · Postgres, Kafka, Redis · Kubernetes, Terraform, AWS · Distributed systems, payment rails, PSD2</p>
+
+          <h3 class="sheet__h">Education</h3>
+          <p class="sheet__li2"><b>MSc Computer Science</b> KTH Royal Institute of Technology · 2014 — 2016</p>
+
+          <div class="sheet__foot">
+            <span class="sheet__fill"><i style="--f:96%"></i></span>
+            <span class="sheet__fillk">One page · 96% full · 4% before spill</span>
+          </div>
+        </div>
+        <div class="sheet__glare" aria-hidden="true"></div>
+      </div>
+      <p class="specimen__hint"><span data-hint>Drag me</span> · <span data-ry>0° / 0°</span></p>
+      <p class="specimen__verdict"><span class="specimen__stamp">Passes</span>Parsed as one column. No table crossed the contact block.</p>
+    </div>
+  </section>
+
+  <div class="tape" aria-hidden="true">
+    <div class="tape__t" data-tape>
+      <div class="tape__set" data-tape-set>
+        <span>Nine templates</span><span class="tape__s">◆</span>
+        <span>Vector PDF</span><span class="tape__s">◆</span>
+        <span>ATS score</span><span class="tape__s">◆</span>
+        <span>Keyword match</span><span class="tape__s">◆</span>
+        <span>Parser view</span><span class="tape__s">◆</span>
+        <span>Cover letters</span><span class="tape__s">◆</span>
+        <span>Tracker</span><span class="tape__s">◆</span>
+        <span>A4 &amp; Letter</span><span class="tape__s">◆</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================== SCORE (dark) -->
+  <section class="score" id="score">
+    <div class="wrap">
+      <div class="sechead">
+        <span class="secnum" data-reveal>01</span>
+        <div>
+          <p class="kick" data-reveal>The score</p>
+          <h2 class="h2" data-reveal>Seven categories.<br><em>Every one of them fixable.</em></h2>
+        </div>
+        <p class="sechead__note" data-reveal>Nothing here is a black box. Each line below is a rule you can read, and the number moves the moment you fix it.</p>
+      </div>
+
+      <div class="score__grid">
+        <div class="gaugebox" data-reveal>
+          <div class="gauge__top">
+            <span class="kick">Readiness</span>
+            <span class="gauge__num"><b data-gauge-num>0</b><i>/100</i></span>
+          </div>
+          <div class="gauge" data-gauge aria-hidden="true"></div>
+          <p class="gauge__foot">Weighted, deterministic, runs offline. Illustrated at 92 — the score of the specimen above.</p>
+          <p class="gauge__band"><span>Weak</span><span>Solid</span><span>Shortlisted</span></p>
+          <div class="gauge__marks" aria-hidden="true"><i></i><i></i><i></i></div>
+        </div>
+
+        <ol class="weights" data-reveal>
+          <li><span class="w__k">Layout &amp; fit</span><span class="w__bar"><i style="--p:25%"></i></span><span class="w__v">25</span></li>
+          <li><span class="w__k">Experience</span><span class="w__bar"><i style="--p:22%"></i></span><span class="w__v">22</span></li>
+          <li><span class="w__k">Contact block</span><span class="w__bar"><i style="--p:18%"></i></span><span class="w__v">18</span></li>
+          <li><span class="w__k">Summary</span><span class="w__bar"><i style="--p:13%"></i></span><span class="w__v">13</span></li>
+          <li><span class="w__k">Skills</span><span class="w__bar"><i style="--p:12%"></i></span><span class="w__v">12</span></li>
+          <li><span class="w__k">Education</span><span class="w__bar"><i style="--p:6%"></i></span><span class="w__v">6</span></li>
+          <li><span class="w__k">Projects</span><span class="w__bar"><i style="--p:4%"></i></span><span class="w__v">4</span></li>
+          <li class="weights__sum"><span class="w__k">Total</span><span class="w__bar w__bar--solid"><i style="--p:100%"></i></span><span class="w__v">100</span></li>
+        </ol>
+
+        <div class="deductions" data-reveal>
+          <p class="deductions__h">The eight points the specimen spends</p>
+          <ul class="deductions__l">
+            <li><span>−4</span>Summary runs two lines past the fold of the eye</li>
+            <li><span>−2</span>Education before Projects; recruiters scan backwards</li>
+            <li><span>−2</span>One bullet has no number in it</li>
+          </ul>
+        </div>
+
+        <div class="score__aside" data-reveal>
+          <p class="score__note">
+            Layout is measured from the rendered page — 1123px is one A4 sheet at 96 dpi,
+            and anything over it costs points. The other six are content rules you can
+            see and correct.
+          </p>
+          <div class="score__facts">
+            <div><b>1123px</b><span>one A4 sheet at 96 dpi</span></div>
+            <div><b>92</b><span>the specimen above</span></div>
+            <div><b>0</b><span>network calls to score</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================== GAPS (paper) -->
+  <section class="gaps" id="gaps">
+    <div class="wrap">
+      <div class="sechead sechead--ink">
+        <span class="secnum" data-reveal>02</span>
+        <div>
+          <p class="kick" data-reveal>Where résumés actually die</p>
+          <h2 class="h2" data-reveal>Six ways in.<br><em>All six named.</em></h2>
+        </div>
+        <p class="sechead__note" data-reveal>Most rejections happen before a person reads a word. These are the six the scorer looks for, and each one has a fix the editor will do for you.</p>
+      </div>
+
+      <ol class="gaps__grid">
+        <li class="gap" data-reveal>
+          <span class="gap__n">01</span>
+          <h3 class="gap__h">Two-column body</h3>
+          <p class="gap__p">A side table reads as interleaved lines. Text order inverts and the summary lands after the phone number.</p>
+          <span class="gap__fix">Fix · collapse to one column</span>
+        </li>
+        <li class="gap" data-reveal>
+          <span class="gap__n">02</span>
+          <h3 class="gap__h">Contact inside a header</h3>
+          <p class="gap__p">Anything grouped in a graphic header is skipped whole. The parser reports a résumé with no way to reply.</p>
+          <span class="gap__fix">Fix · lift to a plain text block</span>
+        </li>
+        <li class="gap" data-reveal>
+          <span class="gap__n">03</span>
+          <h3 class="gap__h">En-dash date ranges</h3>
+          <p class="gap__p">“2021 — Present” is read as a role some of the time. The date column returns empty and the tenure scores zero.</p>
+          <span class="gap__fix">Fix · normalise to a hyphen</span>
+        </li>
+        <li class="gap" data-reveal>
+          <span class="gap__n">04</span>
+          <h3 class="gap__h">Skills as a graphic</h3>
+          <p class="gap__p">Dots and bars have no text. A five-dot rating extracts as nothing at all, and the skill is simply lost.</p>
+          <span class="gap__fix">Fix · print the level as a word</span>
+        </li>
+        <li class="gap" data-reveal>
+          <span class="gap__n">05</span>
+          <h3 class="gap__h">Spill past one page</h3>
+          <p class="gap__p">A line crossing the page edge is cut, not wrapped. The last bullet of the last role is the one that goes.</p>
+          <span class="gap__fix">Fix · show the spill before export</span>
+        </li>
+        <li class="gap" data-reveal>
+          <span class="gap__n">06</span>
+          <h3 class="gap__h">Decorative glyph bullets</h3>
+          <p class="gap__p">A dingbat before every line attaches to the previous line on extraction, doubling the length of the parse.</p>
+          <span class="gap__fix">Fix · plain hyphens, always</span>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ================================================== TEMPLATES (paper) -->
+  <section class="templates" id="templates">
+    <div class="wrap">
+      <div class="sechead sechead--ink">
+        <span class="secnum" data-reveal>03</span>
+        <div>
+          <p class="kick" data-reveal>Nine templates, plus blank</p>
+          <h2 class="h2" data-reveal>Pick a shape.<br><em>Every one stays parseable.</em></h2>
+        </div>
+        <p class="sechead__note" data-reveal>Palette, font and density are independent of the template. Cropping is never automatic — you see the spill before you export.</p>
+      </div>
+
+      <ul class="plates" data-plates>
+        <li class="plate tilt" data-reveal><div class="plate__box"><span class="plate__mini m1" aria-hidden="true"></span></div><p class="plate__n">Executive Classic <span class="plate__tag plate__tag--safe">ATS-safe</span></p><p class="plate__d">Default · framed photo, slate rules</p></li>
+        <li class="plate tilt" data-reveal><div class="plate__box"><span class="plate__mini m2" aria-hidden="true"></span></div><p class="plate__n">Modern Two-Tone <span class="plate__tag">collapses</span></p><p class="plate__d">Dual column, accent sidebar</p></li>
+        <li class="plate tilt" data-reveal><div class="plate__box"><span class="plate__mini m3" aria-hidden="true"></span></div><p class="plate__n">Minimal ATS Pro <span class="plate__tag plate__tag--safe">ATS-safe</span></p><p class="plate__d">One column, nothing decorative</p></li>
+        <li class="plate tilt" data-reveal><div class="plate__box"><span class="plate__mini m4" aria-hidden="true"></span></div><p class="plate__n">Emerald Horizon <span class="plate__tag plate__tag--safe">ATS-safe</span></p><p class="plate__d">Deep rule, soft headers</p></li>
+        <li class="plate tilt" data-reveal><div class="plate__box"><span class="plate__mini m5" aria-hidden="true"></span></div><p class="plate__n">Nordic Luxury <span class="plate__tag plate__tag--safe">ATS-safe</span></p><p class="plate__d">Wide margins, quiet type</p></li>
+        <li class="plate tilt" data-reveal><div class="plate__box"><span class="plate__mini m6" aria-hidden="true"></span></div><p class="plate__n">Grid Master <span class="plate__tag">grid lines</span></p><p class="plate__d">Strict baseline, one page</p></li>
+        <li class="plate tilt" data-reveal><div class="plate__box"><span class="plate__mini m7" aria-hidden="true"></span></div><p class="plate__n">Developer Console <span class="plate__tag plate__tag--safe">ATS-safe</span></p><p class="plate__d">Mono accents, tight leading</p></li>
+        <li class="plate tilt" data-reveal><div class="plate__box"><span class="plate__mini m8" aria-hidden="true"></span></div><p class="plate__n">Academic CV <span class="plate__tag">long form</span></p><p class="plate__d">Publications first, no summary</p></li>
+        <li class="plate tilt" data-reveal><div class="plate__box"><span class="plate__mini m9" aria-hidden="true"></span></div><p class="plate__n">Startup One-Pager <span class="plate__tag">impact first</span></p><p class="plate__d">Colour accent, one page hard</p></li>
+        <li class="plate tilt plate--blank" data-reveal><div class="plate__box"><span class="plate__blank" aria-hidden="true">+</span></div><p class="plate__n">Start blank <span class="plate__tag plate__tag--safe">ATS-safe</span></p><p class="plate__d">No decoration, nothing to undo</p></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ================================================== PARSER (dark) -->
+  <section class="parser" id="parser">
+    <div class="wrap">
+      <div class="sechead">
+        <span class="secnum" data-reveal>04</span>
+        <div>
+          <p class="kick" data-reveal>The parser</p>
+          <h2 class="h2" data-reveal>This is what gets read.<br><em>Word for word.</em></h2>
+        </div>
+        <p class="sechead__note" data-reveal>The right-hand panel is generated from your data, not a screenshot — so it is always the current version of the file.</p>
+      </div>
+
+      <div class="peel" data-peel data-reveal>
+        <div class="peel__side peel__side--proof">
+          <p class="peel__k">As designed</p>
+          <h3 class="peel__nm">Tomas Lindqvist</h3>
+          <p class="peel__rl">Platform Engineer · Stockholm</p>
+          <p class="peel__sum">Payments infrastructure at scale — ledgers, authorisation, and the migration paths between them.</p>
+          <div class="peel__cols">
+            <div>
+              <p class="peel__h">Experience</p>
+              <p class="peel__li"><b>Staff Engineer</b> Nordpay</p>
+              <p class="peel__yr">2021 — Present</p>
+              <p class="peel__li">Append-only ledger; errors down 225×</p>
+              <p class="peel__li">p99 340ms → 61ms</p>
+              <p class="peel__li">Migration of 41M accounts</p>
+              <p class="peel__yr">2018 — 2021</p>
+              <p class="peel__li"><b>Senior Engineer</b> Klarna</p>
+            </div>
+            <div>
+              <p class="peel__h">Stack</p>
+              <table class="peel__tbl"><tbody>
+                <tr><th>Data</th><td>Postgres, Kafka</td></tr>
+                <tr><th>Infra</th><td>K8s, Terraform</td></tr>
+                <tr><th>Lang</th><td>Go, Kotlin</td></tr>
+                <tr><th>Cloud</th><td>AWS</td></tr>
+              </tbody></table>
+              <p class="peel__h peel__h--2">Education</p>
+              <p class="peel__li">MSc CS, KTH</p>
+            </div>
+          </div>
+          <p class="peel__foot">One page · A4 · 96 dpi</p>
+        </div>
+
+        <div class="peel__side peel__side--read">
+          <p class="peel__k">As extracted</p>
+          <pre class="peel__pre">CONTACT
+Tomas Lindqvist
+Platform Engineer | Stockholm
+
+EXPERIENCE
+Staff Engineer | Nordpay | 2021 - Present
+- Append-only ledger; errors down 225x
+- p99 340ms to 61ms
+- Migration of 41M accounts
+
+STACK
+Data: Postgres, Kafka
+Infra: K8s, Terraform
+Lang: Go, Kotlin</pre>
+          <p class="peel__delta"><b>3 rows</b> promoted out of the side table. <b>2 glyphs</b> normalised. <b>0 lines</b> lost.</p>
+        </div>
+
+        <button class="peel__handle" type="button" data-peel-btn aria-label="Reveal the extracted text" aria-pressed="false">
+          <span>Peel</span>
+        </button>
+      </div>
+
+      <div class="parser__notes">
+        <p data-reveal><b>Two columns collapse.</b> The side table becomes a labelled list, which is why the template picker marks which ones are ATS-safe.</p>
+        <p data-reveal><b>Em-dash ranges normalise.</b> Some parsers read “2021 — Present” as a role, not a date.</p>
+        <p data-reveal><b>Nothing is invented.</b> The extracted side is generated from your data, not a screenshot — so it is always current.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================== LEDGER (paper) -->
+  <section class="ledger" id="ledger">
+    <div class="wrap">
+      <div class="sechead sechead--ink">
+        <span class="secnum" data-reveal>05</span>
+        <div>
+          <p class="kick" data-reveal>The ledger</p>
+          <h2 class="h2" data-reveal>What you get.<br><em>What it costs.</em></h2>
+        </div>
+        <p class="sechead__note" data-reveal>Everything below is true of the build you can clone right now. No tier unlocks any of it.</p>
+      </div>
+
+      <dl class="sheets" data-sheets>
+        <div class="sheetrow" data-reveal><dt>Storage</dt><dd>localStorage — a browser key, not a row in a database.</dd></div>
+        <div class="sheetrow" data-reveal><dt>Network</dt><dd>None by default. Scorer, matcher and exporters are all client-side.</dd></div>
+        <div class="sheetrow" data-reveal><dt>Export</dt><dd>Vector PDF, DOCX, JSON Resume. Real A4 and US Letter.</dd></div>
+        <div class="sheetrow" data-reveal><dt>AI</dt><dd>Your own key, or Ollama on your own machine. Optional.</dd></div>
+        <div class="sheetrow" data-reveal><dt>Deleted</dt><dd>Thirty days in the trash, one-click restore.</dd></div>
+        <div class="sheetrow" data-reveal><dt>Cost</dt><dd>Nothing. MIT, no paid tier, no telemetry.</dd></div>
+        <div class="sheetrow" data-reveal><dt>Trash</dt><dd>Every removal is recoverable for thirty days, then purged.</dd></div>
+        <div class="sheetrow" data-reveal><dt>Paper</dt><dd>A4 and US Letter, measured in real millimetres, not pixels.</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <!-- ================================================== CLOSE (dark) -->
+  <section class="close">
+    <div class="wrap">
+      <h2 class="mega close__h">
+        <span class="ln"><span class="ln__i">Open it.</span></span>
+        <span class="ln"><span class="ln__i"><em>Close the tab.</em></span></span>
+        <span class="ln"><span class="ln__i">Lose nothing.</span></span>
+      </h2>
+      <div class="acts acts--c">
+        <a class="btn btn--solid btn--lg magnetic" href="https://github.com/akshaytp1571/resume-builder" rel="noreferrer">
+          <span data-split>Open the studio</span>
+          <span class="btn__ico" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 7h11M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.5"/></svg></span>
+        </a>
+        <a class="btn btn--line btn--lg magnetic" href="https://github.com/akshaytp1571/resume-builder" rel="noreferrer"><span data-split>Read the source</span></a>
+      </div>
+      <p class="close__note">Sample data loads first. Clearing it is one click.</p>
+
+      <div class="close__strip">
+        <div><b>Runs in</b><span>The tab. No server, no queue, no cold start.</span></div>
+        <div><b>Stores in</b><span>One browser key. Nothing leaves unless you say so.</span></div>
+        <div><b>Costs</b><span>Nothing. MIT from the first commit.</span></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <span>Resume Studio · MIT</span>
+  <span>No cookies. No analytics. One font request, then never again.</span>
+</footer>
+
+<script src="motion.js" defer></script>
+</body>
+</html>
