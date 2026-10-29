@@ -10,9 +10,11 @@ Built with React 19, Vite 8 and Tailwind CSS 4.
 > job-discovery agent.** It automates actions that job boards prohibit in their
 > terms of service, and you are responsible for how you use it.
 
-**v2.1** adds layout-aware ATS scoring and a cover letter builder. **v2.0** added
-a 783-test component suite, undo/redo, and photo upload guards. See
-[CHANGELOG.md](./CHANGELOG.md).
+**v3.1** adds a landing page behind a hash router, US Letter paper, 30-day
+trash for deleted variants, and a plain-text ATS projection. **v3.0** was a
+complete visual re-skin. **v2.1** added layout-aware ATS scoring and a cover
+letter builder; **v2.0** added the 893-test component suite, undo/redo, and
+photo upload guards. See [CHANGELOG.md](./CHANGELOG.md).
 
 ---
 
@@ -40,6 +42,9 @@ without looking sharper on GitHub.
 - **Multiple resume variants** — keep a named, job-targeted copy per application
   ("QA Lead - Dubai", "Automation Engineer"), switch between them instantly,
   duplicate one to tailor it, and export/import the whole set as JSON
+- **Trash with 30-day recovery** — deleting a variant is a soft delete. It sits
+  in a recoverable trash for 30 days, long enough that a misclick is a shrug and
+  short enough that a stale trash cannot quietly fill `localStorage`
 - **Nine templates** — Executive Classic, Modern Two-Tone, Minimalist ATS Pro,
   Emerald Horizon, Nordic Luxury, Grid Master, Developer Console, Academic CV,
   Startup One-Pager
@@ -56,16 +61,22 @@ without looking sharper on GitHub.
   you filled in, the picker tells you before you switch
 - **Native DOCX export** — real `.docx` with an embedded photo (aspect ratio
   preserved), coloured headings and proper bullet lists
-- **PDF export and print** — captured at A4's true width so text stays sharp,
-  or as true vector text via the browser's own print-to-PDF
+- **PDF export and print** — captured at the paper's true width so text stays
+  sharp, or as true vector text via the browser's own print-to-PDF
+- **A4 and US Letter** — switch paper size in the theme customiser. The page
+  budget, the layout score and both export paths all follow the choice, so a
+  Letter resume is never measured against an A4 page
 - **Live ATS score** — weighted across contact info, summary length, skill
   coverage, action verbs, quantified results, education, projects, **and whether
   the page actually fits**. A one-page resume scores higher than the same
   content spilling onto a second page
+- **Plain-text ATS projection** — see exactly what a parser extracts: one
+  column, no styling, uppercase headings, dates on the role line. An ATS never
+  sees the design, so this is the view that predicts whether your export parses
 - **Job-description matcher** — paste a posting and see weighted keyword
   coverage against your resume, offline, with no AI call
 - **Installable and offline** — a PWA with a service worker. Install it to your dock, and open it on a plane. Your resume never needed a server anyway
-- **Keyboard-first** — Ctrl/Cmd+Z to undo, Ctrl/Cmd+S to export DOCX, ? for the full list. Every shortcut is announced to screen readers via ria-keyshortcuts and documented in an in-app panel
+- **Keyboard-first** — Ctrl/Cmd+Z to undo, Ctrl/Cmd+S to export DOCX, ? for the full list. Every shortcut is announced to screen readers via `aria-keyshortcuts` and documented in an in-app panel
 - **Theme customiser** — colours, fonts, density, single-page auto-fit
 - **Resume ingestion** — import a PDF, DOCX, JSON or TXT resume and auto-fill
   the form, using AI when configured and a rule-based parser otherwise
@@ -114,7 +125,8 @@ discover available models from the endpoint and test the connection.
 
 ## Quick start
 
-Requires **Node.js 22.12+**. Vite 8 and Vitest 5 both refuse Node 18.
+Requires **Node.js 22.12+**. Vite 8 allows Node 20.19+, but Vitest 5 requires
+22.12+, and `npm test` is the gate — so 22.12 is the real floor.
 
 ```bash
 git clone https://github.com/akshaytp1571/resume-builder.git
@@ -126,6 +138,11 @@ npm run dev            # http://localhost:5173
 That is all you need to build and export resumes. The app is fully client-side:
 your resume data lives in your browser's `localStorage` and never leaves your
 machine except when you explicitly call an AI provider.
+
+The dev server opens on the landing page at `#/`; the editor lives at `#/app`.
+It is a hash router rather than a path router on purpose — the app deploys to a
+static host on a subpath with no rewrite rules, so a path route would 404 on
+refresh, and a hash never reaches the server.
 
 ### Configure AI
 
@@ -175,7 +192,7 @@ and AI buttons prompt you to configure a provider.
 | `test-fixes.cjs` | 87 | Source-level assertions across parsers, scorer, exporters, store, agent |
 | `test-integrity.mjs` | ~90 | Behavioural regressions: hostile data, corrupt store, quota, two-tab merge, stemming traps, contrast tokens |
 | `smoke-test.mjs` | ~15 | Imports the real modules and asserts runtime outcomes |
-| `vitest` | **783** | Mounts all 9 templates and all 8 modals against a hostile-data matrix; focus traps, Escape, accessible names, HTML-injection containment |
+| `vitest` | **893** | Mounts all 9 templates and all 8 modals against a hostile-data matrix; focus traps, Escape, accessible names, HTML-injection containment |
 
 The component suite exists because the first three cannot catch a render crash —
 they either grep source text or import plain modules. Every P0 found by the
@@ -334,7 +351,7 @@ Issues and pull requests are welcome.
 
 ```bash
 npm install
-npm test           # all four suites: 87 source checks + smoke + integrity + 783 component tests
+npm test           # all four suites: 87 source checks + smoke + integrity + 893 component tests
 npm run lint       # must report 0 errors
 ```
 

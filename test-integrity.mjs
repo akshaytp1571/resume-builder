@@ -270,6 +270,120 @@ console.log('\n== P0: a merge never drops the writing tab\'s own edits ==');
   }
 }
 
+console.log('\n== P0: a same-id edit collision is reported, not swallowed ==');
+{
+  // The id-union merge cannot see this case: both tabs hold the SAME variant id,
+  // so nothing is "adopted" and the older edit is simply overwritten. Tab B
+  // edits the shared variant and saves; tab A, still holding the pre-edit copy,
+  // saves its stale version on top.
+  mem.clear();
+  const base = store.loadStore();
+  const sharedId = base.variants[0].id;
+
+  // Tab B edits the shared variant and stamps a newer updatedAt.
+  const tabB = store.updateVariant(base, sharedId, {
+    data: store.normalizeResume({ ...base.variants[0].data, summary: 'Tab B was here' }),
+  });
+  const first = store.saveStore(tabB);
+  if (!first.ok) fail('setup save failed');
+  else ok('tab B saved its edit');
+
+  // Tab A saves its stale copy of the same variant.
+  const second = store.saveStore(base);
+  if (!second.ok) fail('tab A save failed');
+  else ok('tab A save succeeded');
+
+  if (!Array.isArray(second.conflicts)) {
+    fail(`saveStore did not return a conflicts array (got ${typeof second.conflicts})`);
+  } else if (second.conflicts.length !== 1) {
+    fail(`expected exactly 1 conflict, got ${second.conflicts.length}`);
+  } else {
+    ok('saveStore reports the same-id edit collision');
+  }
+
+  const conflict = second.conflicts?.[0];
+  if (conflict && conflict.id !== sharedId) {
+    fail(`conflict named the wrong variant: ${conflict.id}`);
+  } else if (conflict) {
+    ok('the conflict names the colliding variant id');
+  }
+  if (conflict && !conflict.name) {
+    fail('the conflict carries no name, so the UI cannot say which resume');
+  } else if (conflict) {
+    ok(`the conflict carries a readable name ("${conflict.name}")`);
+  }
+
+  // The writing tab's own copy must survive — the user is looking at it.
+  const onDisk = JSON.parse(mem.get('precision_resume_store_v2'));
+  if (onDisk.variants[0].data.summary === 'Tab B was here') {
+    fail('tab A\'s own edit was discarded in favour of the other tab\'s');
+  } else {
+    ok('the writing tab keeps its own edit rather than being silently replaced');
+  }
+}
+console.log('\n== P0: re-saving identical content is not a conflict ==');
+{
+  // Both tabs holding the same content is the common case after a merge, and
+  // reporting it would train the user to dismiss the warning.
+  mem.clear();
+  const base = store.loadStore();
+  const sharedId = base.variants[0].id;
+  const edited = store.updateVariant(base, sharedId, { name: 'Renamed' });
+  store.saveStore(edited);
+  const again = store.saveStore(edited);
+  if (again.conflicts?.length) {
+    fail(`re-saving identical content reported ${again.conflicts.length} conflict(s)`);
+  } else {
+    ok('re-saving the same content reports no conflict');
+  }
+}
+console.log('\n== P0: the overwriting side is warned too ==');
+{
+  // Tab A edits and saves. Tab B, still holding the pre-edit copy, saves on top.
+  // B is the one destroying A's work, so B is the one that must be told — a
+  // timestamp compare only ever sees this from the losing side.
+  mem.clear();
+  const base = store.loadStore();
+  const sharedId = base.variants[0].id;
+  const tabA = store.updateVariant(base, sharedId, {
+    data: store.normalizeResume({ ...base.variants[0].data, summary: 'Tab A was here' }),
+  });
+  const first = store.saveStore(tabA);
+  if (!first.ok) fail('setup save failed');
+  else ok('tab A saved its edit');
+  if (first.conflicts?.length) {
+    fail('the first save after an edit reported a spurious conflict');
+  } else {
+    ok('a clean save reports no conflict');
+  }
+
+  const second = store.saveStore(base);
+  if (!second.ok) fail('tab B save failed');
+  else ok('tab B save succeeded');
+  if (second.conflicts?.length !== 1) {
+    fail(`expected 1 conflict on the overwriting side, got ${second.conflicts?.length}`);
+  } else {
+    ok('the tab about to overwrite is warned');
+  }
+}
+console.log('\n== P0: a pure merge is not a conflict ==');
+{
+  // Tab B added a variant tab A has never seen. Nothing was edited, so nothing
+  // was lost, and the merge notice is the only thing the user should get.
+  mem.clear();
+  const base = store.loadStore();
+  const tabA = base;
+  const tabB = store.addVariant(base, store.createVariant({ name: 'From tab B' }));
+  store.saveStore(tabB);
+  const second = store.saveStore(tabA);
+  if (second.conflicts?.length) {
+    fail(`a pure merge reported ${second.conflicts.length} conflict(s)`);
+  } else {
+    ok('adopting a new variant reports no conflict');
+  }
+  if (!second.merged) fail('the merge was not reported');
+  else ok('the merge is still reported');
+}
 console.log('\n== P2: import rejects junk without throwing unhandled ==');
 {
   for (const [label, text] of [
@@ -631,5 +745,48 @@ console.log('\n== v2.1: the ATS score can see the rendered page ==');
   }
 }
 
+console.log('\n== P2: isUsableResumePath refuses traversal (QA P2-6) ==');
+{
+  // The value is handed to the Node apply agent as the file to upload, so a
+  // path that escapes its own root is a traversal primitive wearing a .docx
+  // extension. QA reported this OPEN; it is now closed.
+  const { isUsableResumePath } = await import('./src/utils/resumePath.js');
+  const accepted = [
+    ['Windows absolute', 'C:\\Users\\aksha\\Downloads\\Resume.docx'],
+    ['Windows forward slash', 'C:/Users/aksha/Downloads/Resume.docx'],
+    ['POSIX absolute', '/home/aksha/Resume.docx'],
+    ['POSIX with spaces', '/home/aksha/My Resumes/QA Lead.docx'],
+    ['PDF extension', 'C:\\Users\\aksha\\Downloads\\Resume.pdf'],
+    ['uppercase extension', 'C:\\Users\\aksha\\Downloads\\Resume.DOCX'],
+    ['dots inside a filename', 'C:\\Users\\aksha\\My..Resume.docx'],
+    ['deeply nested', '/home/aksha/a/b/c/d/e/Resume.docx'],
+  ];
+  for (const [label, p] of accepted) {
+    if (!isUsableResumePath(p)) fail(`${label} was rejected: ${p}`);
+  }
+  if (accepted.every(([, p]) => isUsableResumePath(p))) {
+    ok(`all ${accepted.length} legitimate paths still accepted`);
+  }
+
+  const refused = [
+    ['parent traversal, backslash', 'C:\\a\\..\\..\\b.docx'],
+    ['parent traversal, forward slash', 'C:/a/../../b.docx'],
+    ['parent traversal, POSIX', '/home/aksha/../../etc/passwd.docx'],
+    ['trailing parent segment', 'C:\\Users\\aksha\\..\\Resume.docx'],
+    ['null byte', 'C:\\Users\\aksha\\Resume\0.docx'],
+    ['relative path', 'Resume.docx'],
+    ['bare relative with traversal', '../Resume.docx'],
+    ['wrong extension', 'C:\\Users\\aksha\\Resume.txt'],
+    ['no extension', 'C:\\Users\\aksha\\Resume'],
+    ['empty', ''],
+    ['whitespace only', '   '],
+  ];
+  for (const [label, p] of refused) {
+    if (isUsableResumePath(p)) fail(`${label} was accepted: ${JSON.stringify(p)}`);
+  }
+  if (refused.every(([, p]) => !isUsableResumePath(p))) {
+    ok(`all ${refused.length} hostile paths refused`);
+  }
+}
 console.log(bad === 0 ? '\nINTEGRITY OK\n' : `\nINTEGRITY FAILED (${bad})\n`);
 process.exit(bad === 0 ? 0 : 1);

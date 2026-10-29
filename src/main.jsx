@@ -4,7 +4,7 @@ import './index.css'
 import App from './App.jsx'
 import Landing from './components/Landing.jsx'
 import ErrorBoundary from './components/ui/ErrorBoundary.jsx'
-import useHashRoute, { ROUTE_APP } from './hooks/useHashRoute.js'
+import useHashRoute from './hooks/useHashRoute.js'
 
 /**
  * Root.

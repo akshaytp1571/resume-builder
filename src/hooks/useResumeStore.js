@@ -61,6 +61,10 @@ export default function useResumeStore({ showToast, resetHistoryRef } = {}) {
   const saveFailedRef = useRef(false);
   // Debounce the "merged from another tab" notice too.
   const mergeNotifiedRef = useRef(false);
+  // Separate cooldown for the conflict notice: a merge and a conflict are
+  // different messages about different problems, and one ref would let the
+  // first suppress the second for five seconds.
+  const conflictNotifiedRef = useRef(false);
   // Latest toast handler, so the save effect does not need it as a dependency
   // (which would restart the debounce whenever the toast changes).
   const showToastRef = useRef(showToast);
@@ -69,7 +73,7 @@ export default function useResumeStore({ showToast, resetHistoryRef } = {}) {
   useEffect(() => {
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
-      const { ok, merged } = saveStore(store);
+      const { ok, merged, conflicts } = saveStore(store);
       if (!ok && !saveFailedRef.current) {
         saveFailedRef.current = true;
         showToastRef.current?.(
@@ -93,6 +97,21 @@ export default function useResumeStore({ showToast, resetHistoryRef } = {}) {
         showToastRef.current?.('info', 'MERGED CHANGES FROM ANOTHER TAB');
         setTimeout(() => {
           mergeNotifiedRef.current = false;
+        }, MERGE_NOTICE_COOLDOWN_MS);
+      }
+      // Another tab edited a variant this tab also holds, more recently than
+      // this tab's copy. Ours is the one that gets written — the user is
+      // looking at it — so the other tab's newer edit is about to be dropped
+      // from disk. Say so, with the name, instead of losing it in silence.
+      if (conflicts?.length && !conflictNotifiedRef.current) {
+        conflictNotifiedRef.current = true;
+        const names = conflicts.map((c) => c.name).join(', ');
+        showToastRef.current?.(
+          'error',
+          `"${names}" WAS ALSO EDITED IN ANOTHER TAB — THAT TAB'S NEWER CHANGES WERE NOT SAVED`
+        );
+        setTimeout(() => {
+          conflictNotifiedRef.current = false;
         }, MERGE_NOTICE_COOLDOWN_MS);
       }
     }, SAVE_DEBOUNCE_MS);

@@ -10,7 +10,6 @@ import {
   Copy,
   Check,
 } from 'lucide-react';
-import confetti from 'canvas-confetti';
 import { sound } from '../../utils/soundEffects';
 import { matchKeywords } from '../../utils/keywordMatcher';
 import { loadStore, getActiveVariant } from '../../utils/resumeStore';
@@ -76,14 +75,10 @@ export default function AtsScoreModal({ atsResult, onClose, resumeData, onShowTe
     }
   };
 
-  const triggerCelebration = () => {
-    sound.playSuccess();
-    confetti({
-      particleCount: 100,
-      spread: 80,
-      origin: { y: 0.6 },
-    });
-  };
+  // The "Celebrate" confetti button was removed in the v3.0.0 re-skin; this
+  // handler and its canvas-confetti import were left behind. Deleted rather
+  // than kept "in case" — dead code that imports a 30 KB animation library is
+  // not a placeholder, it is weight.
 
   return (
     <ModalShell onClose={onClose} labelledBy="ats-score-title" className="max-w-2xl">

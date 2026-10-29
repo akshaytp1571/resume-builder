@@ -34,17 +34,26 @@ const TEMPLATES = [
   ['startup', StartupTemplate],
 ];
 
-/** Collect console.error calls for the duration of a callback. */
+/**
+ * Run fn with console.error captured, and return what it logged.
+ *
+ * The `return` used to live in the `finally` block, which silently swallowed
+ * anything fn() threw — a render crash inside a captured block would have
+ * produced an empty log and a passing test. Reading the calls and restoring the
+ * spy in `finally`, then returning after it, keeps the cleanup unconditional
+ * without discarding the throw.
+ */
 function captureConsoleErrors(fn) {
   const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  let calls;
   try {
     fn();
   } finally {
     // Read before restore so the spy is still populated.
-    const calls = spy.mock.calls.map((args) => args.map(String).join(' '));
+    calls = spy.mock.calls.map((args) => args.map(String).join(' '));
     spy.mockRestore();
-    return calls;
   }
+  return calls;
 }
 
 afterEach(() => {

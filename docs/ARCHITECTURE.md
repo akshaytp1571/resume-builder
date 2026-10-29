@@ -96,14 +96,26 @@ own; it consumes `{ store, resumeData, theme, setResumeData, setTheme, ... }`.
 
 Writes are **debounced 400 ms** and flushed on `beforeunload`, so closing a tab
 mid-edit does not lose the last keystroke. `saveStore()` returns
-`{ ok, merged }`:
+`{ ok, merged, conflicts }`:
 
 - `ok: false` → quota exceeded; the user is told once, not once per keystroke.
 - `merged` → another tab added a variant while this one was open; it is adopted
   rather than dropped, with a one-per-5s notice.
+- `conflicts` → another tab holds the **same** variant id with different
+  content, so this write is about to drop that tab's edit. Ours is the copy
+  written (the user is looking at it), and the caller raises an error toast
+  naming the resume. The id-union merge cannot see this case — nothing is
+  "adopted" when both sides share an id — which is why it is a separate signal.
 
 `saveStore()` also merges rather than overwrites, which is what makes two tabs
 usable at once.
+
+**What the merge still cannot do.** There is no `storage` event listener, so a
+tab only learns about the other tab at the moment it saves. Two tabs editing the
+*same* variant concurrently is last-write-wins with a warning on the overwriting
+side; it is not a merge, and it does not pretend to be. Closing that gap needs a
+listener that reloads the store when this tab is not the writer, which loses
+in-flight edits in this tab — a worse trade than a warning.
 
 ---
 

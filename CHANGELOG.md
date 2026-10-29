@@ -4,6 +4,89 @@ All notable changes to this project. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning is
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.0] - 2026-10-27
+
+Four features that landed after the v3.0.0 re-skin without a changelog entry.
+The re-skin touched no behaviour; these do.
+
+### Added
+
+- **A landing page, behind a hash router.** `#/` is the landing page, `#/app` is
+  the editor. A hash router rather than a path router because the app deploys to
+  a static host on a subpath with no rewrite rules, so a path route would 404 on
+  refresh and a hash never reaches the server. The editor is still imported
+  eagerly — it is the product, and a landing page that delays it behind a second
+  round-trip would be slower to the thing that matters.
+- **US Letter paper size.** `theme.paperSize` is `'a4' | 'letter'`, defaulting to
+  A4. The page budget in `ResumePreview`, the `Layout & Fit` category in the ATS
+  score, and both PDF export paths all read the same value, so a Letter resume
+  is never measured against an A4 page. The DOCX exporter already carried its
+  own page geometry and was left alone.
+- **Trash with 30-day recovery for resume variants.** `removeVariant` moves a
+  variant to a separate `trash` array rather than dropping it, so a delete is
+  undoable and nothing downstream has to learn to filter deleted rows. Trash is
+  purged on load rather than on a timer, because load is the only moment the app
+  is guaranteed to run. Retention is 30 days: long enough that a misclick is a
+  shrug, short enough that a stale trash cannot quietly fill `localStorage` — a
+  resume is ~8 KB, so 30 days of accidental deletes is still smaller than one
+  photo data URL. `restoreVariant` assigns a fresh id, because the old one may
+  have been reused by a resume created after the delete.
+- **Plain-text ATS projection** (`src/utils/atsTextView.js`). Renders the resume
+  as the stream a parser actually extracts: one column, no styling, uppercase
+  section headings, dates on the same line as the role. Deliberately the *worst
+  plausible* shape — if the projection reads correctly, an ATS can parse the
+  export; if a field is missing here it is missing from the PDF, whatever the
+  preview shows.
+
+### Fixed
+
+- **`saveStore()` silently dropped a same-variant edit from another tab.** The
+  cross-tab merge unions variant *ids*, which cannot see the case where both
+  tabs hold the **same** id: nothing is adopted, and the older edit is simply
+  overwritten with no warning. `saveStore` now compares the on-disk copy of each
+  shared id against ours and returns a `conflicts` array naming the colliding
+  variants; `useResumeStore` turns that into an error toast. Ours is the copy
+  that gets written — the user is looking at it — so the other tab's newer edit
+  is reported rather than silently discarded. The comparison is on content, not
+  on `updatedAt`: two saves inside the same millisecond produce identical
+  timestamps, so a timestamp compare misses real collisions, and it only ever
+  sees them from the losing side. Comparing content catches them from the
+  overwriting side too, which is the side that needs the warning.
+- **`isUsableResumePath()` accepted `..` traversal** (QA-REPORT P2-6, previously
+  OPEN). `C:\a\..\..\b.docx` passed, and the value is handed to the Node apply
+  agent as the file to upload. Now refuses any `..` path segment and any null
+  byte, on either separator. A substring test for `..` would also have rejected
+  the legal `My..Resume.docx`, so each segment is tested individually.
+- **`captureConsoleErrors()` swallowed exceptions.** The `return` sat inside the
+  `finally` block, so anything the captured function threw was discarded and the
+  test passed with an empty log. A render crash inside a captured block was
+  invisible. The spy is still restored unconditionally; the throw now propagates.
+- **A stray `0x07` control character in the README**, in the middle of
+  `aria-keyshortcuts`.
+
+### Removed
+
+- **`et3.mjs`** — a committed Playwright probe with a duplicate `tr_check`
+  declaration, a hardcoded `C:/Users/aksha/...` path, and an undeclared `tr2`.
+  It was the only `oxlint` error in the tree, so `npm run lint` failed while the
+  README claimed it reported 0 errors.
+- **Dead code left by the v3.0.0 re-skin.** `triggerCelebration` and its
+  `canvas-confetti` import in `AtsScoreModal.jsx` survived the removal of the
+  "Celebrate" button; `SaveStatus` was imported twice in `App.jsx` (the real
+  render is in `EditorSidebar`); `ROUTE_APP` was imported into `main.jsx` and
+  never used.
+- **A `catch (err) { throw err }` wrapper in `src/sw.js`** that read like it did
+  something while doing nothing. The comment above it was the whole explanation,
+  and is kept.
+
+### Documentation
+
+- README's test count was stale in three places (783 → 893).
+- README now documents the four v3.1 features and the hash-route split.
+- README's Node requirement explains *why* 22.12 is the floor (Vite allows
+  20.19+, Vitest does not), instead of asserting it.
+- `docs/ARCHITECTURE.md` notes the `conflicts` return value on `saveStore`.
+
 ## [3.0.0] - 2026-10-25
 
 **DRAFTING TABLE** — a complete visual re-skin. No behaviour, data or contract

@@ -352,9 +352,20 @@ export function listRecoveryKeys() {
 }
 
 /**
+ * Everything about a variant that another tab's edit could have changed.
+ *
+ * `updatedAt` is deliberately excluded: it is stamped on every write, so
+ * including it would make two copies of identical content compare unequal and
+ * report a collision on every ordinary save.
+ */
+function variantFingerprint(variant) {
+  return JSON.stringify([variant.name, variant.data, variant.theme, variant.letter]);
+}
+
+/**
  * Persist the whole store.
  *
- * Returns `{ ok: boolean, merged: store|null }`.
+ * Returns `{ ok: boolean, merged: store|null, conflicts: array }`.
  *
  * Two tabs of this app share one localStorage key, so a naive whole-store write
  * loses data: tab A holds a stale copy, tab B adds a variant, then tab A's
@@ -366,6 +377,19 @@ export function listRecoveryKeys() {
  * rarer than creation, and resurrecting one is far less harmful than silently
  * destroying one). On a genuine conflict `merged` is non-null so the caller can
  * tell the user their view was refreshed.
+ *
+ * `conflicts` covers the case the id-union merge cannot: both tabs hold the
+ * SAME variant id and the copy on disk is not the copy we hold. Adopting by id
+ * silently drops whichever edit is older, so instead the difference is reported
+ * and ours is kept — the tab the user is looking at is the one whose typing must
+ * not vanish. The caller turns that into a warning, which is the difference
+ * between "I lost an edit" and "another tab has a newer version of this resume".
+ *
+ * The comparison is on content, not on `updatedAt`. Two saves inside the same
+ * millisecond produce identical timestamps, so a timestamp compare silently
+ * misses real collisions — and it only ever sees the collision from the losing
+ * side. Comparing content catches it from the overwriting side too, which is the
+ * side that actually needs the warning.
  */
 export function saveStore(store) {
   let onDisk = null;
@@ -379,6 +403,7 @@ export function saveStore(store) {
 
   let toWrite = store;
   let merged = null;
+  const conflicts = [];
 
   if (
     onDisk &&
@@ -396,6 +421,16 @@ export function saveStore(store) {
       if (!mine.has(id)) {
         combined.push(variant);
         adopted++;
+      }
+    }
+
+    // A shared id whose on-disk copy differs from ours means another tab wrote
+    // content we do not have, and this write is about to drop it.
+    for (const [id, variant] of mine) {
+      const other = theirs.get(id);
+      if (!other) continue;
+      if (variantFingerprint(variant) !== variantFingerprint(other)) {
+        conflicts.push({ id, name: variant.name || 'Untitled resume' });
       }
     }
 
@@ -417,10 +452,10 @@ export function saveStore(store) {
 
   try {
     localStorage.setItem(STORE_KEY, JSON.stringify(toWrite));
-    return { ok: true, merged };
+    return { ok: true, merged, conflicts };
   } catch (e) {
     console.error('Error saving resume store:', e);
-    return { ok: false, merged: null };
+    return { ok: false, merged: null, conflicts: [] };
   }
 }
 

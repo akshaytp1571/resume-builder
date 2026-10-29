@@ -3,6 +3,10 @@
   "private": true,
   "version": "3.1.0",
   "type": "module",
+  "//": "22.12 is the floor because Vitest 5 requires it. Vite 8 alone would accept 20.19+, so a lower bound here is what stops `npm test` from failing on a Node 20 box.",
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",

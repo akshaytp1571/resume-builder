@@ -175,17 +175,15 @@ async function cacheFirst(request) {
   const cached = await cache.match(request);
   if (cached) return cached;
 
-  try {
-    const response = await fetch(request);
-    // Only cache successful, same-origin, basic responses. An opaque cross-
-    // origin response has status 0 and would poison the cache.
-    if (response && response.ok && response.type === 'basic') {
-      cache.put(request, response.clone());
-    }
-    return response;
-  } catch (err) {
-    // Offline and not cached: propagate so the page sees a normal network
-    // error instead of a fabricated response.
-    throw err;
+  // No try/catch here on purpose. Offline and uncached must propagate so the
+  // page sees a normal network error rather than a fabricated response — a
+  // `catch (err) { throw err }` wrapper reads like it does something while
+  // doing exactly nothing, and the comment above is the whole explanation.
+  const response = await fetch(request);
+  // Only cache successful, same-origin, basic responses. An opaque cross-
+  // origin response has status 0 and would poison the cache.
+  if (response && response.ok && response.type === 'basic') {
+    cache.put(request, response.clone());
   }
+  return response;
 }

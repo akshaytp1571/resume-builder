@@ -40,7 +40,6 @@ import useKeyboardShortcuts from './hooks/useKeyboardShortcuts.js';
 import useCommandBar, { buildCommands } from './hooks/useCommandBar.js';
 import useSaveStatus from './hooks/useSaveStatus.js';
 import CommandBar from './components/ui/CommandBar.jsx';
-import SaveStatus from './components/ui/SaveStatus.jsx';
 import GoogleDriveModal from './components/ui/GoogleDriveModal.jsx';
 
 /** Set when the user dismisses the recovery banner so it stops nagging. */
