@@ -24,10 +24,25 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # 22.12 is the floor, not a preference. Vite 8 accepts ^20.19.0, but
+          # Vitest 5 requires ^22.12.0, and `npm test` is the gate this repo
+          # claims to have. Node 20 here would build fine and fail the moment
+          # anyone added the test step — which is exactly what happened before
+          # this was pinned, since the workflow ran build only.
+          node-version: 22
           cache: npm
 
       - run: npm ci
+
+      # The gate. `npm test` chains all four suites with && and exits non-zero
+      # on any failure, so a red test blocks the deploy rather than shipping a
+      # broken build to Pages.
+      - name: Test
+        run: npm test
+
+      # 0 errors is the documented bar; warnings are not. Fail on error only.
+      - name: Lint
+        run: npm run lint
 
       # Project Pages are served at /resume-builder/, so assets must resolve
       # under that subpath. The committed config keeps base: '/' (used for the
