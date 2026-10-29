@@ -1,33 +1,59 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 /**
  * Animation primitives for the landing page.
  *
- * All three respect prefers-reduced-motion by resolving immediately to the
- * final state, never by running a faster animation. A user who asked for less
- * motion should get the content, not a quicker version of the thing they
+ * Every hook here respects prefers-reduced-motion by resolving immediately to
+ * the final state, never by running a faster animation. A user who asked for
+ * less motion should get the content, not a quicker version of the thing they
  * turned off.
  *
  * Only opacity and transform are ever animated. Both are compositor-only, so a
  * long page of them still runs at 60fps on a mid-range phone.
+ *
+ * The custom cursor and the magnetic buttons were removed with the redesign:
+ * both were agency-portfolio vocabulary, the cursor fought the reduced-motion
+ * preference it was supposed to respect, and a landing page has no business
+ * replacing the user's pointer.
  */
 
-/** True when the user has asked for reduced motion. Live-updates if they change it. */
-export function usePrefersReducedMotion() {
-  const [reduced, setReduced] = useState(() => {
+const QUERY_REDUCED_MOTION = '(prefers-reduced-motion: reduce)';
+
+/**
+ * Live-updating matchMedia.
+ *
+ * Returns false rather than throwing when the API is missing, so it is safe in
+ * jsdom and during a static render. `query` is a dependency: a caller that
+ * swaps the query gets the new one's value.
+ */
+export function useMediaQuery(query) {
+  const [matches, setMatches] = useState(() => {
     if (typeof window === 'undefined' || !window.matchMedia) return false;
-    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    return window.matchMedia(query).matches;
   });
 
   useEffect(() => {
     if (typeof window === 'undefined' || !window.matchMedia) return undefined;
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const onChange = (e) => setReduced(e.matches);
-    mq.addEventListener('change', onChange);
-    return () => mq.removeEventListener('change', onChange);
-  }, []);
+    const mq = window.matchMedia(query);
+    const onChange = (e) => setMatches(Boolean(e.matches));
 
-  return reduced;
+    // Safari < 14 and a few embedded webviews expose the old MediaQueryList
+    // API only. Supporting both keeps the preference live without making the
+    // hook throw in those browsers.
+    if (typeof mq.addEventListener === 'function') {
+      mq.addEventListener('change', onChange);
+      return () => mq.removeEventListener('change', onChange);
+    }
+    mq.addListener?.(onChange);
+    return () => mq.removeListener?.(onChange);
+  }, [query]);
+
+  return matches;
+}
+
+/** True when the user has asked for reduced motion. Live-updates if they change it. */
+export function usePrefersReducedMotion() {
+  return useMediaQuery(QUERY_REDUCED_MOTION);
 }
 
 /**
@@ -199,26 +225,6 @@ export function useMastTone() {
 }
 
 /**
- * A live clock string for the mast readout. One interval per twenty seconds;
- * there is nothing to clean up beyond the interval itself.
- */
-export function useClock() {
-  const [time, setTime] = useState(() =>
-    new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
-  );
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
-    const id = setInterval(() => {
-      setTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }));
-    }, 20000);
-    return () => clearInterval(id);
-  }, []);
-
-  return time;
-}
-
-/**
  * Reveal every section that owns a masked headline (.ln__i lines).
  *
  * One observer for all of them — never one nested inside another. A parent at
@@ -258,116 +264,6 @@ export function useMaskedHeadlines() {
 }
 
 /**
- * The custom cursor: a dot on the pointer and a ring lagging on a lerp.
- *
- * Position and scale live on SEPARATE nodes — an earlier version put both on
- * the ring's own transform, so the 1.7x hover scale fought the translate and
- * the ring drifted. The outer node translates; the inner <i> scales.
- *
- * The whole thing stays at opacity 0 until the first pointermove, because
- * before that we do not know where the pointer is — a ring parked at 0,0
- * reads as a rendering artefact. Fine pointers only.
- */
-export function useCursor() {
-  useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
-    if (!window.matchMedia) return undefined;
-    const fine = window.matchMedia('(hover: hover) and (pointer: fine)');
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
-    if (!fine.matches || reduced.matches) return undefined;
-
-    const cur = document.querySelector('.dt-cursor');
-    const dot = cur?.querySelector('.dt-cursor__dot');
-    const ring = cur?.querySelector('.dt-cursor__ring');
-    if (!cur || !dot || !ring) return undefined;
-
-    let mx = window.innerWidth / 2;
-    let my = window.innerHeight / 2;
-    let rx = mx;
-    let ry = my;
-    let last = null;
-    let frame = null;
-
-    const onMove = (e) => {
-      mx = e.clientX;
-      my = e.clientY;
-      dot.style.transform = `translate(${mx}px, ${my}px)`;
-      cur.classList.add('is-live');
-      const t = e.target;
-      const hot = t instanceof Element && t.closest('a, button, .dt-sheet, [role=slider]');
-      cur.classList.toggle('is-hot', Boolean(hot));
-    };
-    const onDown = () => cur.classList.add('is-down');
-    const onUp = () => cur.classList.remove('is-down');
-
-    const loop = () => {
-      rx += (mx - rx) * 0.16;
-      ry += (my - ry) * 0.16;
-      const k = `${rx.toFixed(1)},${ry.toFixed(1)}`;
-      if (k !== last) {
-        last = k;
-        ring.style.transform = `translate(${rx.toFixed(1)}px, ${ry.toFixed(1)}px)`;
-      }
-      frame = requestAnimationFrame(loop);
-    };
-
-    window.addEventListener('pointermove', onMove, { passive: true });
-    window.addEventListener('pointerdown', onDown, { passive: true });
-    window.addEventListener('pointerup', onUp, { passive: true });
-    frame = requestAnimationFrame(loop);
-    return () => {
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerdown', onDown);
-      window.removeEventListener('pointerup', onUp);
-      if (frame) cancelAnimationFrame(frame);
-    };
-  }, []);
-
-  return undefined;
-}
-
-/**
- * A magnetic wrapper: any element carrying `dt-magnetic` leans a few pixels
- * toward the pointer and springs back on leave. Capped, so it cannot wander.
- */
-export function useMagnetic() {
-  useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
-    if (!window.matchMedia) return undefined;
-    const fine = window.matchMedia('(hover: hover) and (pointer: fine)');
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
-    if (!fine.matches || reduced.matches) return undefined;
-
-    const MAG = 7;
-
-    const move = (e) => {
-      const el = e.target instanceof Element ? e.target.closest('.dt-magnetic') : null;
-      if (!el) return;
-      const r = el.getBoundingClientRect();
-      const dx = (e.clientX - (r.left + r.width / 2)) / (r.width / 2);
-      const dy = (e.clientY - (r.top + r.height / 2)) / (r.height / 2);
-      el.style.setProperty('--mx', `${(dx * MAG).toFixed(2)}px`);
-      el.style.setProperty('--my', `${(dy * MAG).toFixed(2)}px`);
-    };
-    const leave = (e) => {
-      const el = e.target instanceof Element ? e.target.closest('.dt-magnetic') : null;
-      if (!el) return;
-      el.style.setProperty('--mx', '0px');
-      el.style.setProperty('--my', '0px');
-    };
-
-    document.addEventListener('pointermove', move, { passive: true });
-    document.addEventListener('pointerout', leave, { passive: true });
-    return () => {
-      document.removeEventListener('pointermove', move);
-      document.removeEventListener('pointerout', leave);
-    };
-  }, []);
-
-  return undefined;
-}
-
-/**
  * The draggable hero specimen: a spring-damper tilt in 3D.
  *
  * TMAX 13° target, rubber-banded to 1.7× at the hard limit. A firm release
@@ -381,8 +277,6 @@ export function useSheetDrag(ref) {
   const [readout, setReadout] = useState('0° / 0°');
   const [hint, setHint] = useState('Drag me');
   const reduced = usePrefersReducedMotion();
-
-  const stateRef = useRef(null);
 
   useEffect(() => {
     const sheet = ref?.current;
@@ -400,7 +294,6 @@ export function useSheetDrag(ref) {
     let frame = null;
 
     const glare = sheet.querySelector('.dt-sheet__glare');
-    const readoutEl = sheet.parentElement?.querySelector('[data-ry], .dt-specimen__hint span:last-child');
 
     const paint = () => {
       sheet.style.transform = `rotateX(${ty.toFixed(2)}deg) rotateY(${tx.toFixed(2)}deg)`;
@@ -513,21 +406,55 @@ export function useSheetDrag(ref) {
  * The demo value drives a CSS custom property; the panels clip themselves via
  * inset(). The button toggles between 0 and 100 with the same property, so
  * dragging and clicking agree on one state.
+ *
+ * KEYBOARD. The drag surface is a plain <div>, so a keydown listener attached
+ * to it could never fire — nothing focuses a div. The handler is therefore
+ * exposed as `controlProps.onKeyDown` for the caller to spread on a focusable
+ * element, and `controlProps` carries the whole `role="slider"` contract
+ * (tabIndex, aria-valuemin/max/now/valuetext, aria-label) so the control is
+ * announced as a slider rather than as an unlabelled group.
+ *
+ * Spread it on the element that owns `ref` for the standard pattern:
+ *
+ *   <div className="dt-peel" ref={peel.ref} style={{'--peel': peel.v}} {...peel.controlProps}>
+ *
+ * The native listener is deliberately NOT also attached to `ref`: a listener on
+ * the box would run before React's delegated handler and every arrow key would
+ * step twice. One path, one step.
+ *
+ * Returns (all optional except the first three, which are unchanged):
+ *   ref, v, toggle      — as before
+ *   controlProps        — spread on the focusable slider element
+ *   aria                — the aria-* attributes alone, for attaching the
+ *                         semantics to a node other than the handler's
+ *   onKeyDown           — the handler alone, same reason
  */
-export function usePeel() {
+export function usePeel({
+  step = 10,
+  label = 'Peel between the designed sheet and the extracted text',
+} = {}) {
   const [v, setV] = useState(0);
   const ref = useRef(null);
   const vRef = useRef(0);
+
+  /**
+   * The single writer for both the state and the ref.
+   *
+   * `toggle` used to call setV directly and leave `vRef` stale, so one full
+   * cycle desynchronised them: click Peel (v becomes 100, vRef stays 0), press
+   * ArrowRight, and the value jumped from 100 back down to 10 because the key
+   * handler read the ref only the drag path maintained.
+   */
+  const apply = useCallback((next) => {
+    const clamped = Math.max(0, Math.min(100, Math.round(next)));
+    vRef.current = clamped;
+    setV(clamped);
+  }, []);
 
   useEffect(() => {
     const box = ref?.current;
     if (!box) return undefined;
     let held = false;
-
-    const apply = (next) => {
-      vRef.current = next;
-      setV(next);
-    };
 
     const onDown = (e) => {
       // The handle is its own button; its click must not become a drag.
@@ -538,35 +465,85 @@ export function usePeel() {
     const onMove = (e) => {
       if (!held) return;
       const r = box.getBoundingClientRect();
-      const next = Math.round(Math.max(0, Math.min(100, ((e.clientX - r.left) / r.width) * 100)));
-      if (next !== vRef.current) apply(next);
+      // A zero-width box (display:none, or mid-layout) would divide by zero and
+      // write NaN into the custom property, which silently kills the clip.
+      if (!r.width) return;
+      apply(((e.clientX - r.left) / r.width) * 100);
     };
     const onUp = () => {
       held = false;
-    };
-    const onKey = (e) => {
-      const k = e.key;
-      if (k !== 'ArrowLeft' && k !== 'ArrowRight') return;
-      e.preventDefault();
-      const next = Math.max(0, Math.min(100, vRef.current + (k === 'ArrowRight' ? 10 : -10)));
-      apply(next);
     };
 
     box.addEventListener('pointerdown', onDown);
     box.addEventListener('pointermove', onMove);
     box.addEventListener('pointerup', onUp);
     box.addEventListener('pointercancel', onUp);
-    box.addEventListener('keydown', onKey);
+
     return () => {
       box.removeEventListener('pointerdown', onDown);
       box.removeEventListener('pointermove', onMove);
       box.removeEventListener('pointerup', onUp);
       box.removeEventListener('pointercancel', onUp);
-      box.removeEventListener('keydown', onKey);
     };
-  }, []);
+  }, [apply]);
 
-  const toggle = () => setV((x) => (x >= 50 ? 0 : 100));
+  const onKeyDown = useCallback(
+    (e) => {
+      // React can invoke a handler twice in some StrictMode/legacy paths, and a
+      // caller may attach this to a child of an element that also carries it.
+      if (e.defaultPrevented) return;
+      let next = null;
+      switch (e.key) {
+        case 'ArrowLeft':
+        case 'ArrowDown':
+          next = vRef.current - step;
+          break;
+        case 'ArrowRight':
+        case 'ArrowUp':
+          next = vRef.current + step;
+          break;
+        case 'PageDown':
+          next = vRef.current - step * 2;
+          break;
+        case 'PageUp':
+          next = vRef.current + step * 2;
+          break;
+        // Home/End are part of the expected slider keyboard contract; without
+        // them a keyboard user cannot jump to either end, only crawl there.
+        case 'Home':
+          next = 0;
+          break;
+        case 'End':
+          next = 100;
+          break;
+        default:
+          return;
+      }
+      e.preventDefault();
+      apply(next);
+    },
+    [apply, step]
+  );
 
-  return { ref, v, toggle };
+  const toggle = useCallback(() => {
+    apply(vRef.current >= 50 ? 0 : 100);
+  }, [apply]);
+
+  const aria = {
+    'aria-label': label,
+    'aria-valuemin': 0,
+    'aria-valuemax': 100,
+    'aria-valuenow': Math.round(v),
+    'aria-valuetext': `${Math.round(v)}% extracted`,
+  };
+
+  const controlProps = {
+    role: 'slider',
+    tabIndex: 0,
+    'aria-orientation': 'horizontal',
+    ...aria,
+    onKeyDown,
+  };
+
+  return { ref, v, toggle, controlProps, aria, onKeyDown };
 }

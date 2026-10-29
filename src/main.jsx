@@ -1,27 +1,10 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
-import App from './App.jsx'
-import Landing from './components/Landing.jsx'
 import ErrorBoundary from './components/ui/ErrorBoundary.jsx'
-import useHashRoute from './hooks/useHashRoute.js'
+import Root from './Root.jsx'
 
-/**
- * Root.
- *
- * Two screens behind a hash route: the landing page at #/ and the editor at
- * #/app. A hash router rather than a path router because the app is deployed
- * to a static host on a subpath with no rewrite rules, so a path route would
- * 404 on refresh; hashes never reach the server.
- *
- * The editor is imported eagerly. It is the product, and a landing page that
- * delays it behind a second round-trip would be slower to the thing that
- * matters. The landing page is the thing that can afford to wait.
- */
-function Root() {
-  const { isLanding, navigate } = useHashRoute();
-  return isLanding ? <Landing navigate={navigate} /> : <App />;
-}
+export { Root }
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
