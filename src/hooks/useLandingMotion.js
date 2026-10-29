@@ -271,7 +271,22 @@ export function useMaskedHeadlines() {
  * obeys the throw instead of pinging flat, which is the physical judgement —
  * then a small nudge returns it home and the spring settles it.
  *
- * Returns aria props for the group, plus the readout and hint strings.
+ * POINTER ONLY, on purpose. The sheet is a plain <div>: no tabindex, no role,
+ * nothing that can focus it. A keydown listener attached to it could therefore
+ * never fire, which is why the arrow-key handler that used to live here is
+ * gone. The keyboard-driven comparison on this page is the parser peel below
+ * the specimen, which is a real slider; an instruction to press arrow keys on
+ * the sheet would be a key press with no key to press.
+ *
+ * REDUCED MOTION resolves to the settled state instead of running a faster
+ * tilt: the effect attaches nothing at all, so the sheet keeps its flat
+ * transform and the readout never leaves 0° / 0°. Its hint is replaced with
+ * 'Static preview' so the caption does not invite a gesture that is disabled.
+ *
+ * Returns data attributes for the sheet, plus the readout and hint strings.
+ * The hint is a claim about the card: 'Drag me' (flat and inviting),
+ * 'Nice grip' (held), 'Firm throw' (released hard and holding its tilt), or
+ * 'Static preview' when reduced motion disables the pointer-only effect.
  */
 export function useSheetDrag(ref) {
   const [readout, setReadout] = useState('0° / 0°');
@@ -332,7 +347,7 @@ export function useSheetDrag(ref) {
       pvx = 0; pvy = 0;
       sheet.setPointerCapture(e.pointerId);
       sheet.parentElement?.classList.add('is-held');
-      setHint((h) => (h === 'Nice grip' ? h : 'Nice grip'));
+      setHint('Nice grip');
     };
 
     const onMove = (e) => {
@@ -365,39 +380,30 @@ export function useSheetDrag(ref) {
       } else {
         ttx = 0; tty = 0;            // go home
       }
-      setHint((h) => (h === 'Firm throw' && firm ? h : 'Firm throw'));
-    };
-
-    const onKey = (e) => {
-      const k = e.key;
-      if (k === 'ArrowLeft') ttx = clampV(ttx - 4);
-      else if (k === 'ArrowRight') ttx = clampV(ttx + 4);
-      else if (k === 'ArrowUp') tty = clampV(tty + 3);
-      else if (k === 'ArrowDown') tty = clampV(tty - 3);
-      else if (k === 'Home') { ttx = 0; tty = 0; }
-      else return;
-      e.preventDefault();
-      dirty = true;
+      // The hint is a claim about the card, so it has to stay true. A firm
+      // release holds its tilt and says so; a soft release is already home
+      // again, so it goes back to inviting the next drag. The old code set
+      // 'Firm throw' on every release, including the ones that sprang flat.
+      setHint(firm ? 'Firm throw' : 'Drag me');
     };
 
     sheet.addEventListener('pointerdown', onDown);
     sheet.addEventListener('pointermove', onMove);
     sheet.addEventListener('pointerup', onUp);
     sheet.addEventListener('pointercancel', onUp);
-    sheet.addEventListener('keydown', onKey);
     frame = requestAnimationFrame(loop);
     return () => {
       sheet.removeEventListener('pointerdown', onDown);
       sheet.removeEventListener('pointermove', onMove);
       sheet.removeEventListener('pointerup', onUp);
       sheet.removeEventListener('pointercancel', onUp);
-      sheet.removeEventListener('keydown', onKey);
       if (frame) cancelAnimationFrame(frame);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reduced, ref]);
 
-  return { readout, hint, aria: { 'data-ry': readout, 'data-hint': hint } };
+  const shownHint = reduced ? 'Static preview' : hint;
+  return { readout, hint: shownHint, aria: { 'data-ry': readout, 'data-hint': shownHint } };
 }
 
 /**

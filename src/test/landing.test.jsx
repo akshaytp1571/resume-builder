@@ -244,6 +244,97 @@ describe('landing — accessibility contract', () => {
     expect(specimen).not.toHaveAttribute('role');
     expect(specimen).toHaveTextContent('Tomas Lindqvist');
   });
+
+  it('leaves nothing tabbable inside the specimen figure', () => {
+    const { container } = renderLanding();
+    const figure = container.querySelector('.dt-specimen');
+
+    expect(figure).toBeTruthy();
+    // The whole figure is evidence: caption included. If a control ever moves in
+    // here it becomes a second, competing focus stop beside the peel.
+    const tabbable = figure.querySelectorAll(
+      'a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    expect([...tabbable].map((el) => `${el.tagName}.${el.className}`)).toEqual([]);
+  });
+
+  it('does not promise the specimen a keyboard interaction it no longer has', () => {
+    const { container } = renderLanding();
+    const figure = container.querySelector('.dt-specimen');
+
+    // The previous specimen was a role="group" with tabIndex and an aria-label
+    // reading "drag or use arrow keys to tilt". The tab stop is gone, so any
+    // copy still advertising arrow keys is an instruction that does nothing.
+    expect(figure.textContent).not.toMatch(/arrow keys/i);
+    expect(container.querySelector('.dt-sheet').getAttribute('aria-label')).toBeFalsy();
+  });
+
+  it('offers exactly one keyboard-operable comparison: the peel slider', () => {
+    const { container } = renderLanding();
+    const sliders = screen.getAllByRole('slider');
+
+    expect(sliders).toHaveLength(1);
+    expect(sliders[0]).toBe(container.querySelector('.dt-peel__handle'));
+  });
+
+  it('keeps the specimen settled and inert when reduced motion is requested', () => {
+    const restore = mockMedia({ reducedMotion: true });
+    try {
+      const { container } = renderLanding();
+      const specimen = container.querySelector('.dt-sheet');
+
+      expect(specimen).toHaveAttribute('data-hint', 'Static preview');
+      expect(specimen).toHaveAttribute('data-ry', '0° / 0°');
+      expect(specimen.style.transform).toBe('');
+
+      // Reduced motion disables the pointer/key loop in useSheetDrag. These
+      // events must not turn a decorative specimen into a moving control.
+      fireEvent.pointerDown(specimen, { button: 0, pointerId: 1, clientX: 100, clientY: 100 });
+      fireEvent.pointerMove(specimen, { pointerId: 1, clientX: 180, clientY: 60 });
+      fireEvent.pointerUp(specimen, { pointerId: 1, clientX: 180, clientY: 60 });
+      fireEvent.keyDown(specimen, { key: 'ArrowRight' });
+
+      expect(specimen).toHaveAttribute('data-hint', 'Static preview');
+      expect(specimen).toHaveAttribute('data-ry', '0° / 0°');
+      expect(specimen.style.transform).toBe('');
+    } finally {
+      restore();
+    }
+  });
+
+  it('keeps the specimen tilt loop wired when motion is allowed', async () => {
+    const { container } = renderLanding();
+    const specimen = container.querySelector('.dt-sheet');
+
+    // The reduced-motion case above must not pass merely because the tilt loop
+    // was deleted. In the normal path the loop paints its initial transform and
+    // updates the live readout, even before a pointer gesture occurs.
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 60));
+    });
+
+    expect(specimen.style.transform).toMatch(/rotateX\(0\.00deg\) rotateY\(0\.00deg\)/);
+    expect(specimen).toHaveAttribute('data-ry', '0° / 0°');
+  });
+
+  it('names the closing section from a heading that keeps all three of its lines', () => {
+    const { container } = renderLanding();
+    const heading = container.querySelector('#close-title');
+
+    expect(heading).toBeTruthy();
+    expect(heading.tagName).toBe('H2');
+    expect(container.querySelector('.dt-close')).toHaveAttribute('aria-labelledby', 'close-title');
+
+    // The hero's h1 supplies an aria-label because its masked lines are
+    // aria-hidden. This heading has no aria-label, so its name is built from the
+    // lines themselves. Hiding them the way the hero does — without adding a
+    // label — would leave the closing section with no accessible name at all,
+    // and the `aria-labelledby` above would point at an empty string.
+    for (const line of heading.querySelectorAll('.ln')) {
+      expect(line).not.toHaveAttribute('aria-hidden');
+    }
+    expect(heading).toHaveAccessibleName(/open it\.\s*close the tab\.\s*lose nothing\./i);
+  });
 });
 
 describe('landing — reveal contract', () => {

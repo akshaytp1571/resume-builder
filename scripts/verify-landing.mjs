@@ -29,6 +29,11 @@ const BASE = process.env.LANDING_URL || 'http://localhost:4173/';
 const VIEWPORTS = [
   { name: '1440', width: 1440, height: 900 },
   { name: '1024', width: 1024, height: 800 },
+  // Keep the intermediate desktop band honest: it stays two-column, but a
+  // 600px-tall window needs a tiny scroll to expose the launch action.
+  { name: '900x600', width: 900, height: 600, short: true },
+  { name: '820x600', width: 820, height: 600, short: true },
+  { name: '769x600', width: 769, height: 600, short: true },
   { name: '768', width: 768, height: 900 },
   { name: '390', width: 390, height: 844 },
   { name: '320', width: 320, height: 720 },
@@ -39,6 +44,60 @@ const check = (ok, message) => {
   if (!ok) failures.push(message);
   console.log(`${ok ? 'ok  ' : 'FAIL'} ${message}`);
 };
+
+async function settleTemplateCount(page, name) {
+  const count = page.locator('[data-count="9"]');
+  try {
+    await count.waitFor({ state: 'attached', timeout: 10_000 });
+    const inViewport = await count.evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      return r.top < window.innerHeight && r.bottom > 0;
+    });
+    if (!inViewport) await count.scrollIntoViewIfNeeded({ timeout: 5_000 });
+    await page.waitForFunction(
+      () => document.querySelector('[data-count="9"]')?.textContent === '9',
+      null,
+      { timeout: 6_000 }
+    );
+    // The count may have needed a scroll to enter view; fold checks always
+    // start at the top of the landing page.
+    await page.evaluate(() => window.scrollTo(0, 0));
+    return true;
+  } catch (error) {
+    const actual = await count.textContent().catch(() => 'missing');
+    check(false, `${name}: Templates count did not settle at 9 (got ${actual ?? 'empty'}; ${error.message})`);
+    return false;
+  }
+}
+
+async function revealAll(page, name) {
+  await page.evaluate(async () => {
+    const step = Math.round(window.innerHeight * 0.6);
+    document.documentElement.style.setProperty('scroll-behavior', 'auto', 'important');
+    for (let y = 0; y < document.body.scrollHeight; y += step) {
+      window.scrollTo(0, y);
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    }
+  });
+  try {
+    await page.waitForFunction(
+      () => [...document.querySelectorAll('.landing-rise, .dt-rise')].every(
+        (el) => parseFloat(getComputedStyle(el).opacity) >= 0.99
+      ),
+      null,
+      { timeout: 8_000 }
+    );
+    return true;
+  } catch (error) {
+    const hidden = await page.evaluate(() =>
+      [...document.querySelectorAll('.landing-rise, .dt-rise')]
+        .filter((el) => parseFloat(getComputedStyle(el).opacity) < 0.99)
+        .map((el) => el.className)
+    );
+    check(false, `${name}: all revealed content is visible (${hidden.length} hidden; ${error.message})`);
+    return false;
+  }
+}
 
 await mkdir(OUT, { recursive: true });
 
@@ -64,8 +123,9 @@ for (const vp of VIEWPORTS) {
 
   await page.goto(`${BASE}#/`, { waitUntil: 'load' });
   await page.waitForSelector('#hero-title');
-  // Let the 900ms Templates count-up settle before capturing deterministic art.
-  await page.waitForFunction(() => document.querySelector('[data-count="9"]')?.textContent === '9');
+  // The count sits below the fold on short desktop windows. Bring it into view
+  // once, then return to the top; never wait forever on an unseen observer.
+  await settleTemplateCount(page, vp.name);
 
   // --- no horizontal overflow. This is the failure mode that hides on a
   // desktop screenshot and ruins the page on a phone.
@@ -89,7 +149,9 @@ for (const vp of VIEWPORTS) {
     `${vp.name}: no horizontal overflow (scrollW ${overflow.scrollW} vs clientW ${overflow.clientW})${overflow.offenders.length ? ` — ${overflow.offenders.join(' | ')}` : ''}`
   );
 
-  // --- the promise and the launch button are both above the fold.
+  // --- the promise and the launch button are both above the fold on the
+  // normal-height matrix. Short desktop windows keep the two-column art but
+  // intentionally require one small scroll to reach the action.
   const fold = await page.evaluate(() => {
     const h1 = document.querySelector('#hero-title');
     const cta = document.querySelector('.dt-acts .dt-btn--solid');
@@ -101,10 +163,26 @@ for (const vp of VIEWPORTS) {
     };
   });
   check(fold.h1Size >= 40, `${vp.name}: hero type is display-scale (${fold.h1Size}px)`);
-  check(
-    fold.ctaBottom <= fold.innerH,
-    `${vp.name}: primary CTA is above the fold (bottom ${Math.round(fold.ctaBottom)} vs ${fold.innerH})`
-  );
+  if (vp.short) {
+    const reachable = await page.evaluate(async () => {
+      const cta = document.querySelector('.dt-acts .dt-btn--solid');
+      cta?.scrollIntoView({ block: 'center', behavior: 'auto' });
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      const rect = cta?.getBoundingClientRect();
+      const result = { top: rect?.top ?? Infinity, bottom: rect?.bottom ?? Infinity, innerH: window.innerHeight };
+      window.scrollTo(0, 0);
+      return result;
+    });
+    check(
+      reachable.bottom <= reachable.innerH && reachable.top >= 0,
+      `${vp.name}: primary CTA is reachable after one short-window scroll (top ${Math.round(reachable.top)}, bottom ${Math.round(reachable.bottom)} vs ${reachable.innerH})`
+    );
+  } else {
+    check(
+      fold.ctaBottom <= fold.innerH,
+      `${vp.name}: primary CTA is above the fold (bottom ${Math.round(fold.ctaBottom)} vs ${fold.innerH})`
+    );
+  }
   check(fold.h1Rect.bottom <= fold.innerH, `${vp.name}: headline is above the fold`);
 
   await page.screenshot({ path: join(OUT, `hero-${vp.name}.png`) });
@@ -122,28 +200,14 @@ for (const vp of VIEWPORTS) {
 
   // --- everything hidden for the entrance has been revealed by the time the
   // reader has scrolled through the page.
-  await page.evaluate(async () => {
-    const step = Math.round(window.innerHeight * 0.6);
-    for (let y = 0; y < document.body.scrollHeight; y += step) {
-      window.scrollTo(0, y);
-      await new Promise((r) => setTimeout(r, 90));
-    }
-  });
-  await page.waitForTimeout(900);
-  const hidden = await page.evaluate(() =>
-    [...document.querySelectorAll('.landing-rise, .dt-rise')]
-      .filter((el) => parseFloat(getComputedStyle(el).opacity) < 0.99)
-      .map((el) => el.className)
-  );
-  check(hidden.length === 0, `${vp.name}: all revealed content is visible (${hidden.length} hidden)`);
+  await revealAll(page, vp.name);
 
   await page.screenshot({ path: join(OUT, `full-${vp.name}.png`), fullPage: true });
 
   // --- the launch button actually launches.
   await page.evaluate(() => window.scrollTo(0, 0));
-  await page.waitForTimeout(200);
-  await page.click('.dt-acts .dt-btn--solid');
-  await page.waitForTimeout(900);
+  await page.locator('.dt-acts .dt-btn--solid').first().click();
+  await page.waitForSelector('a.skip-link[href="#main-content"]', { state: 'attached', timeout: 8_000 });
   const routed = await page.evaluate(() => ({
     hash: window.location.hash,
     editor: Boolean(document.querySelector('a.skip-link[href="#main-content"]')),

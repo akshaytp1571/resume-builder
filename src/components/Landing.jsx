@@ -267,7 +267,7 @@ export default function Landing({ navigate = () => {} }) {
       <main id="main-content" tabIndex={-1}>
         <section className="dt-hero" id="top" aria-labelledby="hero-title" style={{ '--scroll-depth': progress }}>
           <div className="dt-hero__main">
-            <p className="dt-tag font-mono dt-tag--on">
+            <p className="dt-tag font-mono">
               <span className="dt-pip" aria-hidden="true" />
               Local-first · MIT · no account
             </p>
@@ -492,9 +492,18 @@ export default function Landing({ navigate = () => {} }) {
 
         <section className="dt-section dt-section--dark dt-close" aria-labelledby="close-title">
           <div className="dt-wrap">
+            {/*
+              This heading carries no aria-label: its name is built from the
+              three masked lines, and the section above names itself from this
+              id. That makes the {' '} between the lines load-bearing rather
+              than cosmetic — JSX drops whitespace between elements, so without
+              it the accessible name concatenates into
+              "Open it.Close the tab.Lose nothing." with no word boundaries.
+              Each .ln is display:block, so the separator never renders.
+            */}
             <Rise as="h2" className="dt-mega dt-close__h" id="close-title">
-              <span className="ln"><span className="ln__i">Open it.</span></span>
-              <span className="ln"><span className="ln__i"><em>Close the tab.</em></span></span>
+              <span className="ln"><span className="ln__i">Open it.</span></span>{' '}
+              <span className="ln"><span className="ln__i"><em>Close the tab.</em></span></span>{' '}
               <span className="ln"><span className="ln__i">Lose nothing.</span></span>
             </Rise>
             <div className="dt-acts dt-acts--c">
