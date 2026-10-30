@@ -1,0 +1,790 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>résumé.studio — paste the job description</title>
+<meta name="description" content="A local-first résumé builder: paste a job description, watch the ATS score climb, and export the plain text a legacy parser actually reads.">
+<style>
+/* ============================================================ tokens */
+:root{
+  --bg:#0a0a0b;
+  --surface:#131316;
+  --well:#0d0d0f;
+  --line:#232329;
+  --text:#f4f4f6;
+  --muted:#8b8b95;
+  --faint:#5a5a64;
+  --body:#a8a8b2;
+  --lime:#c8fa4b;
+  --mono:ui-monospace,'SF Mono','Cascadia Code','JetBrains Mono',Menlo,Consolas,'Liberation Mono',monospace;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+  --pad:clamp(20px,4vw,40px);
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--sans);
+  font-size:17px;
+  line-height:1.65;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+::selection{background:var(--lime);color:#0a0a0b}
+a{color:inherit;text-decoration:none}
+a:focus-visible,.btn:focus-visible{outline:1px solid var(--lime);outline-offset:3px}
+.skip{
+  position:absolute;left:-9999px;top:0;z-index:200;
+  background:var(--lime);color:#0a0a0b;font-family:var(--mono);
+  font-size:12px;text-transform:uppercase;letter-spacing:.14em;padding:10px 16px;
+}
+.skip:focus{left:12px;top:12px}
+
+.wrap{max-width:1200px;margin-inline:auto;padding-inline:var(--pad)}
+
+/* micro label — 11px mono, uppercase, wide tracking */
+.mlabel{
+  font-family:var(--mono);
+  font-size:11px;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  color:var(--faint);
+}
+
+/* ============================================================ scroll progress */
+.progress{
+  position:fixed;top:0;left:0;z-index:100;
+  width:100%;height:2px;
+  background:var(--lime);
+  transform:scaleX(0);
+  transform-origin:0 50%;
+  pointer-events:none;
+}
+
+/* ============================================================ buttons */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  height:44px;padding:0 24px;
+  font-family:var(--mono);
+  font-size:12px;font-weight:500;
+  letter-spacing:.14em;text-transform:uppercase;
+  border-radius:2px;
+  border:1px solid transparent;
+  cursor:pointer;
+  transition:background-color .2s ease,border-color .2s ease,color .2s ease;
+  white-space:nowrap;
+}
+.btn--primary{background:var(--lime);color:#0a0a0b}
+.btn--primary:hover{background:#d3fb63}
+.btn--ghost{border-color:var(--line);color:var(--text);background:transparent}
+.btn--ghost:hover{border-color:var(--lime);color:var(--lime)}
+
+/* ============================================================ hero */
+.hero{position:relative}
+.hero__grid{
+  position:absolute;inset:0;
+  display:grid;grid-template-columns:repeat(6,1fr);
+  max-width:1200px;margin-inline:auto;
+  padding-inline:var(--pad);
+  pointer-events:none;
+}
+.hero__grid i{border-left:1px solid rgba(244,244,246,.06)}
+
+.topbar{position:relative;z-index:1;border-bottom:1px solid var(--line)}
+.topbar__inner{display:flex;align-items:center;justify-content:space-between;height:68px;gap:24px}
+.mark{
+  display:inline-flex;align-items:center;gap:10px;
+  font-family:var(--mono);font-size:14px;letter-spacing:.01em;color:var(--text);
+  transition:color .2s ease;
+}
+.mark:hover{color:var(--lime)}
+.mark__sq{width:10px;height:10px;background:var(--lime);flex:none}
+.topbar__nav{display:flex;align-items:center;gap:28px}
+.topbar__nav a{
+  font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--muted);transition:color .2s ease;
+}
+.topbar__nav a:hover{color:var(--lime)}
+
+.hero__inner{
+  position:relative;z-index:1;
+  display:grid;grid-template-columns:52fr 48fr;
+  gap:clamp(40px,5vw,72px);
+  align-items:center;
+  padding:clamp(64px,9vh,104px) 0 clamp(84px,11vh,128px);
+}
+
+.display{
+  font-family:var(--mono);
+  font-size:clamp(38px,5.2vw,72px);
+  font-weight:500;
+  letter-spacing:-.03em;
+  line-height:1.05;
+  color:var(--text);
+  margin-top:26px;
+}
+.display span{display:block}
+.display__l2{color:var(--lime)}
+.caret{
+  display:inline-block;
+  width:9px;height:.82em;
+  background:var(--lime);
+  vertical-align:-.06em;
+  margin-left:.12em;
+  animation:caret-blink 1s steps(1) infinite;
+}
+@keyframes caret-blink{50%{opacity:0}}
+
+.lede{
+  margin-top:30px;
+  max-width:44ch;
+  font-size:17px;
+  line-height:1.65;
+  color:var(--body);
+}
+.cta{display:flex;flex-wrap:wrap;gap:14px;margin-top:42px}
+
+/* ============================================================ pipeline panel */
+.pipe{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:2px;
+}
+.pipe__bar{
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:14px 18px;
+  border-bottom:1px solid var(--line);
+  font-family:var(--mono);font-size:12px;letter-spacing:.08em;
+  color:var(--text);
+}
+.pipe__bar span:last-child{color:var(--faint);letter-spacing:.14em;text-transform:uppercase;font-size:11px}
+.pipe__body{padding:14px 18px 18px}
+
+.pipe__step{
+  display:flex;align-items:center;gap:14px;
+  padding:11px 0;
+  font-family:var(--mono);font-size:13px;
+}
+.pipe__dot{
+  width:8px;height:8px;flex:none;
+  border:1px solid var(--faint);
+  border-radius:1px;
+  transition:background-color .25s ease,border-color .25s ease;
+}
+.pipe__step.on .pipe__dot{background:var(--lime);border-color:var(--lime)}
+.pipe__cmd{color:var(--text);letter-spacing:-.01em}
+.pipe__out{margin-left:auto;color:var(--faint);font-size:12px;white-space:nowrap}
+
+.pipe__step--score{display:block;padding:16px 0 4px}
+.score__row{display:flex;align-items:baseline;gap:14px}
+.score__row .pipe__cmd{font-size:13px}
+.score__num{
+  margin-left:auto;
+  font-family:var(--mono);
+  font-size:clamp(40px,4vw,56px);
+  font-weight:500;letter-spacing:-.03em;line-height:1;
+  color:var(--text);
+  font-variant-numeric:tabular-nums;
+}
+.score__num i{font-style:normal;font-size:14px;color:var(--faint);margin-left:8px;letter-spacing:0}
+.score__note{margin-top:12px;font-family:var(--mono);font-size:12px;color:var(--muted)}
+
+.pipe__prompt{display:flex;align-items:center;gap:9px;margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+.pipe__prompt span{font-family:var(--mono);font-size:13px;color:var(--faint)}
+
+/* bars */
+.bar{height:3px;background:var(--line);position:relative;overflow:hidden}
+.bar--score{height:4px;margin-top:16px}
+.bar__fill{height:100%;width:var(--w);background:var(--lime)}
+
+/* ============================================================ sections */
+.section{border-top:1px solid var(--line);padding:clamp(88px,12vw,148px) 0}
+.sechead{max-width:760px}
+.sechead__top{display:flex;align-items:baseline;justify-content:space-between;gap:24px}
+.sechead__anchor{font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--faint);white-space:nowrap}
+.h2{
+  margin-top:20px;
+  font-family:var(--mono);
+  font-size:clamp(26px,3.2vw,40px);
+  font-weight:500;letter-spacing:-.02em;line-height:1.1;
+  color:var(--text);
+}
+.sechead__note{margin-top:18px;font-size:17px;color:var(--body);max-width:58ch}
+
+/* reveal-on-scroll (only armed when JS runs and motion is allowed) */
+html.js [data-reveal]{opacity:0;transform:translateY(16px)}
+html.js [data-reveal].in{
+  opacity:1;transform:none;
+  transition:opacity .6s ease,transform .6s ease;
+  transition-delay:var(--d,0ms);
+}
+html.js .pipe__step{opacity:0;transform:translateY(8px)}
+html.js .pipe__step.on{
+  opacity:1;transform:none;
+  transition:opacity .45s ease,transform .45s ease;
+}
+html.js .bar__fill{width:0;transition:width 1.1s cubic-bezier(.22,.61,.36,1)}
+html.js .in .bar__fill{width:var(--w)}
+html.js .bar--score .bar__fill{transition:width 1.1s cubic-bezier(.22,.61,.36,1)}
+
+/* ============================================================ 01 — score */
+.crits{margin-top:60px}
+.crit{
+  display:grid;
+  grid-template-columns:minmax(170px,240px) 1fr auto;
+  grid-template-areas:"name bar num" "note note note";
+  gap:10px 28px;
+  align-items:center;
+  padding:28px 0;
+}
+.crit + .crit{border-top:1px solid var(--line)}
+.crit__name{grid-area:name;font-family:var(--mono);font-size:15px;letter-spacing:-.01em;color:var(--text)}
+.crit .bar{grid-area:bar}
+.crit__num{
+  grid-area:num;
+  font-family:var(--mono);font-size:15px;color:var(--text);
+  font-variant-numeric:tabular-nums;
+}
+.crit__num i{font-style:normal;color:var(--faint);font-size:12px;margin-left:2px}
+.crit__note{grid-area:note;margin-top:6px;font-size:15px;line-height:1.6;color:var(--muted);max-width:78ch}
+
+/* ============================================================ 02 — templates */
+.tpls{margin-top:60px;display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.tpl{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:2px;
+  padding:26px 26px 28px;
+  transition:border-color .25s ease;
+}
+.tpl:hover{border-color:var(--lime)}
+.tpl__idx{
+  display:block;
+  font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--faint);
+}
+.tpl__name{
+  margin-top:14px;
+  font-family:var(--mono);font-size:20px;font-weight:500;letter-spacing:-.02em;color:var(--text);
+}
+.tpl__note{margin-top:18px;font-size:15px;line-height:1.6;color:var(--muted)}
+
+/* css-drawn wireframes */
+.wire{
+  margin-top:24px;
+  height:140px;
+  border:1px solid var(--line);
+  border-radius:2px;
+  padding:14px;
+  display:flex;flex-direction:column;gap:9px;
+  overflow:hidden;
+}
+.wire i{display:block;height:4px;background:rgba(244,244,246,.07);border-radius:1px}
+.wire__name{display:block;height:8px;width:52%;background:rgba(244,244,246,.11);border-radius:1px}
+.wire__head{display:block;height:16px;width:42%;background:rgba(244,244,246,.11);border-radius:1px}
+.wire__cols{flex:1;display:flex;gap:10px;min-height:0}
+.wire__col{flex:1;display:flex;flex-direction:column;gap:7px;min-width:0}
+.wire--plain{gap:7px}
+
+/* ============================================================ 03 — plain text out */
+.well{
+  margin-top:60px;
+  background:var(--well);
+  border:1px solid var(--line);
+  border-radius:2px;
+  display:grid;grid-template-columns:1fr 1fr;
+}
+.well__pane{padding:26px 30px 30px;min-width:0}
+.well__pane + .well__pane{border-left:1px solid var(--line)}
+.well__label{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint)}
+.code{
+  margin-top:18px;
+  font-family:var(--mono);
+  font-size:13px;line-height:1.8;
+  color:var(--body);
+  white-space:pre-wrap;
+  word-break:break-word;
+}
+.editor b{color:var(--text);font-weight:500}
+.editor .ln{color:var(--faint);margin-right:20px;user-select:none}
+.editor__active{color:var(--text)}
+.well__cap{margin-top:20px;font-family:var(--mono);font-size:12px;color:var(--faint)}
+
+/* ============================================================ 04 — runs locally */
+.band{
+  margin-top:60px;
+  background:var(--well);
+  border:1px solid var(--line);
+  border-radius:2px;
+  padding:clamp(28px,3.4vw,44px);
+  display:grid;grid-template-columns:1fr auto;gap:36px;align-items:center;
+}
+.band__line{
+  display:flex;align-items:center;gap:14px;
+  font-family:var(--mono);
+  font-size:clamp(14px,1.5vw,18px);
+  letter-spacing:-.01em;
+  color:var(--text);
+}
+.band__dot{width:9px;height:9px;background:var(--lime);flex:none;border-radius:1px}
+.band__note{margin-top:18px;font-size:16px;line-height:1.65;color:var(--body);max-width:62ch}
+.chip{
+  display:inline-flex;align-items:center;gap:8px;
+  border:1px solid var(--line);border-radius:2px;
+  padding:9px 14px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--faint);
+  white-space:nowrap;
+}
+
+/* ============================================================ 05 — agent */
+.agent__lede{margin-top:18px;font-size:17px;color:var(--body);max-width:68ch}
+.snippet{
+  margin-top:48px;
+  background:var(--well);
+  border:1px solid var(--line);
+  border-radius:2px;
+}
+.snippet__bar{
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:14px 20px;border-bottom:1px solid var(--line);
+  font-family:var(--mono);font-size:12px;letter-spacing:.08em;color:var(--text);
+}
+.snippet__bar span:last-child{color:var(--faint);font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+.snippet pre{padding:24px 20px 26px}
+.snippet .cmd{color:var(--text)}
+.snippet .out{color:var(--muted)}
+.snippet .bullets{color:var(--text)}
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:28px;align-items:center}
+.chips__note{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin-left:6px}
+
+/* ============================================================ footer */
+.foot{border-top:1px solid var(--line);padding:46px 0 58px}
+.foot__inner{display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
+.foot__nav{display:flex;gap:28px}
+.foot__nav a{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);transition:color .2s ease}
+.foot__nav a:hover{color:var(--lime)}
+.foot__mit{font-family:var(--mono);font-size:12px;letter-spacing:.1em;color:var(--faint)}
+
+/* ============================================================ responsive */
+@media (max-width:1020px){
+  .hero__inner{grid-template-columns:1fr;padding-top:56px}
+  .hero__panel{max-width:620px}
+}
+@media (max-width:860px){
+  .tpls{grid-template-columns:1fr}
+  .well{grid-template-columns:1fr}
+  .well__pane + .well__pane{border-left:0;border-top:1px solid var(--line)}
+  .band{grid-template-columns:1fr;gap:24px}
+}
+@media (max-width:720px){
+  body{font-size:16px}
+  .crit{grid-template-columns:1fr auto;grid-template-areas:"name num" "bar bar" "note note";gap:12px 16px}
+  .crit__num{justify-self:end}
+  .topbar__nav{gap:20px}
+  .pipe__out{font-size:11px}
+  .pipe__step{gap:10px}
+  .foot__inner{gap:18px}
+  .foot__mit{order:3;width:100%}
+}
+
+/* ============================================================ reduced motion */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{
+    transition-duration:.01ms !important;
+    transition-delay:0s !important;
+    animation:none !important;
+  }
+  html.js [data-reveal],
+  html.js .pipe__step{opacity:1 !important;transform:none !important}
+  html.js .bar__fill{width:var(--w)}
+  .caret{opacity:1}
+}
+</style>
+</head>
+<body>
+<div class="progress" id="progress" aria-hidden="true"></div>
+<a class="skip" href="#main">Skip to content</a>
+
+<main id="main">
+
+  <!-- ================================================== HERO -->
+  <section class="hero" id="top">
+    <div class="hero__grid" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+
+    <div class="topbar">
+      <div class="wrap topbar__inner">
+        <a class="mark" href="#top"><span class="mark__sq" aria-hidden="true"></span>résumé.studio</a>
+        <nav class="topbar__nav" aria-label="Primary">
+          <a href="https://github.com/akshaytp1571/resume-builder" rel="noreferrer">Source</a>
+          <a href="#/app">Open</a>
+        </nav>
+      </div>
+    </div>
+
+    <div class="wrap hero__inner">
+      <div class="hero__copy">
+        <p class="mlabel">// LOCAL-FIRST · NO ACCOUNT · NO UPLOAD</p>
+        <h1 class="display">
+          <span class="display__l1">Paste the job</span>
+          <span class="display__l2"><span id="typed">description.</span><span class="caret" aria-hidden="true"></span></span>
+        </h1>
+        <p class="lede">Watch the score climb as the parser, the matcher, and the formatter each do their job.</p>
+        <div class="cta">
+          <a class="btn btn--primary" href="#/app">Open the studio</a>
+          <a class="btn btn--ghost" href="https://github.com/akshaytp1571/resume-builder" rel="noreferrer">Source</a>
+        </div>
+      </div>
+
+      <div class="hero__panel">
+        <div class="pipe">
+          <div class="pipe__bar"><span>pipeline — run 042</span><span>exit 0</span></div>
+          <div class="pipe__body">
+
+            <div class="pipe__step">
+              <span class="pipe__dot" aria-hidden="true"></span>
+              <span class="pipe__cmd">read job_description.txt</span>
+              <span class="pipe__out">1,284 words</span>
+            </div>
+
+            <div class="pipe__step">
+              <span class="pipe__dot" aria-hidden="true"></span>
+              <span class="pipe__cmd">parse résumé.pdf</span>
+              <span class="pipe__out">42 fields</span>
+            </div>
+
+            <div class="pipe__step">
+              <span class="pipe__dot" aria-hidden="true"></span>
+              <span class="pipe__cmd">match keywords</span>
+              <span class="pipe__out">18 / 26</span>
+            </div>
+
+            <div class="pipe__step pipe__step--score">
+              <div class="score__row">
+                <span class="pipe__dot" aria-hidden="true"></span>
+                <span class="pipe__cmd">score</span>
+                <span class="score__num"><span id="scoreNum">87</span><i>/ 100</i></span>
+              </div>
+              <div class="bar bar--score"><div class="bar__fill" id="scoreBar" style="--w:87%"></div></div>
+              <p class="score__note">+45 after tailoring</p>
+            </div>
+
+            <div class="pipe__prompt" aria-hidden="true">
+              <span>$</span><span class="caret"></span>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================== 01 — SCORE -->
+  <section class="section" id="score">
+    <div class="wrap">
+      <header class="sechead" data-reveal>
+        <div class="sechead__top">
+          <p class="mlabel">// 01 · SCORING</p>
+          <span class="sechead__anchor">#score</span>
+        </div>
+        <h2 class="h2">How the score works</h2>
+        <p class="sechead__note">No black box. Every point is traceable to a line in your résumé.</p>
+      </header>
+
+      <div class="crits">
+        <div class="crit" data-reveal style="--d:0ms">
+          <span class="crit__name">Parse fidelity</span>
+          <div class="bar"><div class="bar__fill" style="--w:94%"></div></div>
+          <span class="crit__num">94<i>%</i></span>
+          <p class="crit__note">How much of your PDF the parser can actually read: text layer, reading order, and headings intact. A scanned image scores zero no matter how good it looks.</p>
+        </div>
+
+        <div class="crit" data-reveal style="--d:70ms">
+          <span class="crit__name">Keyword coverage</span>
+          <div class="bar"><div class="bar__fill" style="--w:69%"></div></div>
+          <span class="crit__num">69<i>%</i></span>
+          <p class="crit__note">The share of the posting's required skills that appear verbatim in your résumé, weighted by how often the posting repeats each one.</p>
+        </div>
+
+        <div class="crit" data-reveal style="--d:140ms">
+          <span class="crit__name">Formatting risk</span>
+          <div class="bar"><div class="bar__fill" style="--w:12%"></div></div>
+          <span class="crit__num">12<i>%</i></span>
+          <p class="crit__note">Layout choices that break parsers — tables, columns, icons, text baked into images. Lower is better; this draft is nearly clean.</p>
+        </div>
+
+        <div class="crit" data-reveal style="--d:210ms">
+          <span class="crit__name">Seniority match</span>
+          <div class="bar"><div class="bar__fill" style="--w:81%"></div></div>
+          <span class="crit__num">81<i>%</i></span>
+          <p class="crit__note">Whether the years and scope you claim line up with the level the posting is hiring for, title by title.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================== 02 — TEMPLATES -->
+  <section class="section" id="templates">
+    <div class="wrap">
+      <header class="sechead" data-reveal>
+        <div class="sechead__top">
+          <p class="mlabel">// 02 · TEMPLATES</p>
+          <span class="sechead__anchor">#templates</span>
+        </div>
+        <h2 class="h2">Three shapes, one source of truth</h2>
+        <p class="sechead__note">The layout is a render target, not a second document. Switch templates and the score, the export, and the parser view all follow.</p>
+      </header>
+
+      <div class="tpls">
+        <article class="tpl" data-reveal style="--d:0ms">
+          <span class="tpl__idx">01</span>
+          <h3 class="tpl__name">Editorial</h3>
+          <div class="wire" aria-hidden="true">
+            <span class="wire__name"></span>
+            <div class="wire__cols">
+              <div class="wire__col">
+                <i style="width:100%"></i><i style="width:86%"></i><i style="width:94%"></i><i style="width:72%"></i><i style="width:90%"></i><i style="width:64%"></i><i style="width:88%"></i>
+              </div>
+              <div class="wire__col">
+                <i style="width:92%"></i><i style="width:100%"></i><i style="width:78%"></i><i style="width:88%"></i><i style="width:60%"></i><i style="width:96%"></i><i style="width:70%"></i>
+              </div>
+            </div>
+          </div>
+          <p class="tpl__note">Two-column editorial layout for design and brand roles.</p>
+        </article>
+
+        <article class="tpl" data-reveal style="--d:70ms">
+          <span class="tpl__idx">02</span>
+          <h3 class="tpl__name">Ledger</h3>
+          <div class="wire" aria-hidden="true">
+            <span class="wire__head"></span>
+            <i style="width:100%"></i><i style="width:94%"></i><i style="width:88%"></i><i style="width:97%"></i><i style="width:76%"></i><i style="width:92%"></i><i style="width:84%"></i><i style="width:98%"></i><i style="width:70%"></i>
+          </div>
+          <p class="tpl__note">Dense single-column ledger built for consulting and finance.</p>
+        </article>
+
+        <article class="tpl" data-reveal style="--d:140ms">
+          <span class="tpl__idx">03</span>
+          <h3 class="tpl__name">Plain</h3>
+          <div class="wire wire--plain" aria-hidden="true">
+            <i style="width:100%"></i><i style="width:96%"></i><i style="width:100%"></i><i style="width:90%"></i><i style="width:98%"></i><i style="width:84%"></i><i style="width:100%"></i><i style="width:92%"></i><i style="width:88%"></i><i style="width:100%"></i>
+          </div>
+          <p class="tpl__note">No layout at all — the plain-text shape a legacy ATS reads best.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================== 03 — PLAIN TEXT OUT -->
+  <section class="section" id="plain">
+    <div class="wrap">
+      <header class="sechead" data-reveal>
+        <div class="sechead__top">
+          <p class="mlabel">// 03 · PARSER VIEW</p>
+          <span class="sechead__anchor">#plain</span>
+        </div>
+        <h2 class="h2">Plain text out</h2>
+        <p class="sechead__note">The editor is the source of truth. The export is what the machine sees — one column, no styling, uppercase headings, dates on the role line.</p>
+      </header>
+
+      <div class="well" data-reveal>
+        <div class="well__pane">
+          <p class="well__label">editor — résumé.md</p>
+          <div class="code editor" aria-hidden="true">
+<div><b># Akshay T P</b></div>
+<div>Bengaluru, IN · akshaytp1571@gmail.com</div>
+<div> </div>
+<div><b>## Summary</b></div>
+<div>Frontend engineer, 6 years — React, TypeScript,</div>
+<div>design systems, performance.</div>
+<div> </div>
+<div><b>## Experience</b></div>
+<div class="editor__active">Senior Frontend Engineer — Nimbus Labs<span class="caret"></span></div>
+          </div>
+        </div>
+        <div class="well__pane">
+          <p class="well__label">plain_text.txt</p>
+          <div class="code">AKSHAY T P
+Bengaluru, IN | akshaytp1571@gmail.com
+
+SUMMARY
+Frontend engineer, 6 years. React, TypeScript,
+design systems, performance.
+
+EXPERIENCE
+Senior Frontend Engineer, Nimbus Labs, 2022 - present
+- Rebuilt the billing dashboard in React; p95 load
+  went from 4.1s to 1.2s
+- Shipped a 40-component design system now used by
+  five teams
+- Cut bundle size 38% with route-level code splitting</div>
+          <p class="well__cap">What the machine actually reads.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================== 04 — RUNS LOCALLY -->
+  <section class="section" id="local">
+    <div class="wrap">
+      <header class="sechead" data-reveal>
+        <div class="sechead__top">
+          <p class="mlabel">// 04 · LOCAL-FIRST</p>
+          <span class="sechead__anchor">#local</span>
+        </div>
+        <h2 class="h2">Runs locally</h2>
+      </header>
+
+      <div class="band" data-reveal>
+        <div>
+          <p class="band__line"><span class="band__dot" aria-hidden="true"></span>no network calls · no account · localStorage only</p>
+          <p class="band__note">Your résumé never leaves the tab it was typed in. Parsing, matching, and scoring all run in the browser against files you pick yourself; the only thing persisted is your own draft, in this browser's localStorage. There is no account to create, no upload to wait for, and no analytics script watching which template you click.</p>
+        </div>
+        <span class="chip">no telemetry</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================== 05 — OPTIONAL AGENT -->
+  <section class="section" id="agent">
+    <div class="wrap">
+      <header class="sechead" data-reveal>
+        <div class="sechead__top">
+          <p class="mlabel">// 05 · POWER-USER TOOLING</p>
+          <span class="sechead__anchor">#agent</span>
+        </div>
+        <h2 class="h2">Optional agent</h2>
+        <p class="agent__lede">For people who want the loop closed. The agent is a local Playwright job you run yourself: it opens a posting, reads it, and drafts tailored bullets against your own résumé — then hands them back for you to edit. AI providers are opt-in and bring-your-own-key; with none configured, the matcher and the formatter still run fully offline.</p>
+      </header>
+
+      <div class="snippet" data-reveal>
+        <div class="snippet__bar"><span>agent — dry run</span><span>local · playwright</span></div>
+<pre class="code"><span class="cmd">$ studio agent run --url https://boards.example.com/acme/jobs/4821</span>
+
+<span class="out">  fetch posting ...................... ok (1.2s)
+  extract requirements ................ 26 found
+  match against résumé ................ 18 hit / 8 gap
+  draft bullets ....................... 3 written</span>
+
+<span class="bullets">- Turned a three-day monthly close into a four-hour one by
+  scripting the AP export into a single review queue
+- Migrated 60k lines of jQuery to React behind a per-tenant
+  flag, zero downtime, no rollback
+- Built the audit log the SOC 2 auditors asked for; it is
+  now the template for three sibling services</span></pre>
+      </div>
+
+      <div class="chips" data-reveal>
+        <span class="chip">openai</span>
+        <span class="chip">anthropic</span>
+        <span class="chip">ollama — local</span>
+        <span class="chips__note">optional · bring your own key</span>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ================================================== FOOTER -->
+<footer class="foot">
+  <div class="wrap foot__inner">
+    <a class="mark" href="#top"><span class="mark__sq" aria-hidden="true"></span>résumé.studio</a>
+    <nav class="foot__nav" aria-label="Footer">
+      <a href="https://github.com/akshaytp1571/resume-builder" rel="noreferrer">Source</a>
+      <a href="#/app">Open</a>
+    </nav>
+    <p class="foot__mit">Open source. MIT.</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+  var doc = document.documentElement;
+  doc.classList.add('js');
+
+  var RM = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- scroll progress (2px, lime, top of viewport) ---------- */
+  var progress = document.getElementById('progress');
+  var queued = false;
+  function draw() {
+    queued = false;
+    var h = doc.scrollHeight - window.innerHeight;
+    var p = h > 0 ? Math.min(1, Math.max(0, window.scrollY / h)) : 0;
+    progress.style.transform = 'scaleX(' + p + ')';
+  }
+  function onScroll() {
+    if (queued) return;
+    queued = true;
+    window.requestAnimationFrame(draw);
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll, { passive: true });
+  draw();
+
+  /* ---------- hero: live-typing accent line (runs once) ---------- */
+  var typed = document.getElementById('typed');
+  var full = typed.textContent;
+  if (!RM) {
+    typed.textContent = '';
+    var i = 0;
+    setTimeout(function type() {
+      i += 1;
+      typed.textContent = full.slice(0, i);
+      if (i < full.length) setTimeout(type, 65);
+    }, 420);
+  }
+
+  /* ---------- pipeline: staggered steps, then the count ---------- */
+  var steps = Array.prototype.slice.call(document.querySelectorAll('.pipe__step'));
+  var scoreNum = document.getElementById('scoreNum');
+  var scoreBar = document.getElementById('scoreBar');
+
+  function count(from, to, dur) {
+    var t0 = null;
+    function frame(t) {
+      if (t0 === null) t0 = t;
+      var k = Math.min(1, (t - t0) / dur);
+      var e = 1 - Math.pow(1 - k, 3);
+      scoreNum.textContent = String(Math.round(from + (to - from) * e));
+      if (k < 1) window.requestAnimationFrame(frame);
+    }
+    window.requestAnimationFrame(frame);
+  }
+
+  if (RM) {
+    steps.forEach(function (s) { s.classList.add('on'); });
+    scoreNum.textContent = '87';
+    scoreBar.style.width = '87%';
+  } else {
+    scoreNum.textContent = '42';
+    steps.forEach(function (s, idx) {
+      setTimeout(function () { s.classList.add('on'); }, 260 + idx * 220);
+    });
+    setTimeout(function () {
+      count(42, 87, 1100);
+      scoreBar.style.width = '87%';
+    }, 260 + 3 * 220 + 420);
+  }
+
+  /* ---------- reveal on scroll: rise 16px, fade, bars fill once ---------- */
+  var reveals = Array.prototype.slice.call(document.querySelectorAll('[data-reveal]'));
+  if (RM || !('IntersectionObserver' in window)) {
+    reveals.forEach(function (el) { el.classList.add('in'); });
+  } else {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (en.isIntersecting) {
+          en.target.classList.add('in');
+          io.unobserve(en.target);
+        }
+      });
+    }, { threshold: 0.18, rootMargin: '0px 0px -6% 0px' });
+    reveals.forEach(function (el) { io.observe(el); });
+  }
+})();
+</script>
+</body>
+</html>

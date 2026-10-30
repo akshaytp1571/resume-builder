@@ -55,6 +55,19 @@ jobs:
 
       - uses: actions/configure-pages@v5
 
+      # Ship the static landing-page mockups alongside the built app so the
+      # directions can be opened live at
+      # /resume-builder/previews/<direction>/index.html. `previews/` is
+      # self-contained HTML with no build step, so a straight copy is enough.
+      # PNG screenshots are gitignored inside previews/, so nothing heavy and
+      # nothing from design-sample/ rides along.
+      - name: Stage landing previews
+        run: |
+          mkdir -p dist/previews
+          cp -R previews/. dist/previews/
+          test -f dist/previews/index.html
+          test -f dist/previews/J-daylight-glass/index.html
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: ./dist

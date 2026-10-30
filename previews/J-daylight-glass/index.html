@@ -1,0 +1,1792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Résumé Studio — The résumé tool that gets you read</title>
+<script>
+/* Set before first paint so the hero choreography never flashes. */
+if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  document.documentElement.classList.add('js-anim');
+}
+</script>
+<style>
+/* ============================================================
+   TOKENS
+   ============================================================ */
+:root{
+  --bg:#ffffff;
+  --bg-alt:#f5f5f7;
+  --text:#1d1d1f;
+  --muted:#6e6e73;
+  --muted-2:#4a4a4f;
+  --hairline:#d2d2d7;
+  --hairline-soft:rgba(0,0,0,.07);
+  --accent:#0071e3;
+  --accent-hover:#0077ed;
+  --accent-tint:rgba(0,113,227,.12);
+  --accent-tint-soft:rgba(0,113,227,.06);
+
+  --font:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+  --mono:ui-monospace,'SF Mono',SFMono-Regular,'San Francisco Mono',Menlo,Consolas,'Liberation Mono',monospace;
+
+  --ease:cubic-bezier(.16,1,.3,1);
+  --ease-spring:cubic-bezier(.22,1,.36,1);
+
+  --maxw:1120px;
+  --pad:32px;
+
+  --shadow-sm:0 2px 10px rgba(0,0,0,.05),0 1px 2px rgba(0,0,0,.04);
+  --shadow-md:0 8px 30px rgba(0,0,0,.08),0 1px 3px rgba(0,0,0,.05);
+  --shadow-lg:0 24px 60px rgba(0,0,0,.12),0 2px 8px rgba(0,0,0,.05);
+  --shadow-xl:0 40px 90px rgba(0,0,0,.16),0 4px 14px rgba(0,0,0,.06);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%;scroll-padding-top:84px}
+/* NOTE: no CSS scroll-behavior:smooth here on purpose. It would make every
+   programmatic window.scrollTo() animated, which breaks fast scripted
+   scroll-throughs (screenshot tooling, tests). Anchor smoothness is handled
+   per-click in JS instead — see the smooth-scroll block near the bottom. */
+body{
+  font-family:var(--font);
+  background:var(--bg);
+  color:var(--text);
+  font-size:17px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+a{color:inherit;text-decoration:none}
+img{max-width:100%}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 var(--pad);width:100%;min-width:0}
+section{position:relative;z-index:1}
+/* grid/flex children must be allowed to shrink below their min-content
+   width, otherwise long unbreakable strings (URLs, <pre>) blow out the
+   track and create horizontal page overflow */
+.stats-grid > *,.tpl-grid > *,.split > *,.extras-grid > *,
+.ba-grid > *,.oss-grid > *,.faq-list > *,.footer-cols > *{min-width:0}
+
+/* ============================================================
+   ATMOSPHERE — pre-blurred radial colour fields.
+   These live behind every glass surface so the blur has
+   something real to chew on.
+   ============================================================ */
+.atmos{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.field{position:absolute;border-radius:50%;will-change:transform}
+
+.field--blue{
+  width:940px;height:940px;left:-300px;top:-260px;
+  background:radial-gradient(closest-side,
+    rgba(0,113,227,.30) 0%,
+    rgba(0,113,227,.21) 26%,
+    rgba(0,113,227,.11) 50%,
+    rgba(0,113,227,.045) 72%,
+    rgba(0,113,227,0) 100%);
+}
+.field--peri{
+  width:860px;height:860px;right:-280px;top:120px;
+  background:radial-gradient(closest-side,
+    rgba(133,148,226,.28) 0%,
+    rgba(133,148,226,.19) 28%,
+    rgba(133,148,226,.10) 52%,
+    rgba(133,148,226,.04) 74%,
+    rgba(133,148,226,0) 100%);
+}
+.field--amber{
+  width:680px;height:680px;right:-160px;bottom:-220px;
+  background:radial-gradient(closest-side,
+    rgba(255,176,84,.30) 0%,
+    rgba(255,176,84,.20) 28%,
+    rgba(255,176,84,.10) 54%,
+    rgba(255,176,84,.035) 76%,
+    rgba(255,176,84,0) 100%);
+}
+.field--cool{
+  width:760px;height:760px;left:-280px;top:40px;
+  background:radial-gradient(closest-side,
+    rgba(0,113,227,.20) 0%,
+    rgba(0,113,227,.13) 30%,
+    rgba(0,113,227,.06) 56%,
+    rgba(0,113,227,.02) 78%,
+    rgba(0,113,227,0) 100%);
+}
+
+/* ============================================================
+   GLASS
+   ============================================================ */
+.glass{
+  position:relative;
+  background:rgba(255,255,255,.55);
+  backdrop-filter:blur(24px) saturate(180%);
+  -webkit-backdrop-filter:blur(24px) saturate(180%);
+  border:1px solid rgba(255,255,255,.7);
+  box-shadow:0 8px 32px rgba(0,0,0,.08), inset 0 1px 0 rgba(255,255,255,.9), inset 0 -1px 0 rgba(255,255,255,.35);
+  border-radius:24px;
+}
+/* specular top edge — the detail that sells it */
+.glass::before{
+  content:'';position:absolute;left:0;right:0;top:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.95),transparent);
+  pointer-events:none;z-index:3;
+}
+.glass--nav{
+  background:rgba(255,255,255,.72);
+  backdrop-filter:blur(20px) saturate(180%);
+  -webkit-backdrop-filter:blur(20px) saturate(180%);
+  border-radius:0;border-left:0;border-right:0;border-top:0;
+  box-shadow:0 1px 0 rgba(0,0,0,0),0 8px 30px rgba(0,0,0,0);
+  transition:box-shadow 400ms var(--ease),border-color 400ms var(--ease);
+}
+.glass--nav.scrolled{
+  border-bottom-color:var(--hairline);
+  box-shadow:0 1px 0 rgba(0,0,0,.02),0 12px 34px rgba(0,0,0,.09);
+}
+.glass--card{background:rgba(255,255,255,.55)}
+.glass--well{
+  background:rgba(255,255,255,.35);
+  box-shadow:0 1px 6px rgba(0,0,0,.03), inset 0 1px 0 rgba(255,255,255,.9), inset 0 -1px 0 rgba(255,255,255,.4);
+}
+.glass--chip{
+  background:rgba(255,255,255,.6);
+  border-radius:999px;
+  box-shadow:0 4px 18px rgba(0,0,0,.07), inset 0 1px 0 rgba(255,255,255,.9);
+}
+.glass--dark{
+  background:rgba(255,255,255,.07);
+  border-color:rgba(255,255,255,.14);
+  box-shadow:0 8px 32px rgba(0,0,0,.42), inset 0 1px 0 rgba(255,255,255,.25);
+}
+.glass--dark::before{
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.4),transparent);
+}
+
+/* ============================================================
+   REVEALS + HERO CHOREOGRAPHY (JS-gated so no-JS = visible)
+   ============================================================ */
+html.js-anim .reveal{opacity:0;transform:translateY(24px);
+  transition:opacity 700ms var(--ease),transform 700ms var(--ease)}
+html.js-anim .reveal.in{opacity:1;transform:none}
+
+html.js-anim .rise{opacity:0;transform:translateY(16px);
+  transition:opacity 700ms var(--ease),transform 700ms var(--ease);
+  transition-delay:var(--d,0ms)}
+html.loaded .rise{opacity:1;transform:none}
+
+html.js-anim .hero-panel{opacity:0;transform:scale(.96);
+  transition:opacity 620ms var(--ease),transform 620ms var(--ease);
+  transition-delay:var(--d,0ms)}
+html.loaded .hero-panel{opacity:1;transform:none}
+
+/* clip-mask word rise */
+.hw{display:inline-block;overflow:hidden;vertical-align:bottom;
+  padding-bottom:.14em;margin-bottom:-.14em}
+.hw i{display:inline-block;font-style:normal}
+html.js-anim .hw i{transform:translateY(112%);
+  transition:transform 700ms var(--ease);transition-delay:var(--d,0ms)}
+html.loaded .hw i{transform:none}
+
+/* ============================================================
+   SCROLL PROGRESS
+   ============================================================ */
+#progressBar{
+  position:fixed;top:0;left:0;right:0;height:2px;z-index:200;
+  background:linear-gradient(90deg,var(--accent),#4da3ff);
+  transform-origin:0 50%;transform:scaleX(0);pointer-events:none;
+  will-change:transform;
+}
+
+/* ============================================================
+   NAV
+   ============================================================ */
+.nav{position:fixed;top:0;left:0;right:0;z-index:100}
+.nav-inner{
+  max-width:var(--maxw);margin:0 auto;padding:0 var(--pad);
+  height:56px;display:flex;align-items:center;justify-content:space-between;gap:20px;
+}
+.wordmark{font-size:15px;font-weight:600;letter-spacing:-.012em;color:var(--text)}
+.nav-center{display:flex;align-items:center;gap:30px}
+.nav-center a{font-size:13.5px;color:var(--muted);transition:color 220ms ease}
+.nav-center a:hover{color:var(--text)}
+.nav-right{display:flex;align-items:center;gap:22px}
+.nav-source{font-size:13.5px;color:var(--muted);transition:color 220ms ease}
+.nav-source:hover{color:var(--text)}
+.nav-open{
+  display:inline-flex;align-items:center;height:32px;padding:0 17px;border-radius:980px;
+  background:var(--accent);color:#fff;font-size:13.5px;font-weight:500;
+  transition:background 220ms ease,transform 160ms var(--ease-spring);
+}
+.nav-open:hover{background:var(--accent-hover)}
+.nav-open:active{transform:scale(.95)}
+
+/* ============================================================
+   BUTTONS / LINKS
+   ============================================================ */
+.btn-primary{
+  display:inline-flex;align-items:center;justify-content:center;
+  height:48px;padding:0 32px;border-radius:980px;
+  background:var(--accent);color:#fff;font-family:var(--font);
+  font-size:17px;font-weight:500;letter-spacing:-.01em;
+  transition:background 220ms ease;
+  will-change:transform;
+}
+.btn-primary:hover{background:var(--accent-hover)}
+.text-link{
+  display:inline-flex;align-items:center;gap:7px;color:var(--accent);
+  font-size:17px;letter-spacing:-.01em;transition:color 220ms ease;
+}
+.text-link .arrow{display:inline-block;transition:transform 260ms var(--ease)}
+.text-link:hover{color:var(--accent-hover)}
+.text-link:hover .arrow{transform:translateX(6px)}
+
+/* ============================================================
+   TYPE
+   ============================================================ */
+.eyebrow{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+.eyebrow.accent{color:var(--accent)}
+.section-title{
+  font-size:clamp(34px,4.4vw,54px);font-weight:700;letter-spacing:-.032em;
+  line-height:1.06;color:var(--text);margin-top:16px;
+}
+.section-intro{font-size:19px;line-height:1.55;color:var(--muted);max-width:640px;margin-top:20px}
+.head{max-width:720px}
+
+/* ============================================================
+   HERO
+   ============================================================ */
+.hero{padding:158px 0 60px;text-align:center;overflow:visible}
+/* clipping wrapper so the amber field can bleed off-canvas without ever
+   contributing to the document's scroll width */
+.hero-fields{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0}
+.hero-title{
+  font-size:clamp(44px,8vw,92px);font-weight:700;letter-spacing:-.035em;line-height:1.03;
+  color:var(--text);margin-top:24px;max-width:940px;margin-left:auto;margin-right:auto;
+  position:relative;z-index:2;
+}
+.hero-sub{font-size:21px;line-height:1.45;color:var(--muted);max-width:640px;margin:26px auto 0;position:relative;z-index:2}
+.hero-cta{margin-top:38px;display:flex;justify-content:center;position:relative;z-index:2}
+.hero-src{margin-top:20px;display:flex;justify-content:center;position:relative;z-index:2}
+
+.hero-stage-wrap{margin-top:76px;display:flex;justify-content:center;position:relative;z-index:2}
+.hero-panel{
+  width:min(760px,100%);
+  padding:26px 26px 30px;
+  border-radius:30px;
+}
+.hero-stage{position:relative;perspective:1700px}
+
+/* the résumé document */
+.hero-doc{
+  --p:0;--tiltX:0deg;--tiltY:0deg;
+  background:#fff;border-radius:22px;padding:42px 46px 46px;
+  box-shadow:var(--shadow-lg),0 0 0 1px rgba(0,0,0,.03);
+  text-align:left;position:relative;overflow:hidden;
+  transform:perspective(1700px)
+    rotateX(calc((1 - var(--p)) * 6deg + var(--tiltX)))
+    rotateY(calc((1 - var(--p)) * -8deg + var(--tiltY)))
+    scale(calc(1 + var(--p) * .06));
+  transform-origin:50% 60%;
+  will-change:transform;
+}
+.sweep{
+  position:absolute;inset:-30% -70%;pointer-events:none;opacity:0;z-index:4;
+  background:linear-gradient(102deg,
+    rgba(255,255,255,0) 42%,
+    rgba(255,255,255,.42) 49%,
+    rgba(255,255,255,.62) 50%,
+    rgba(255,255,255,.42) 51%,
+    rgba(255,255,255,0) 58%);
+  transform:translateX(-130%);
+}
+.sweep.run{animation:sweeponce 1500ms var(--ease) 1 forwards}
+@keyframes sweeponce{
+  0%{opacity:0;transform:translateX(-130%)}
+  10%{opacity:1}
+  85%{opacity:1}
+  100%{opacity:0;transform:translateX(130%)}
+}
+
+/* résumé document internals */
+.rdoc{font-size:13px;line-height:1.5;color:var(--text);position:relative;z-index:2}
+.rd-name{font-size:25px;font-weight:700;letter-spacing:-.018em;line-height:1.1}
+.rd-title{font-size:14px;color:var(--muted);font-weight:500;margin-top:3px}
+.rd-contact{font-size:11px;color:var(--muted);margin-top:9px;letter-spacing:.01em}
+.rd-sec{margin-top:18px}
+.rd-sec-h{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;
+  color:var(--text);padding-bottom:5px;border-bottom:1px solid var(--hairline)}
+.rd-summary{font-size:12.5px;color:var(--muted-2);margin-top:8px;line-height:1.55}
+.rd-role{font-size:12.5px;font-weight:600;margin-top:10px}
+.rd-role span{font-weight:400;color:var(--muted)}
+.rdoc ul{margin:5px 0 0;padding-left:17px}
+.rdoc li{font-size:12px;color:var(--muted-2);margin-top:4px;line-height:1.45}
+.rd-skills{font-size:12px;color:var(--muted-2);margin-top:8px}
+
+/* ATS chip */
+.score-chip{
+  position:absolute;right:-20px;bottom:38px;z-index:6;
+  display:flex;align-items:center;gap:11px;
+  padding:12px 17px 12px 12px;border-radius:18px;
+  background:rgba(255,255,255,.84);
+  backdrop-filter:blur(20px) saturate(180%);
+  -webkit-backdrop-filter:blur(20px) saturate(180%);
+  border:1px solid rgba(255,255,255,.9);
+  box-shadow:0 10px 34px rgba(0,0,0,.13),0 1px 3px rgba(0,0,0,.06),inset 0 1px 0 rgba(255,255,255,.95);
+}
+.chip-ring{width:38px;height:38px;flex:none}
+.chip-ring circle{fill:none;stroke-width:3.2;stroke-linecap:round}
+.chip-ring .cr-bg{stroke:#ececef}
+.chip-ring .cr-fg{stroke:var(--accent);stroke-dasharray:91 100;transform:rotate(-90deg);transform-origin:center}
+.chip-label{font-size:13px;color:var(--muted);font-weight:500;letter-spacing:.01em;white-space:nowrap}
+.chip-label b{color:var(--text);font-weight:700;font-size:15px}
+
+/* floating stat chips */
+.hero-chips{position:absolute;inset:0;pointer-events:none;z-index:5}
+.hero-chip{
+  position:absolute;pointer-events:auto;white-space:nowrap;
+  display:inline-flex;align-items:center;gap:8px;
+  padding:9px 15px;border-radius:999px;
+  font-size:12.5px;font-weight:500;color:var(--muted-2);letter-spacing:-.005em;
+  animation:floaty 7s var(--ease) infinite;
+}
+.hero-chip b{color:var(--text);font-weight:700}
+.hero-chip .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex:none}
+.hero-chip.c1{left:-34px;top:16%;animation-duration:7.4s;animation-delay:-1.2s}
+.hero-chip.c2{right:-40px;top:46%;animation-duration:8.6s;animation-delay:-3.4s}
+.hero-chip.c3{left:-26px;bottom:13%;animation-duration:6.8s;animation-delay:-5.1s}
+@keyframes floaty{
+  0%,100%{transform:translate3d(0,0,0)}
+  50%{transform:translate3d(0,-11px,0)}
+}
+
+/* ============================================================
+   STATS BAND
+   ============================================================ */
+.stats{padding:40px 0 130px;background:var(--bg)}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-top:54px}
+.stat{
+  padding:34px 28px 32px;border-radius:22px;text-align:left;
+}
+.stat-num{
+  font-size:clamp(44px,4.6vw,60px);font-weight:700;letter-spacing:-.04em;line-height:1;
+  color:var(--text);font-variant-numeric:tabular-nums;
+}
+.stat-num .suffix{color:var(--accent)}
+.stat-label{font-size:14.5px;color:var(--muted);margin-top:12px;line-height:1.4}
+
+/* ============================================================
+   STICKY SCROLL
+   ============================================================ */
+.how{padding:120px 0 60px;background:var(--bg)}
+.sticky-track{position:relative;margin-top:44px}
+.sticky-grid{
+  display:grid;grid-template-columns:.92fr 1.08fr;gap:76px;
+  max-width:var(--maxw);margin:0 auto;padding:0 var(--pad);align-items:stretch;
+}
+.sticky-text{position:relative;display:flex;flex-direction:column;gap:6vh;padding:6vh 0 14vh}
+.rail{position:absolute;left:0;top:0;bottom:0;width:2px;border-radius:2px;background:var(--hairline-soft)}
+.rail-fill{position:absolute;top:0;left:0;width:100%;height:100%;border-radius:2px;
+  background:linear-gradient(180deg,var(--accent),#4da3ff);
+  transform-origin:50% 0%;transform:scaleY(0);will-change:transform}
+.step-text{position:relative;padding-left:32px;min-height:52vh;display:flex;flex-direction:column;justify-content:center}
+.step-text::before{
+  content:'';position:absolute;left:0;top:10px;bottom:10px;width:2px;border-radius:2px;
+  background:var(--accent);opacity:0;transform:scaleY(.25);transform-origin:50% 0%;
+  transition:opacity 550ms var(--ease),transform 550ms var(--ease);
+}
+.step-text.is-active::before{opacity:1;transform:scaleY(1)}
+.step-num{font-size:11.5px;font-weight:600;letter-spacing:.12em;color:var(--accent);text-transform:uppercase}
+.step-text h3{
+  font-size:clamp(24px,2.7vw,34px);font-weight:700;letter-spacing:-.024em;line-height:1.08;
+  color:#b9b9be;margin-top:14px;transition:color 550ms var(--ease);
+}
+.step-text.is-active h3{color:var(--text)}
+.step-text p{font-size:17px;line-height:1.55;color:#a8a8ad;margin-top:14px;max-width:430px;
+  transition:color 550ms var(--ease)}
+.step-text.is-active p{color:var(--muted-2)}
+
+.sticky-visual{position:relative}
+.visual-sticky{position:sticky;top:100px}
+.states-wrap{position:relative;height:600px}
+.state{
+  position:absolute;inset:0;opacity:0;transform:scale(.985) translateY(8px);
+  transition:opacity 400ms var(--ease),transform 400ms var(--ease);
+  pointer-events:none;
+}
+.state.is-active{opacity:1;transform:none;pointer-events:auto}
+.vcard{
+  height:100%;border-radius:26px;padding:28px 30px;overflow:hidden;
+  display:flex;flex-direction:column;
+}
+.vcard-tag{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;
+  color:var(--muted);margin-bottom:18px;display:flex;align-items:center;gap:9px}
+.vcard-tag::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--accent);flex:none}
+
+/* state 0 — raw job description */
+.raw-text{font-family:var(--mono);font-size:12px;line-height:1.7;color:var(--muted-2);white-space:pre-wrap}
+.raw-text .raw-h{color:var(--text);font-weight:600}
+.raw-text .raw-dim{color:#a8a8ad}
+.raw-foot{margin-top:auto;padding-top:16px;border-top:1px solid var(--hairline-soft);
+  font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:12px}
+
+/* state 1 — parsed structure */
+.parsed{display:flex;flex-direction:column;gap:10px}
+.pfield{
+  border:1.5px solid var(--accent-tint);border-radius:13px;padding:11px 15px;
+  display:flex;align-items:baseline;gap:14px;background:rgba(0,113,227,.035);
+}
+.plabel{font-family:var(--mono);font-size:10.5px;font-weight:600;text-transform:uppercase;
+  letter-spacing:.05em;color:var(--accent);min-width:84px;flex:none}
+.pval{font-size:13px;color:var(--text);font-weight:500}
+.pval .pv-sub{color:var(--muted);font-weight:400}
+.pfield.pfield--warn{border-color:rgba(0,0,0,.1);background:rgba(0,0,0,.02)}
+.pfield.pfield--warn .plabel{color:var(--muted)}
+
+/* state 2 — scored */
+.score-head{display:flex;align-items:center;gap:20px;margin-bottom:20px}
+.score-ring{width:76px;height:76px;flex:none;position:relative}
+.score-ring svg{width:76px;height:76px;display:block}
+.score-ring circle{fill:none;stroke-width:4;stroke-linecap:round}
+.score-ring .sr-bg{stroke:#ececef}
+.score-ring .sr-fg{stroke:var(--accent);stroke-dasharray:91 100;transform:rotate(-90deg);transform-origin:center}
+.score-ring .sr-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:21px;font-weight:700;color:var(--text);letter-spacing:-.02em}
+.score-meta .sm-title{font-size:16px;font-weight:700;color:var(--text);letter-spacing:-.01em}
+.score-meta .sm-sub{font-size:13px;color:var(--muted);margin-top:5px;line-height:1.45}
+.score-breakdown{margin-top:6px;display:flex;flex-direction:column;gap:10px}
+.sb-row{display:flex;align-items:center;gap:12px}
+.sb-row .sb-name{font-family:var(--mono);font-size:11.5px;color:var(--muted);min-width:104px}
+.sb-bar{flex:1;height:6px;border-radius:3px;background:#ececef;overflow:hidden}
+.sb-bar i{display:block;height:100%;border-radius:3px;background:var(--accent)}
+.sb-row .sb-val{font-size:12px;font-weight:600;color:var(--text);min-width:26px;text-align:right;font-variant-numeric:tabular-nums}
+.kw-doc{margin-top:auto;font-size:12.5px;line-height:1.65;color:var(--muted-2);
+  border-top:1px solid var(--hairline-soft);padding-top:15px}
+.kw-doc mark{background:var(--accent-tint);color:var(--accent);border-radius:3px;padding:0 3px;font-weight:500}
+.kw-doc .miss{color:#b9b9be;text-decoration:line-through;text-decoration-color:rgba(0,0,0,.18)}
+
+/* state 3 — tailored */
+.tailored-badge{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:600;
+  color:var(--accent);background:var(--accent-tint);border-radius:980px;padding:5px 12px;margin-bottom:16px}
+.rdoc.tight .rd-sec{margin-top:14px}
+.rdoc.tight li{font-size:11.5px}
+
+/* ============================================================
+   SCORE BREAKDOWN SECTION
+   ============================================================ */
+.score-sec{padding:150px 0;background:var(--bg);overflow:hidden}
+.score-sec .field--cool{position:absolute;pointer-events:none;z-index:0}
+.score-panel{padding:14px 40px 12px;border-radius:28px}
+.crit{padding:30px 0;border-bottom:1px solid var(--hairline-soft)}
+.crit:last-of-type{border-bottom:none}
+.crit-top{display:flex;align-items:baseline;justify-content:space-between;gap:20px}
+.crit-name{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text);letter-spacing:-.01em}
+.crit-num{font-size:30px;font-weight:700;letter-spacing:-.03em;color:var(--text);
+  font-variant-numeric:tabular-nums;line-height:1}
+.crit-num .unit{font-size:14px;font-weight:600;color:var(--muted);margin-left:2px}
+.crit-bar{height:3px;border-radius:2px;background:var(--hairline-soft);margin-top:18px;overflow:hidden}
+.crit-bar i{display:block;height:100%;border-radius:2px;background:var(--accent);transform-origin:0 50%}
+html.js-anim .crit-bar i{transform:scaleX(0);transition:transform 1100ms var(--ease) 120ms}
+html.js-anim .in .crit-bar i{transform:scaleX(var(--w,1))}
+.crit-copy{font-size:16.5px;line-height:1.55;color:var(--muted);margin-top:16px;max-width:760px}
+.score-note{
+  margin-top:6px;padding:24px 0 26px;border-top:1px solid var(--hairline-soft);
+  font-size:15px;color:var(--muted-2);display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+}
+.score-note .tick{width:18px;height:18px;border-radius:50%;background:var(--accent-tint);
+  display:inline-flex;align-items:center;justify-content:center;flex:none}
+.score-note .tick::after{content:'';width:7px;height:4px;border-left:1.6px solid var(--accent);
+  border-bottom:1.6px solid var(--accent);transform:rotate(-45deg) translate(1px,-1px)}
+.score-note b{color:var(--text);font-weight:600}
+
+/* ============================================================
+   TEMPLATES
+   ============================================================ */
+.templates{background:var(--bg-alt);padding:160px 0}
+.tpl-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-top:66px}
+.tpl-card{
+  --rx:0deg;--ry:0deg;--mx:50%;--my:0%;
+  padding:22px 22px 28px;border-radius:26px;
+  transform:perspective(1100px) rotateX(var(--rx)) rotateY(var(--ry)) translateY(var(--lift,0px));
+  transition:transform 380ms var(--ease-spring),box-shadow 380ms var(--ease);
+  transform-style:preserve-3d;
+}
+.tpl-card:hover{--lift:-6px;box-shadow:0 22px 54px rgba(0,0,0,.12),inset 0 1px 0 rgba(255,255,255,.9)}
+.tpl-card::after{
+  content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:radial-gradient(420px circle at var(--mx) var(--my),rgba(255,255,255,.55),rgba(255,255,255,0) 62%);
+  opacity:0;transition:opacity 380ms var(--ease);z-index:2;
+}
+.tpl-card:hover::after{opacity:1}
+.tpl-preview{
+  position:relative;background:#fff;border:1px solid var(--hairline-soft);border-radius:15px;
+  padding:24px 22px;height:248px;overflow:hidden;margin-bottom:22px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.8);
+}
+.wl{height:6px;background:#e4e4e8;border-radius:3px;margin-bottom:8px}
+.wl.w-name{height:14px;width:58%;background:#c2c2c7;margin-bottom:6px}
+.wl.w-name-sm{height:12px;width:46%;background:#c2c2c7;margin-bottom:5px}
+.wl.w-sub-sm{height:6px;width:38%;margin-bottom:13px}
+.wl.w-head{height:7px;width:30%;background:#cfcfd4;margin:15px 0 11px}
+.wl.w-rule{height:1px;background:var(--hairline);margin:13px 0}
+.wl.w-95{width:95%}.wl.w-92{width:92%}.wl.w-90{width:90%}.wl.w-88{width:88%}
+.wl.w-85{width:85%}.wl.w-84{width:84%}.wl.w-80{width:80%}.wl.w-78{width:78%}
+.wl.w-75{width:75%}.wl.w-70{width:70%}.wl.w-65{width:65%}.wl.w-60{width:60%}
+.wl.w-55{width:55%}.wl.w-45{width:45%}.wl.w-40{width:40%}.wl.w-35{width:35%}
+.wl.w-accent{background:var(--accent-tint);height:6px;width:22%;margin-bottom:12px}
+.w-center{display:flex;flex-direction:column;align-items:center}
+.w-center .wl{margin-left:auto;margin-right:auto}
+.led-cols{display:grid;grid-template-columns:.78fr 1.4fr;gap:18px;height:100%}
+.led-side{border-right:1px solid var(--hairline-soft);padding-right:15px}
+.led-side .wl.w-head{margin-top:0}
+.tpl-card h3{font-size:21px;font-weight:700;letter-spacing:-.014em;color:var(--text);position:relative;z-index:3}
+.tpl-card p{font-size:15px;line-height:1.5;color:var(--muted);margin-top:8px;position:relative;z-index:3}
+.tpl-meta{margin-top:16px;font-family:var(--mono);font-size:11px;color:var(--muted);
+  letter-spacing:.02em;position:relative;z-index:3;display:flex;gap:10px;align-items:center}
+.tpl-meta i{width:4px;height:4px;border-radius:50%;background:var(--hairline);display:block}
+
+/* ============================================================
+   PLAIN TEXT
+   ============================================================ */
+.plaintext{background:var(--bg);padding:160px 0}
+.plaintext .head{max-width:700px;margin-bottom:62px}
+.split{display:grid;grid-template-columns:1.12fr 1fr;gap:34px;align-items:start}
+.editor-window{background:#fff;border-radius:22px;overflow:hidden;border:1px solid var(--hairline-soft);
+  box-shadow:var(--shadow-md)}
+.editor-bar{display:flex;align-items:center;gap:14px;padding:13px 18px;
+  border-bottom:1px solid var(--hairline-soft);background:#fafafa}
+.dots{display:flex;gap:6px}
+.dots i{width:11px;height:11px;border-radius:50%;background:#e2e2e6;display:block}
+.editor-file{font-size:13px;color:var(--muted);font-weight:500}
+.editor-actions{margin-left:auto;display:flex;gap:8px}
+.ea{font-size:12px;font-weight:500;color:var(--muted);padding:4px 12px;border-radius:980px;border:1px solid var(--hairline)}
+.ea.ea-on{color:#fff;background:var(--accent);border-color:var(--accent)}
+.editor-body{padding:30px 34px 38px}
+.editor-body .rdoc{font-size:13px}
+.cursor{display:inline-block;width:2px;height:14px;background:var(--accent);
+  vertical-align:-2px;margin-left:2px;animation:blink 1.1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.export-block{background:var(--bg-alt);border-radius:22px;overflow:hidden;box-shadow:var(--shadow-md);
+  border:1px solid var(--hairline-soft)}
+.export-head{display:flex;align-items:center;padding:15px 20px;border-bottom:1px solid var(--hairline-soft)}
+.export-head .fname{font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+.export-head .badge{margin-left:auto;font-size:10.5px;font-weight:600;text-transform:uppercase;
+  letter-spacing:.09em;color:var(--accent);background:var(--accent-tint);padding:3px 9px;border-radius:980px}
+.export-text{font-family:var(--mono);font-size:11.5px;line-height:1.72;color:var(--muted-2);
+  padding:22px 24px;white-space:pre;overflow-x:auto}
+.export-caption{padding:0 24px 24px;font-size:14px;color:var(--muted);line-height:1.5}
+.export-caption b{color:var(--text);font-weight:600}
+
+/* ============================================================
+   BEFORE / AFTER
+   ============================================================ */
+.ba{background:var(--bg);padding:150px 0}
+.ba .head{max-width:700px;margin-bottom:60px}
+.ba-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:22px;align-items:stretch}
+.ba-card{padding:36px 34px 34px;border-radius:26px;display:flex;flex-direction:column}
+.ba-card.after{box-shadow:0 18px 46px rgba(0,113,227,.10),inset 0 1px 0 rgba(255,255,255,.9)}
+.ba-top{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}
+.ba-kicker{font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.11em;color:var(--muted)}
+.ba-score{font-size:52px;font-weight:700;letter-spacing:-.04em;line-height:1;color:#b9b9be;
+  font-variant-numeric:tabular-nums}
+.ba-card.after .ba-score{color:var(--accent)}
+.ba-cap{font-size:14.5px;color:var(--muted);margin-top:10px;line-height:1.45}
+.ba-list{margin-top:26px;padding-top:22px;border-top:1px solid var(--hairline-soft);
+  display:flex;flex-direction:column;gap:15px}
+.ba-list li{list-style:none;display:flex;gap:12px;font-size:15px;line-height:1.5;color:var(--muted-2)}
+.ba-list li .mk{width:16px;height:16px;border-radius:50%;flex:none;margin-top:3px;
+  display:inline-flex;align-items:center;justify-content:center}
+.ba-list li .mk.bad{background:rgba(0,0,0,.06)}
+.ba-list li .mk.bad::after{content:'';width:6px;height:1.6px;background:#a8a8ad;border-radius:1px}
+.ba-list li .mk.good{background:var(--accent-tint)}
+.ba-list li .mk.good::after{content:'';width:6px;height:3.4px;border-left:1.6px solid var(--accent);
+  border-bottom:1.6px solid var(--accent);transform:rotate(-45deg) translate(.5px,-.5px)}
+.ba-arrow{display:flex;align-items:center;justify-content:center;width:52px}
+.ba-arrow .line{width:100%;height:2px;background:linear-gradient(90deg,var(--hairline),var(--accent));border-radius:2px;position:relative}
+.ba-arrow .line::after{content:'';position:absolute;right:-1px;top:50%;width:9px;height:9px;
+  border-top:2px solid var(--accent);border-right:2px solid var(--accent);
+  transform:translateY(-50%) rotate(45deg);border-radius:1px}
+.ba-foot{margin-top:auto;padding-top:24px;font-size:13.5px;color:var(--muted);line-height:1.5}
+
+/* ============================================================
+   PRIVACY (dark glass band)
+   ============================================================ */
+.privacy{
+  background:linear-gradient(180deg,#0b0b0d 0%,#101014 52%,#15151a 100%);
+  padding:170px 0;text-align:center;color:#fff;overflow:hidden;
+}
+.privacy .eyebrow{color:rgba(255,255,255,.5)}
+.privacy .statement{
+  font-size:clamp(36px,5.2vw,66px);font-weight:700;letter-spacing:-.034em;line-height:1.04;
+  color:#fff;max-width:840px;margin:18px auto 0;
+}
+.statement-body{font-size:19px;line-height:1.55;color:rgba(255,255,255,.62);max-width:620px;margin:26px auto 0}
+.privacy .glow{
+  position:absolute;width:760px;height:760px;left:50%;top:-160px;transform:translateX(-50%);
+  border-radius:50%;pointer-events:none;
+  background:radial-gradient(closest-side,rgba(0,113,227,.22) 0%,rgba(0,113,227,.09) 40%,rgba(0,113,227,0) 72%);
+}
+.chips{display:flex;justify-content:center;gap:16px;margin-top:72px;flex-wrap:wrap}
+.chip{
+  display:inline-flex;align-items:center;gap:10px;padding:14px 24px;border-radius:999px;
+  font-size:15px;font-weight:500;color:rgba(255,255,255,.86);letter-spacing:-.01em;
+}
+.chip .tick{width:16px;height:16px;border-radius:50%;background:rgba(255,255,255,.14);
+  display:inline-flex;align-items:center;justify-content:center;flex:none}
+.chip .tick::after{content:'';width:6px;height:3px;border-left:1.6px solid #4da3ff;
+  border-bottom:1.6px solid #4da3ff;transform:rotate(-45deg) translate(.5px,-.5px)}
+.privacy-foot{margin-top:56px;font-size:13.5px;color:rgba(255,255,255,.4);letter-spacing:.01em}
+
+/* ============================================================
+   EXTRAS
+   ============================================================ */
+.extras{background:var(--bg);padding:160px 0}
+.extras .head{max-width:700px;margin-bottom:58px}
+.extras-grid{display:grid;grid-template-columns:1fr 1fr;gap:26px}
+.extra-card{padding:42px 40px;border-radius:28px;transition:transform 420ms var(--ease-spring)}
+.extra-card:hover{transform:translateY(-5px)}
+.extra-card .ec-kicker{font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.11em;color:var(--accent)}
+.extra-card h3{font-size:27px;font-weight:700;letter-spacing:-.024em;color:var(--text);margin-top:14px;line-height:1.12}
+.extra-card p{font-size:17px;line-height:1.6;color:var(--muted);margin-top:14px}
+.extra-card .ec-note{margin-top:22px;padding-top:18px;border-top:1px solid var(--hairline-soft);
+  font-size:14px;color:var(--muted);display:flex;align-items:center;gap:9px}
+.extra-card .ec-note::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--accent);flex:none}
+
+/* ============================================================
+   FAQ
+   ============================================================ */
+.faq{background:var(--bg-alt);padding:160px 0}
+.faq .head{max-width:700px;margin-bottom:56px}
+.faq-list{display:flex;flex-direction:column;gap:14px;max-width:860px}
+.faq-item{border-radius:22px;overflow:hidden}
+.faq-item summary{
+  list-style:none;cursor:pointer;display:flex;align-items:center;gap:20px;
+  padding:24px 28px;font-size:19px;font-weight:600;letter-spacing:-.016em;color:var(--text);
+  transition:color 220ms ease;
+}
+.faq-item summary::-webkit-details-marker{display:none}
+.faq-item summary:hover{color:var(--accent)}
+.faq-icon{position:relative;width:15px;height:15px;flex:none;margin-left:auto}
+.faq-icon i{position:absolute;background:var(--muted);border-radius:2px;
+  transition:transform 420ms var(--ease),opacity 320ms var(--ease)}
+.faq-icon i:first-child{left:0;right:0;top:6.5px;height:1.6px}
+.faq-icon i:last-child{top:0;bottom:0;left:6.5px;width:1.6px}
+.faq-item[open] summary{color:var(--text)}
+.faq-item[open] .faq-icon i:first-child{transform:rotate(180deg)}
+.faq-item[open] .faq-icon i:last-child{transform:rotate(90deg);opacity:0}
+.faq-body{overflow:hidden;transition:height 420ms var(--ease)}
+.faq-item[open] .faq-body{height:auto}
+.faq-body p{padding:0 28px 26px;font-size:16.5px;line-height:1.62;color:var(--muted);max-width:760px}
+
+/* ============================================================
+   OPEN SOURCE
+   ============================================================ */
+.oss{background:var(--bg);padding:160px 0}
+.oss .head{max-width:700px;margin-bottom:56px}
+.oss-grid{display:grid;grid-template-columns:.95fr 1.05fr;gap:26px;align-items:start}
+.oss-facts{display:flex;flex-direction:column;gap:0}
+.oss-fact{padding:26px 0;border-bottom:1px solid var(--hairline-soft);display:flex;gap:22px;align-items:baseline}
+.oss-fact:first-child{padding-top:0}
+.oss-fact:last-child{border-bottom:none}
+.oss-fact .k{font-family:var(--mono);font-size:11.5px;font-weight:600;text-transform:uppercase;
+  letter-spacing:.08em;color:var(--accent);min-width:96px;flex:none}
+.oss-fact .v{font-size:16.5px;line-height:1.55;color:var(--muted-2);min-width:0;overflow-wrap:anywhere}
+.oss-fact .v b{color:var(--text);font-weight:600}
+.oss-fact .v a{color:var(--accent)}
+.oss-fact .v a:hover{color:var(--accent-hover)}
+.tree{padding:26px 28px 28px;border-radius:24px;min-width:0}
+.tree-head{display:flex;align-items:center;gap:10px;margin-bottom:20px;
+  padding-bottom:16px;border-bottom:1px solid var(--hairline-soft);min-width:0}
+.tree-head .fname{font-family:var(--mono);font-size:12.5px;color:var(--text);font-weight:600}
+.tree-head .badge{margin-left:auto;font-family:var(--mono);font-size:10.5px;color:var(--muted);
+  border:1px solid var(--hairline);border-radius:980px;padding:2px 9px;letter-spacing:.04em;flex:none}
+.tree pre{font-family:var(--mono);font-size:12px;line-height:1.85;color:var(--muted-2);white-space:pre;overflow-x:auto;min-width:0}
+.tree .t-dir{color:var(--accent);font-weight:600}
+.tree .t-file{color:var(--muted-2)}
+.tree .t-note{color:#a8a8ad}
+
+/* ============================================================
+   FINAL CTA
+   ============================================================ */
+.final-cta{background:var(--bg-alt);padding:170px 0;text-align:center;overflow:hidden}
+.final-cta .glow{
+  position:absolute;width:820px;height:820px;left:50%;bottom:-420px;transform:translateX(-50%);
+  border-radius:50%;pointer-events:none;
+  background:radial-gradient(closest-side,rgba(0,113,227,.16) 0%,rgba(0,113,227,.07) 42%,rgba(0,113,227,0) 72%);
+}
+.cta-title{font-size:clamp(40px,6.2vw,76px);font-weight:700;letter-spacing:-.036em;line-height:1.02;color:var(--text)}
+.cta-sub{font-size:19px;color:var(--muted);max-width:520px;margin:24px auto 0;line-height:1.5}
+.final-cta .btn-primary{margin-top:40px}
+.final-cta .text-link{margin-top:24px}
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+footer{background:var(--bg);border-top:1px solid var(--hairline);padding:44px 0 52px;position:relative;z-index:1}
+.footer-top{display:flex;align-items:flex-start;gap:40px;flex-wrap:wrap}
+.footer-brand{max-width:280px}
+.footer-brand .wordmark{display:block;font-size:15px}
+.footer-brand p{font-size:13.5px;color:var(--muted);margin-top:10px;line-height:1.5}
+.footer-cols{display:flex;gap:64px;margin-left:auto;flex-wrap:wrap}
+.footer-col h4{font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+.footer-col ul{list-style:none;margin-top:14px;display:flex;flex-direction:column;gap:11px}
+.footer-col a{font-size:14px;color:var(--muted-2);transition:color 200ms ease}
+.footer-col a:hover{color:var(--accent)}
+.footer-bottom{margin-top:40px;padding-top:22px;border-top:1px solid var(--hairline-soft);
+  display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.footer-meta{font-size:13px;color:var(--muted)}
+.footer-meta b{color:var(--muted-2);font-weight:600}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width:1000px){
+  .oss-grid{grid-template-columns:1fr;gap:22px}
+  .ba-grid{grid-template-columns:1fr;gap:18px}
+  .ba-arrow{width:100%;height:44px}
+  .ba-arrow .line{width:120px;height:2px;background:linear-gradient(180deg,var(--hairline),var(--accent))}
+  .ba-arrow .line::after{right:50%;top:auto;bottom:-1px;
+    transform:translateX(50%) rotate(135deg)}
+}
+@media (max-width:900px){
+  .sticky-grid{grid-template-columns:1fr;grid-template-rows:1fr;gap:0}
+  .sticky-visual{grid-row:1;grid-column:1;align-self:start;position:sticky;top:72px;z-index:6}
+  .visual-sticky{position:static}
+  .states-wrap{height:392px}
+  .sticky-text{grid-row:1;grid-column:1;padding:410px 0 8vh;gap:1vh}
+  .step-text{min-height:40vh}
+  .split{grid-template-columns:1fr;gap:26px}
+  .tpl-grid{grid-template-columns:1fr;gap:22px}
+  .extras-grid{grid-template-columns:1fr}
+  .stats-grid{grid-template-columns:repeat(2,1fr);gap:16px}
+  .footer-cols{gap:44px}
+  /* floating chips would hang off a narrow panel — lay them out inline */
+  .hero-chips{position:static;display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;pointer-events:auto}
+  .hero-chip{position:static;animation:none;font-size:12px;padding:8px 13px}
+}
+@media (max-width:760px){
+  :root{--pad:22px}
+  .nav-center,.nav-source{display:none}
+  .nav-inner{height:52px}
+  .hero{padding:118px 0 44px}
+  .hero-title{font-size:clamp(38px,10.4vw,60px);letter-spacing:-.03em}
+  .hero-sub{font-size:19px}
+  .hero-stage-wrap{margin-top:52px}
+  .hero-panel{padding:16px 16px 20px;border-radius:24px;width:100%}
+  .hero-doc{padding:28px 24px 32px;border-radius:18px}
+  .rd-name{font-size:21px}
+  .score-chip{right:6px;bottom:12px;padding:9px 13px 9px 9px;border-radius:14px}
+  .chip-ring{width:30px;height:30px}
+  .chip-label{font-size:12px}
+  .chip-label b{font-size:13.5px}
+  .stats{padding:26px 0 90px}
+  .stats-grid{margin-top:38px}
+  .stat{padding:26px 22px 24px;border-radius:20px}
+  .how{padding:88px 0 30px}
+  .score-sec,.templates,.plaintext,.extras,.faq,.oss{padding:100px 0}
+  .privacy{padding:110px 0}
+  .final-cta{padding:110px 0}
+  .score-panel{padding:10px 24px 8px;border-radius:22px}
+  .crit{padding:24px 0}
+  .crit-copy{font-size:15.5px}
+  .vcard{padding:20px 20px;border-radius:20px}
+  .raw-text{font-size:11px;line-height:1.65}
+  .sb-row .sb-name{min-width:88px;font-size:10.5px}
+  .editor-body{padding:22px 20px 28px}
+  .export-text{font-size:10.5px;padding:18px 18px}
+  .ba-card{padding:28px 24px 26px;border-radius:22px}
+  .extra-card{padding:30px 26px;border-radius:22px}
+  .faq-item summary{padding:20px 20px;font-size:17px;gap:14px}
+  .faq-body p{padding:0 20px 22px;font-size:15.5px}
+  .tree{padding:20px 18px 22px;border-radius:20px}
+  .tree pre{font-size:10.5px;line-height:1.75}
+  .footer-top{gap:32px}
+  .footer-brand{max-width:100%}
+  .footer-cols{margin-left:0;gap:36px}
+}
+
+/* ============================================================
+   REDUCED MOTION — everything visible, everything static
+   ============================================================ */
+@media (prefers-reduced-motion: reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{transition:none !important;animation:none !important}
+  html.js-anim .reveal,html.js-anim .rise,html.js-anim .hero-panel{opacity:1 !important;transform:none !important}
+  .hw i{transform:none !important}
+  .hero-doc{transform:none !important}
+  .hero-chip{animation:none !important;transform:none !important}
+  .sweep{display:none}
+  .cursor{animation:none !important}
+  .tpl-card{transform:none !important}
+  .crit-bar i{transform:scaleX(var(--w,1)) !important}
+  /* sticky section degrades to a plain stacked list */
+  .visual-sticky{position:static !important}
+  .sticky-visual{position:static !important;grid-row:auto !important}
+  .sticky-text{grid-row:auto !important;padding:24px 0 0 !important;gap:0 !important}
+  .sticky-grid{grid-template-columns:1fr;grid-template-rows:auto;gap:24px}
+  .states-wrap{height:auto !important}
+  .state{position:static !important;opacity:1 !important;transform:none !important;
+    margin-bottom:18px;pointer-events:auto !important}
+  .step-text{min-height:0 !important;padding:24px 0 24px 26px}
+  .step-text::before{opacity:1 !important;transform:none !important}
+  .step-text h3{color:var(--text) !important}
+  .step-text p{color:var(--muted-2) !important}
+  .rail,.rail-fill{display:none}
+  #progressBar{display:none}
+  .field{transform:none !important}
+}
+</style>
+</head>
+<body>
+
+<div class="atmos" aria-hidden="true">
+  <div class="field field--blue" id="fieldA"></div>
+  <div class="field field--peri" id="fieldB"></div>
+</div>
+
+<div id="progressBar" aria-hidden="true"></div>
+
+<!-- ============ 1. GLASS NAV ============ -->
+<nav class="nav glass glass--nav" id="nav">
+  <div class="nav-inner">
+    <a class="wordmark" href="#top">Résumé Studio</a>
+    <div class="nav-center">
+      <a href="#how">How it works</a>
+      <a href="#templates">Templates</a>
+      <a href="#privacy">Privacy</a>
+      <a href="#faq">FAQ</a>
+    </div>
+    <div class="nav-right">
+      <a class="nav-source" href="https://github.com/akshaytp1571/resume-builder">Source</a>
+      <a class="nav-open" href="#/app">Open</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ============ 2. HERO ============ -->
+<header class="hero" id="top">
+  <div class="hero-fields" aria-hidden="true"><div class="field field--amber" data-par="0.09"></div></div>
+  <div class="wrap">
+    <p class="eyebrow accent rise" style="--d:0ms">Résumé Studio · Local-first</p>
+    <h1 class="hero-title"><span class="hw" style="--d:80ms"><i>The</i></span> <span class="hw" style="--d:140ms"><i>résumé</i></span> <span class="hw" style="--d:200ms"><i>tool</i></span> <span class="hw" style="--d:260ms"><i>that</i></span> <span class="hw" style="--d:320ms"><i>gets</i></span> <span class="hw" style="--d:380ms"><i>you</i></span> <span class="hw" style="--d:440ms"><i>read.</i></span></h1>
+    <p class="hero-sub rise" style="--d:500ms">Local-first and ATS-aware. Paste a job description, see how a machine reads you, and fix it before a human does.</p>
+    <div class="hero-cta rise" style="--d:580ms">
+      <a class="btn-primary magnetic" href="#/app">Open the studio</a>
+    </div>
+    <div class="hero-src rise" style="--d:640ms">
+      <a class="text-link" href="https://github.com/akshaytp1571/resume-builder">View source on GitHub <span class="arrow">→</span></a>
+    </div>
+
+    <div class="hero-stage-wrap">
+      <div class="hero-panel glass" id="heroPanel" style="--d:700ms">
+        <div class="hero-stage" id="heroStage">
+          <div class="hero-doc" id="heroDoc">
+            <div class="sweep" id="sweep" aria-hidden="true"></div>
+            <div class="rdoc">
+              <div class="rd-name">Dev Ramanathan</div>
+              <div class="rd-title">Staff Platform Engineer</div>
+              <div class="rd-contact">Bengaluru, India · dev.ramanathan@mailbox.com · github.com/dev-ramanathan</div>
+
+              <div class="rd-sec">
+                <div class="rd-sec-h">Summary</div>
+                <p class="rd-summary">Platform engineer with nine years building distributed systems and the tooling around them. I make deployments boring and on-call quiet.</p>
+              </div>
+
+              <div class="rd-sec">
+                <div class="rd-sec-h">Experience</div>
+                <div class="rd-role">Staff Platform Engineer <span>· Northwind Systems · 2021–Present</span></div>
+                <ul>
+                  <li>Cut p99 deploy time from 34 to 6 minutes by rebuilding CI around content-addressed, cached artifacts.</li>
+                  <li>Led a 240-service migration to a unified service mesh with zero customer-visible downtime over 18 months.</li>
+                  <li>Reduced cloud spend 31% ($1.4M/yr) by right-sizing workloads and reclaiming idle staging capacity.</li>
+                </ul>
+              </div>
+
+              <div class="rd-sec">
+                <div class="rd-sec-h">Skills</div>
+                <div class="rd-skills">Kubernetes · Terraform · Go · Python · AWS · Observability · CI/CD</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="score-chip">
+            <svg class="chip-ring" viewBox="0 0 36 36" aria-hidden="true">
+              <circle class="cr-bg" cx="18" cy="18" r="15.9155"></circle>
+              <circle class="cr-fg" cx="18" cy="18" r="15.9155"></circle>
+            </svg>
+            <span class="chip-label">ATS <b>91</b></span>
+          </div>
+        </div>
+
+        <div class="hero-chips">
+          <span class="hero-chip glass glass--chip c1"><span class="dot"></span>Parse fidelity <b>94</b></span>
+          <span class="hero-chip glass glass--chip c2"><span class="dot"></span>Keywords <b>18/26</b></span>
+          <span class="hero-chip glass glass--chip c3"><span class="dot"></span>Exports <b>plain text</b></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ============ 3. STATS BAND ============ -->
+<section class="stats">
+  <div class="wrap">
+    <div class="stats-grid">
+      <div class="stat glass glass--card reveal">
+        <div class="stat-num" data-count="0">0</div>
+        <div class="stat-label">accounts required to open the studio</div>
+      </div>
+      <div class="stat glass glass--card reveal" style="transition-delay:80ms">
+        <div class="stat-num" data-count="3">3</div>
+        <div class="stat-label">templates, all exporting the same text</div>
+      </div>
+      <div class="stat glass glass--card reveal" style="transition-delay:160ms">
+        <div class="stat-num" data-count="100" data-suffix="%">100<span class="suffix">%</span></div>
+        <div class="stat-label">of parsing and scoring runs in this tab</div>
+      </div>
+      <div class="stat glass glass--card reveal" style="transition-delay:240ms">
+        <div class="stat-num" data-count="1">1</div>
+        <div class="stat-label">plain-text export a legacy ATS can read</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 4. STICKY SCROLL ============ -->
+<section class="how" id="how">
+  <div class="wrap">
+    <p class="eyebrow reveal">How it works</p>
+    <h2 class="section-title reveal">From paste to polished.</h2>
+    <p class="section-intro reveal">Four things happen between a job posting and a résumé a machine can read. Scroll through them.</p>
+  </div>
+
+  <div class="sticky-track" id="stickyTrack">
+    <div class="sticky-grid">
+      <div class="sticky-text">
+        <div class="rail" aria-hidden="true"><div class="rail-fill" id="railFill"></div></div>
+
+        <div class="step-text is-active" data-step="0">
+          <span class="step-num">Step 01</span>
+          <h3>Paste the posting.</h3>
+          <p>Drop in any job description. We read the whole thing — the requirements, the responsibilities, and the exact language they use for the work.</p>
+        </div>
+        <div class="step-text" data-step="1">
+          <span class="step-num">Step 02</span>
+          <h3>We parse your résumé.</h3>
+          <p>Every section, date, and bullet becomes structured data a machine can actually read. Anything the parser can't place gets flagged rather than silently dropped.</p>
+        </div>
+        <div class="step-text" data-step="2">
+          <span class="step-num">Step 03</span>
+          <h3>Then we score it.</h3>
+          <p>The score reads you the way a machine does. We extract each section, match its language against the posting, and weight four things: parse fidelity, keyword coverage, formatting risk, and seniority match. A 91 means you're legible — with a few gaps worth closing.</p>
+        </div>
+        <div class="step-text" data-step="3">
+          <span class="step-num">Step 04</span>
+          <h3>Tailor and export.</h3>
+          <p>Rewrite the weak bullets, keep your voice, and export clean plain text or a typeset PDF that reads well to machines and people alike.</p>
+        </div>
+      </div>
+
+      <div class="sticky-visual">
+        <div class="visual-sticky">
+          <div class="states-wrap">
+
+            <!-- state 0: raw job description -->
+            <div class="state is-active" data-state="0">
+              <div class="vcard glass glass--card">
+                <div class="vcard-tag">Job description · pasted raw</div>
+                <pre class="raw-text"><span class="raw-h">STAFF PLATFORM ENGINEER</span>
+<span class="raw-dim">Northwind Systems — Bengaluru / Remote</span>
+
+We're looking for a staff-level platform engineer
+to own our internal developer platform and the
+reliability of everything that ships on it.
+
+You will:
+  - Lead CI/CD reliability and deployment velocity
+  - Drive Kubernetes and service-mesh standardization
+  - Partner with product teams on observability
+
+Required: Kubernetes, Terraform, Go, AWS, CI/CD
+Preferred: service mesh, SLOs, cost management</pre>
+                <div class="raw-foot"><span>1,284 words</span><span>26 candidate terms extracted</span></div>
+              </div>
+            </div>
+
+            <!-- state 1: parsed structure -->
+            <div class="state" data-state="1">
+              <div class="vcard glass glass--card">
+                <div class="vcard-tag">Parsed structure · 7 fields</div>
+                <div class="parsed">
+                  <div class="pfield"><span class="plabel">name</span><span class="pval">Dev Ramanathan</span></div>
+                  <div class="pfield"><span class="plabel">title</span><span class="pval">Staff Platform Engineer</span></div>
+                  <div class="pfield"><span class="plabel">contact</span><span class="pval">Bengaluru, IN <span class="pv-sub">· email · github</span></span></div>
+                  <div class="pfield"><span class="plabel">summary</span><span class="pval">Detected <span class="pv-sub">· 2 sentences · 34 words</span></span></div>
+                  <div class="pfield"><span class="plabel">experience</span><span class="pval">2 roles <span class="pv-sub">· 2018–Present · 9 bullets</span></span></div>
+                  <div class="pfield"><span class="plabel">skills</span><span class="pval">8 terms extracted <span class="pv-sub">· 1 duplicate merged</span></span></div>
+                  <div class="pfield pfield--warn"><span class="plabel">dates</span><span class="pval">1 range unreadable <span class="pv-sub">· sidebar column</span></span></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- state 2: scored -->
+            <div class="state" data-state="2">
+              <div class="vcard glass glass--card">
+                <div class="vcard-tag">ATS score · matched against this posting</div>
+                <div class="score-head">
+                  <div class="score-ring">
+                    <svg viewBox="0 0 36 36" aria-hidden="true">
+                      <circle class="sr-bg" cx="18" cy="18" r="15.9155"></circle>
+                      <circle class="sr-fg" cx="18" cy="18" r="15.9155"></circle>
+                    </svg>
+                    <span class="sr-num">91</span>
+                  </div>
+                  <div class="score-meta">
+                    <div class="sm-title">Strong match</div>
+                    <div class="sm-sub">Reads cleanly to a machine, with a few gaps worth closing before you send it.</div>
+                  </div>
+                </div>
+                <div class="score-breakdown">
+                  <div class="sb-row"><span class="sb-name">parse_fidelity</span><span class="sb-bar"><i style="width:94%"></i></span><span class="sb-val">94</span></div>
+                  <div class="sb-row"><span class="sb-name">keyword_coverage</span><span class="sb-bar"><i style="width:88%"></i></span><span class="sb-val">88</span></div>
+                  <div class="sb-row"><span class="sb-name">formatting_risk</span><span class="sb-bar"><i style="width:12%"></i></span><span class="sb-val">12</span></div>
+                  <div class="sb-row"><span class="sb-name">seniority_match</span><span class="sb-bar"><i style="width:90%"></i></span><span class="sb-val">90</span></div>
+                </div>
+                <div class="kw-doc">Matched from the posting: <mark>Kubernetes</mark>, <mark>Terraform</mark>, <mark>Go</mark>, <mark>CI/CD</mark>, <mark>observability</mark>, <mark>deployment velocity</mark>. Still missing: <span class="miss">service mesh</span> as a named term, <span class="miss">SLOs</span>, <span class="miss">cost management</span>.</div>
+              </div>
+            </div>
+
+            <!-- state 3: tailored final -->
+            <div class="state" data-state="3">
+              <div class="vcard glass glass--card">
+                <div class="vcard-tag">Tailored export · rewritten against this posting</div>
+                <span class="tailored-badge">3 bullets rewritten · 0 facts invented</span>
+                <div class="rdoc tight">
+                  <div class="rd-name" style="font-size:20px">Dev Ramanathan</div>
+                  <div class="rd-title">Staff Platform Engineer</div>
+                  <div class="rd-role" style="margin-top:14px">Staff Platform Engineer <span>· Northwind Systems · 2021–Present</span></div>
+                  <ul>
+                    <li>Own CI/CD reliability and deployment velocity across 240 services, cutting p99 deploy time from 34 to 6 minutes.</li>
+                    <li>Drive Kubernetes and service-mesh standardization with zero customer-visible downtime over 18 months.</li>
+                    <li>Partner with product teams on observability and cost management, reducing cloud spend 31% ($1.4M/yr).</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 5. HOW THE SCORE WORKS ============ -->
+<section class="score-sec" id="score">
+  <div class="field field--cool" data-par="0.12" aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="head">
+      <p class="eyebrow reveal">The score</p>
+      <h2 class="section-title reveal">How the number is built.</h2>
+      <p class="section-intro reveal">Four weighted criteria, each computed from text you can point at. Nothing here is a vibe.</p>
+    </div>
+
+    <div class="glass glass--card score-panel reveal">
+      <div class="crit">
+        <div class="crit-top">
+          <span class="crit-name">parse_fidelity</span>
+          <span class="crit-num" data-count="94">94</span>
+        </div>
+        <div class="crit-bar"><i style="--w:.94"></i></div>
+        <p class="crit-copy">How much of your résumé the parser can read into clean fields. Tables, text boxes, floating graphics, and odd spacing all cost you here — the machine has to guess where your experience ends.</p>
+      </div>
+      <div class="crit">
+        <div class="crit-top">
+          <span class="crit-name">keyword_coverage</span>
+          <span class="crit-num" data-count="88">88</span>
+        </div>
+        <div class="crit-bar"><i style="--w:.88"></i></div>
+        <p class="crit-copy">The share of the posting's required terms that appear in your résumé, matched on meaning rather than exact strings. "Cut deploy time" counts for "deployment velocity".</p>
+      </div>
+      <div class="crit">
+        <div class="crit-top">
+          <span class="crit-name">formatting_risk</span>
+          <span class="crit-num" data-count="12">12</span>
+        </div>
+        <div class="crit-bar"><i style="--w:.12"></i></div>
+        <p class="crit-copy">How much your layout is likely to break on the way through a plain-text pass. Lower is better — multi-column bodies, icons, and header tables are the usual culprits.</p>
+      </div>
+      <div class="crit">
+        <div class="crit-top">
+          <span class="crit-name">seniority_match</span>
+          <span class="crit-num" data-count="90">90</span>
+        </div>
+        <div class="crit-bar"><i style="--w:.90"></i></div>
+        <p class="crit-copy">Whether your titles, dates, and scope read at the level the posting is hiring for. A staff posting wants to see ownership, breadth, and numbers at scale.</p>
+      </div>
+      <p class="score-note"><span class="tick" aria-hidden="true"></span><span><b>No black box.</b> Every point traces to a line in your résumé — click any criterion and the studio shows you the exact sentence it came from.</span></p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 6. TEMPLATES ============ -->
+<section class="templates" id="templates">
+  <div class="wrap">
+    <div class="head">
+      <p class="eyebrow reveal">Templates</p>
+      <h2 class="section-title reveal">Three templates. One clean export.</h2>
+      <p class="section-intro reveal">Pick the look you like. All three produce the same honest plain text underneath.</p>
+    </div>
+
+    <div class="tpl-grid">
+      <div class="tpl-card glass glass--card reveal tilt">
+        <div class="tpl-preview p-editorial">
+          <div class="w-center">
+            <div class="wl w-name"></div>
+            <div class="wl w-sub-sm"></div>
+          </div>
+          <div class="wl w-rule"></div>
+          <div class="wl w-head"></div>
+          <div class="wl w-accent"></div>
+          <div class="wl"></div>
+          <div class="wl w-90"></div>
+          <div class="wl w-80"></div>
+          <div class="wl w-head"></div>
+          <div class="wl"></div>
+          <div class="wl w-85"></div>
+          <div class="wl w-70"></div>
+        </div>
+        <h3>Editorial</h3>
+        <p>Generous margins and a centered masthead for a considered, print-first feel.</p>
+        <div class="tpl-meta">serif display <i></i> 1 page <i></i> PDF + TXT</div>
+      </div>
+
+      <div class="tpl-card glass glass--card reveal tilt" style="transition-delay:80ms">
+        <div class="tpl-preview p-ledger">
+          <div class="led-cols">
+            <div class="led-side">
+              <div class="wl w-head"></div>
+              <div class="wl w-70"></div>
+              <div class="wl w-60"></div>
+              <div class="wl w-75"></div>
+              <div class="wl w-head"></div>
+              <div class="wl w-65"></div>
+              <div class="wl w-55"></div>
+              <div class="wl w-45"></div>
+              <div class="wl w-40"></div>
+            </div>
+            <div class="led-main">
+              <div class="wl w-name"></div>
+              <div class="wl w-sub-sm"></div>
+              <div class="wl w-head"></div>
+              <div class="wl w-accent"></div>
+              <div class="wl"></div>
+              <div class="wl w-90"></div>
+              <div class="wl w-85"></div>
+              <div class="wl w-80"></div>
+              <div class="wl w-75"></div>
+            </div>
+          </div>
+        </div>
+        <h3>Ledger</h3>
+        <p>A dense two-column grid that packs more signal onto a single page.</p>
+        <div class="tpl-meta">sans <i></i> 1 page <i></i> PDF + TXT</div>
+      </div>
+
+      <div class="tpl-card glass glass--card reveal tilt" style="transition-delay:160ms">
+        <div class="tpl-preview p-plain">
+          <div class="wl w-name-sm"></div>
+          <div class="wl w-sub-sm"></div>
+          <div class="wl w-rule"></div>
+          <div class="wl w-head"></div>
+          <div class="wl"></div>
+          <div class="wl w-95"></div>
+          <div class="wl w-88"></div>
+          <div class="wl w-92"></div>
+          <div class="wl w-head"></div>
+          <div class="wl w-90"></div>
+          <div class="wl w-84"></div>
+          <div class="wl w-78"></div>
+        </div>
+        <h3>Plain</h3>
+        <p>Bare formatting for maximum machine readability and zero fuss.</p>
+        <div class="tpl-meta">mono-safe <i></i> 1 page <i></i> TXT first</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 7. PLAIN TEXT, ALWAYS ============ -->
+<section class="plaintext" id="plaintext">
+  <div class="wrap">
+    <div class="head">
+      <p class="eyebrow reveal">Plain text, always</p>
+      <h2 class="section-title reveal">Every template exports the same honest text.</h2>
+      <p class="section-intro reveal">The pretty version is for humans. This is the version that decides whether you get read at all.</p>
+    </div>
+
+    <div class="split">
+      <div class="editor-window reveal">
+        <div class="editor-bar">
+          <span class="dots"><i></i><i></i><i></i></span>
+          <span class="editor-file">dev-ramanathan</span>
+          <span class="editor-actions"><span class="ea">Preview</span><span class="ea ea-on">Export</span></span>
+        </div>
+        <div class="editor-body">
+          <div class="rdoc">
+            <div class="rd-name" style="font-size:20px">Dev Ramanathan</div>
+            <div class="rd-title">Staff Platform Engineer</div>
+            <div class="rd-sec">
+              <div class="rd-sec-h">Summary</div>
+              <p class="rd-summary">Platform engineer with nine years building distributed systems and the tooling around them.<span class="cursor"></span></p>
+            </div>
+            <div class="rd-sec">
+              <div class="rd-sec-h">Experience</div>
+              <div class="rd-role">Staff Platform Engineer <span>· Northwind Systems · 2021–Present</span></div>
+              <ul>
+                <li>Cut p99 deploy time from 34 to 6 minutes by rebuilding CI around content-addressed, cached artifacts.</li>
+                <li>Led a 240-service migration to a unified service mesh with zero customer-visible downtime.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="export-block reveal" style="transition-delay:80ms">
+        <div class="export-head">
+          <span class="fname">resume.txt</span>
+          <span class="badge">ATS-safe</span>
+        </div>
+<pre class="export-text">DEV RAMANATHAN
+Staff Platform Engineer
+Bengaluru, India | dev.ramanathan@mailbox.com | github.com/dev-ramanathan
+
+SUMMARY
+Platform engineer with nine years building distributed systems
+and the tooling around them. I make deployments boring and
+on-call quiet.
+
+EXPERIENCE
+Staff Platform Engineer, Northwind Systems (2021 - Present)
+  - Cut p99 deploy time from 34 to 6 minutes by rebuilding CI
+    around content-addressed, cached artifacts.
+  - Led a 240-service migration to a unified service mesh with
+    zero customer-visible downtime over 18 months.
+  - Reduced cloud spend 31% ($1.4M/yr) by right-sizing workloads
+    and reclaiming idle staging capacity.
+
+SKILLS
+Kubernetes, Terraform, Go, Python, AWS, Observability, CI/CD</pre>
+        <p class="export-caption"><b>What the machine actually reads.</b> No columns, no styling, no icons — just the words, in order.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 8. BEFORE / AFTER ============ -->
+<section class="ba" id="before-after">
+  <div class="wrap">
+    <div class="head">
+      <p class="eyebrow reveal">Before / after</p>
+      <h2 class="section-title reveal">The same experience, scored twice.</h2>
+      <p class="section-intro reveal">Nothing was added and nothing was invented. The work was already there — it just wasn't legible.</p>
+    </div>
+
+    <div class="ba-grid">
+      <div class="ba-card glass glass--card reveal">
+        <div class="ba-top">
+          <div>
+            <div class="ba-kicker">Before</div>
+            <div class="ba-cap">Two-column layout, sidebar dates, table skills.</div>
+          </div>
+          <div class="ba-score" data-count="42">42</div>
+        </div>
+        <ul class="ba-list">
+          <li><span class="mk bad" aria-hidden="true"></span><span>Dates sat in a sidebar column. The parser read them as one run-on range and dropped both roles' start months.</span></li>
+          <li><span class="mk bad" aria-hidden="true"></span><span>Six of the posting's required terms never appeared: service mesh, SLOs, cost management, canary, on-call, Terraform.</span></li>
+          <li><span class="mk bad" aria-hidden="true"></span><span>Every bullet opened with "Responsible for" — no outcome, no number, no scope.</span></li>
+          <li><span class="mk bad" aria-hidden="true"></span><span>Skills lived in a bordered table with icons, so the plain-text pass dropped half of them.</span></li>
+        </ul>
+        <p class="ba-foot">Scored against the same posting, with the same parser, before a single edit.</p>
+      </div>
+
+      <div class="ba-arrow reveal" aria-hidden="true"><div class="line"></div></div>
+
+      <div class="ba-card glass glass--card after reveal" style="transition-delay:80ms">
+        <div class="ba-top">
+          <div>
+            <div class="ba-kicker">After</div>
+            <div class="ba-cap">Single column, normalised dates, flattened skills.</div>
+          </div>
+          <div class="ba-score" data-count="87">87</div>
+        </div>
+        <ul class="ba-list">
+          <li><span class="mk good" aria-hidden="true"></span><span>Dates normalised to one column, one role per block, every range machine-readable.</span></li>
+          <li><span class="mk good" aria-hidden="true"></span><span>The six missing terms woven into bullets that already described that work — nothing invented.</span></li>
+          <li><span class="mk good" aria-hidden="true"></span><span>Each bullet rewritten to lead with the outcome, then the number, then the method.</span></li>
+          <li><span class="mk good" aria-hidden="true"></span><span>Skills flattened to a comma-separated line the parser reads whole, in order.</span></li>
+        </ul>
+        <p class="ba-foot">Same nine years. Same three jobs. Forty-five more points of legibility.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 9. PRIVATE BY DEFAULT (dark glass) ============ -->
+<section class="privacy" id="privacy">
+  <div class="glow" aria-hidden="true"></div>
+  <div class="wrap">
+    <p class="eyebrow reveal">Private by default</p>
+    <h2 class="statement reveal">Your résumé never leaves this browser.</h2>
+    <p class="statement-body reveal">No account, no upload, no server. Everything you write lives in this tab's localStorage and nowhere else — close it and your data stays exactly where it was, on your machine.</p>
+    <div class="chips reveal">
+      <span class="chip glass glass--dark"><span class="tick" aria-hidden="true"></span>No account</span>
+      <span class="chip glass glass--dark"><span class="tick" aria-hidden="true"></span>No upload</span>
+      <span class="chip glass glass--dark"><span class="tick" aria-hidden="true"></span>No telemetry</span>
+    </div>
+    <p class="privacy-foot reveal">The only network requests this page can make are the ones you switch on yourself.</p>
+  </div>
+</section>
+
+<!-- ============ 10. THE OPTIONAL EXTRAS ============ -->
+<section class="extras" id="extras">
+  <div class="wrap">
+    <div class="head">
+      <p class="eyebrow reveal">The optional extras</p>
+      <h2 class="section-title reveal">Power-user tooling, not magic.</h2>
+      <p class="section-intro reveal">Two things you can turn on if you want them. Neither is required, and neither changes where your data lives.</p>
+    </div>
+
+    <div class="extras-grid">
+      <div class="extra-card glass glass--well reveal">
+        <span class="ec-kicker">Optional</span>
+        <h3>Bring your own AI key</h3>
+        <p>Connect an AI provider you already pay for to rewrite bullets in your voice and suggest tighter phrasing. The key is stored in your browser and nothing is proxied through us. Switch it off and the studio parses, scores, and exports exactly the same.</p>
+        <p class="ec-note">Off by default. The core tool never needs it.</p>
+      </div>
+      <div class="extra-card glass glass--well reveal" style="transition-delay:80ms">
+        <span class="ec-kicker">Optional</span>
+        <h3>Local job agent</h3>
+        <p>A small Playwright agent runs on your own machine, opens a live posting, reads it, and drafts a résumé tailored to the real text — no copy-paste, no cloud round-trip. You review every change before it lands.</p>
+        <p class="ec-note">Runs locally. Nothing is uploaded to tailor.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 11. FAQ ============ -->
+<section class="faq" id="faq">
+  <div class="wrap">
+    <div class="head">
+      <p class="eyebrow reveal">FAQ</p>
+      <h2 class="section-title reveal">The short answers.</h2>
+    </div>
+
+    <div class="faq-list">
+      <details class="faq-item glass glass--card reveal">
+        <summary>Does it upload my résumé?<span class="faq-icon" aria-hidden="true"><i></i><i></i></span></summary>
+        <div class="faq-body"><p>No. Parsing, scoring, and export all run in this tab. Your résumé is written to localStorage on your machine and never sent anywhere. The only optional network calls are the ones you turn on yourself — an AI provider with your own key, or the local job agent you start.</p></div>
+      </details>
+      <details class="faq-item glass glass--card reveal" style="transition-delay:60ms">
+        <summary>What is an ATS score?<span class="faq-icon" aria-hidden="true"><i></i><i></i></span></summary>
+        <div class="faq-body"><p>A read on how a machine sees your résumé, not a verdict on your career. It measures whether the parser can find your sections, whether the posting's language shows up in your text, and whether your formatting survives a plain-text pass. A high score gets you read; it does not get you hired.</p></div>
+      </details>
+      <details class="faq-item glass glass--card reveal" style="transition-delay:120ms">
+        <summary>Can I use my own AI key?<span class="faq-icon" aria-hidden="true"><i></i><i></i></span></summary>
+        <div class="faq-body"><p>Yes. Bring a key from a provider you already pay for and it's stored in your browser. Nothing is proxied through us, and the studio works exactly the same with it switched off — rewriting bullets is a convenience, not a dependency.</p></div>
+      </details>
+      <details class="faq-item glass glass--card reveal" style="transition-delay:180ms">
+        <summary>Is it really free?<span class="faq-icon" aria-hidden="true"><i></i><i></i></span></summary>
+        <div class="faq-body"><p>Yes. MIT licensed, no account, no trial, no paid tier hiding the export. If you'd rather run it yourself, the whole thing is a static build — clone it, serve the folder, and it works offline.</p></div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 12. OPEN SOURCE ============ -->
+<section class="oss" id="source">
+  <div class="wrap">
+    <div class="head">
+      <p class="eyebrow reveal">Open source</p>
+      <h2 class="section-title reveal">Read all of it.</h2>
+      <p class="section-intro reveal">MIT licensed and built in the open. No build step required to read the code.</p>
+    </div>
+
+    <div class="oss-grid">
+      <div class="oss-facts reveal">
+        <div class="oss-fact">
+          <span class="k">license</span>
+          <span class="v"><b>MIT</b> — use it, fork it, ship it, sell nothing back to us.</span>
+        </div>
+        <div class="oss-fact">
+          <span class="k">repository</span>
+          <span class="v"><a href="https://github.com/akshaytp1571/resume-builder">github.com/akshaytp1571/resume-builder</a></span>
+        </div>
+        <div class="oss-fact">
+          <span class="k">to read</span>
+          <span class="v">No build step. The parser, the scorer, and the plain-text writer are plain files you can open in an editor.</span>
+        </div>
+        <div class="oss-fact">
+          <span class="k">to run</span>
+          <span class="v">A static build. Serve the folder and it works offline, forever, with no backend to deprecate.</span>
+        </div>
+      </div>
+
+      <div class="tree glass glass--card reveal" style="transition-delay:80ms">
+        <div class="tree-head">
+          <span class="fname">src/</span>
+          <span class="badge">53 files</span>
+        </div>
+<pre class="tree"><span class="t-dir">src/</span>
+├── App.jsx
+├── main.jsx
+├── index.css
+├── <span class="t-dir">components/</span>
+│   ├── Landing.jsx
+│   ├── <span class="t-dir">preview/</span>ResumePreview.jsx
+│   ├── <span class="t-dir">templates/</span>       <span class="t-note">11 templates</span>
+│   └── <span class="t-dir">ui/</span>               <span class="t-note">AtsGauge · CommandBar · modals</span>
+├── <span class="t-dir">hooks/</span>
+│   ├── useResumeStore.js
+│   └── useHashRoute.js
+├── <span class="t-dir">utils/</span>
+│   ├── atsScorer.js         <span class="t-note">the four criteria</span>
+│   ├── atsTextView.js       <span class="t-note">the plain-text writer</span>
+│   ├── resumeParser.js      <span class="t-note">sections, dates, bullets</span>
+│   └── keywordMatcher.js
+├── <span class="t-dir">data/</span>
+│   └── initialData.js
+└── <span class="t-dir">agents/</span>
+    └── <span class="t-dir">apply-agent/</span>      <span class="t-note">local Playwright agent</span></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 13. FINAL CTA ============ -->
+<section class="final-cta" id="start">
+  <div class="glow" aria-hidden="true"></div>
+  <div class="wrap">
+    <h2 class="cta-title reveal">Ready to be read?</h2>
+    <p class="cta-sub reveal">Open the studio, paste a posting, and see what a machine makes of you.</p>
+    <div class="reveal" style="transition-delay:80ms"><a class="btn-primary magnetic" href="#/app">Open the studio</a></div>
+    <div class="reveal" style="transition-delay:140ms"><a class="text-link" href="https://github.com/akshaytp1571/resume-builder">View source <span class="arrow">→</span></a></div>
+  </div>
+</section>
+
+<!-- ============ 14. FOOTER ============ -->
+<footer>
+  <div class="wrap">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <span class="wordmark">Résumé Studio</span>
+        <p>A local-first, ATS-aware résumé tool. Your data stays in your browser.</p>
+      </div>
+      <div class="footer-cols">
+        <div class="footer-col">
+          <h4>Product</h4>
+          <ul>
+            <li><a href="#/app">Open the studio</a></li>
+            <li><a href="#how">How it works</a></li>
+            <li><a href="#templates">Templates</a></li>
+            <li><a href="#score">The score</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Source</h4>
+          <ul>
+            <li><a href="https://github.com/akshaytp1571/resume-builder">GitHub</a></li>
+            <li><a href="#source">File tree</a></li>
+            <li><a href="#faq">FAQ</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Legal-ish</h4>
+          <ul>
+            <li><a href="#privacy">Privacy</a></li>
+            <li><a href="#source">MIT License</a></li>
+            <li><a href="#privacy">No telemetry</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span class="footer-meta">Open source · <b>MIT</b></span>
+      <span class="footer-meta">Built to run entirely in your browser.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  'use strict';
+
+  var reduceMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
+  var reduce = reduceMQ.matches;
+  var clamp = function(v,a,b){ return v<a?a:(v>b?b:v); };
+  var raf = window.requestAnimationFrame || function(f){ return setTimeout(f,16); };
+
+  /* ---------- hero load choreography ---------- */
+  if(!reduce){
+    raf(function(){ raf(function(){ document.documentElement.classList.add('loaded'); }); });
+  } else {
+    document.documentElement.classList.add('loaded');
+  }
+
+  /* ---------- smooth anchor scrolling (per-click, not global CSS) ---------- */
+  Array.prototype.forEach.call(document.querySelectorAll('a[href^="#"]'), function(a){
+    var href = a.getAttribute('href') || '';
+    if(!/^#[A-Za-z][\w-]*$/.test(href)) return;      // skip '#', '#/app', odd targets
+    a.addEventListener('click', function(ev){
+      var t = document.querySelector(href);
+      if(!t) return;
+      ev.preventDefault();
+      t.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+      try { history.replaceState(null, '', href); } catch(e) { /* file:// or sandboxed */ }
+    });
+  });
+
+  /* ---------- element cache ---------- */
+  var nav       = document.getElementById('nav');  var bar       = document.getElementById('progressBar');
+  var heroDoc   = document.getElementById('heroDoc');
+  var heroStage = document.getElementById('heroStage');
+  var sweep     = document.getElementById('sweep');
+  var track     = document.getElementById('stickyTrack');
+  var railFill  = document.getElementById('railFill');
+  var fieldA    = document.getElementById('fieldA');
+  var fieldB    = document.getElementById('fieldB');
+  var localFields = Array.prototype.slice.call(document.querySelectorAll('.field[data-par]'));
+
+  var stepTexts = Array.prototype.slice.call(document.querySelectorAll('.step-text'));
+  var states    = Array.prototype.slice.call(document.querySelectorAll('.sticky-visual .state'));
+  var reveals   = Array.prototype.slice.call(document.querySelectorAll('.reveal'));
+  var counters  = Array.prototype.slice.call(document.querySelectorAll('[data-count]'));
+  var tiltCards = Array.prototype.slice.call(document.querySelectorAll('.tilt'));
+  var magnets   = Array.prototype.slice.call(document.querySelectorAll('.magnetic'));
+  var faqItems  = Array.prototype.slice.call(document.querySelectorAll('.faq-item'));
+
+  /* ---------- reveals ---------- */
+  if('IntersectionObserver' in window && !reduce){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){
+          e.target.classList.add('in');
+          io.unobserve(e.target);
+          var nums = e.target.querySelectorAll('[data-count]');
+          for(var i=0;i<nums.length;i++){ startCount(nums[i]); }
+        }
+      });
+    },{threshold:0.14, rootMargin:'0px 0px -7% 0px'});
+    reveals.forEach(function(el){ io.observe(el); });
+  } else {
+    reveals.forEach(function(el){ el.classList.add('in'); });
+    counters.forEach(function(el){ paintFinal(el); });
+  }
+
+  /* ---------- count-ups ---------- */
+  function paintFinal(el){
+    var t = parseFloat(el.getAttribute('data-count')) || 0;
+    var suf = el.getAttribute('data-suffix') || '';
+    var cls = el.querySelector('.suffix');
+    if(cls){ el.firstChild.nodeValue = String(t); }
+    else { el.textContent = t + suf; }
+  }
+  function startCount(el){
+    if(el.getAttribute('data-done') === '1') return;
+    el.setAttribute('data-done','1');
+    var target = parseFloat(el.getAttribute('data-count')) || 0;
+    var suf = el.getAttribute('data-suffix') || '';
+    var cls = el.querySelector('.suffix');
+    var dur = 1100, t0 = null;
+    function frame(t){
+      if(t0 === null) t0 = t;
+      var p = clamp((t - t0)/dur, 0, 1);
+      var e = 1 - Math.pow(1 - p, 3);
+      var v = Math.round(target * e);
+      if(cls){ el.firstChild.nodeValue = String(v); }
+      else { el.textContent = v + suf; }
+      if(p < 1) raf(frame);
+    }
+    raf(frame);
+  }
+
+  /* ---------- sticky step switching ---------- */
+  var current = -1;
+  function setStep(i){
+    if(i === current) return;
+    current = i;
+    for(var k=0;k<stepTexts.length;k++){
+      stepTexts[k].classList.toggle('is-active', parseInt(stepTexts[k].getAttribute('data-step'),10) === i);
+    }
+    for(var m=0;m<states.length;m++){
+      states[m].classList.toggle('is-active', parseInt(states[m].getAttribute('data-state'),10) === i);
+    }
+  }
+  if(reduce){ setStep(0); }
+
+  /* ---------- unified scroll (read everything, then write) ---------- */
+  var swept = false;
+  function onScroll(){
+    var doc = document.documentElement;
+    var vh  = window.innerHeight || doc.clientHeight;
+    var y   = window.pageYOffset || doc.scrollTop || 0;
+    var max = (doc.scrollHeight || 0) - vh;
+
+    /* --- reads --- */
+    var stageRect = heroStage ? heroStage.getBoundingClientRect() : null;
+    var trackRect = track ? track.getBoundingClientRect() : null;
+    var fieldRects = [];
+    for(var i=0;i<localFields.length;i++){ fieldRects.push(localFields[i].getBoundingClientRect()); }
+    var stepRects = [];
+    for(var s=0;s<stepTexts.length;s++){ stepRects.push(stepTexts[s].getBoundingClientRect()); }
+
+    /* --- writes --- */
+    if(nav){ nav.classList.toggle('scrolled', y > 40); }
+    if(bar){ bar.style.transform = 'scaleX(' + (max > 0 ? clamp(y/max,0,1).toFixed(4) : 0) + ')'; }
+
+    /* hero document un-tilt + one-shot light sweep */
+    if(heroDoc && stageRect){
+      var h = stageRect.height || 1;
+      var p = clamp(-stageRect.top / h, 0, 1);
+      heroDoc.style.setProperty('--p', p.toFixed(4));
+      if(!swept && !reduce && p > 0.06){
+        swept = true;
+        if(sweep){ sweep.classList.add('run'); }
+      }
+    }
+
+    /* atmospheric parallax — two fixed layers, plus section-local fields */
+    if(fieldA){ fieldA.style.transform = 'translate3d(0,' + clamp(y*0.05,-60,60).toFixed(1) + 'px,0)'; }
+    if(fieldB){ fieldB.style.transform = 'translate3d(0,' + clamp(y*0.11,-60,60).toFixed(1) + 'px,0)'; }
+    for(var f=0;f<localFields.length;f++){
+      var el = localFields[f];
+      var rate = parseFloat(el.getAttribute('data-par')) || 0.1;
+      var t = clamp((vh - fieldRects[f].top) * rate, -60, 60);
+      el.style.transform = 'translate3d(0,' + t.toFixed(1) + 'px,0)';
+    }
+
+    /* sticky section */
+    if(track && stepTexts.length){
+      var mid = vh * 0.5, best = 0, bestD = Infinity;
+      for(var j=0;j<stepRects.length;j++){
+        var c = stepRects[j].top + stepRects[j].height/2;
+        var d = Math.abs(c - mid);
+        if(d < bestD){ bestD = d; best = j; }
+      }
+      setStep(best);
+      if(railFill && trackRect){
+        var span = Math.max(1, trackRect.height - vh);
+        railFill.style.transform = 'scaleY(' + clamp(-trackRect.top/span, 0, 1).toFixed(4) + ')';
+      }
+    }
+  }
+
+  if(!reduce){
+    var ticking = false;
+    function frame(){
+      onScroll();
+      ticking = false;
+    }
+    window.addEventListener('scroll', function(){
+      if(!ticking){ ticking = true; raf(frame); }
+    },{passive:true});
+    window.addEventListener('resize', function(){
+      if(!ticking){ ticking = true; raf(frame); }
+    },{passive:true});
+    onScroll();
+  } else {
+    onScroll();
+  }
+
+  /* ---------- magnetic primary buttons ---------- */
+  function magnet(el, max){
+    var tx=0, ty=0, cx=0, cy=0, running=false;
+    function loop(){
+      cx += (tx-cx)*0.18; cy += (ty-cy)*0.18;
+      el.style.transform = 'translate3d(' + cx.toFixed(2) + 'px,' + cy.toFixed(2) + 'px,0)';
+      if(Math.abs(tx-cx) > 0.04 || Math.abs(ty-cy) > 0.04){ raf(loop); }
+      else { el.style.transform = ''; cx=cy=0; running=false; }
+    }
+    function kick(){ if(!running){ running = true; raf(loop); } }
+    el.addEventListener('pointermove', function(e){
+      var r = el.getBoundingClientRect();
+      tx = ((e.clientX - r.left)/r.width  - 0.5) * 2 * max;
+      ty = ((e.clientY - r.top )/r.height - 0.5) * 2 * max;
+      kick();
+    });
+    el.addEventListener('pointerleave', function(){ tx=0; ty=0; kick(); });
+  }
+  if(!reduce){ magnets.forEach(function(el){ magnet(el, 6); }); }
+
+  /* ---------- 3D pointer tilt ---------- */
+  function tilt(el, max){
+    el.addEventListener('pointermove', function(e){
+      var r = el.getBoundingClientRect();
+      var px = (e.clientX - r.left)/r.width;
+      var py = (e.clientY - r.top)/r.height;
+      el.style.setProperty('--ry', ((px-0.5)*2*max).toFixed(2) + 'deg');
+      el.style.setProperty('--rx', (-(py-0.5)*2*max).toFixed(2) + 'deg');
+      el.style.setProperty('--mx', (px*100).toFixed(1) + '%');
+      el.style.setProperty('--my', (py*100).toFixed(1) + '%');
+    });
+    el.addEventListener('pointerleave', function(){
+      el.style.setProperty('--rx','0deg');
+      el.style.setProperty('--ry','0deg');
+    });
+  }
+  if(!reduce){ tiltCards.forEach(function(el){ tilt(el, 6); }); }
+
+  /* ---------- FAQ smooth height ---------- */
+  faqItems.forEach(function(d){
+    var summary = d.querySelector('summary');
+    var body = d.querySelector('.faq-body');
+    if(!summary || !body) return;
+    summary.addEventListener('click', function(ev){
+      ev.preventDefault();
+      if(d.getAttribute('data-busy') === '1') return;
+      if(d.open){
+        d.setAttribute('data-busy','1');
+        body.style.height = body.getBoundingClientRect().height + 'px';
+        void body.offsetHeight;
+        body.style.height = '0px';
+        var done = function(){
+          d.open = false;
+          body.style.height = '';
+          d.removeAttribute('data-busy');
+          body.removeEventListener('transitionend', done);
+        };
+        body.addEventListener('transitionend', done);
+        /* safety net if transitionend never fires */
+        setTimeout(function(){
+          if(d.getAttribute('data-busy') === '1'){ done(); }
+        }, 600);
+      } else {
+        d.setAttribute('data-busy','1');
+        d.open = true;
+        var h = body.scrollHeight;
+        body.style.height = '0px';
+        void body.offsetHeight;
+        body.style.height = h + 'px';
+        var fin = function(){
+          body.style.height = '';
+          d.removeAttribute('data-busy');
+          body.removeEventListener('transitionend', fin);
+        };
+        body.addEventListener('transitionend', fin);
+        setTimeout(function(){
+          if(d.getAttribute('data-busy') === '1'){ fin(); }
+        }, 600);
+      }
+    });
+  });
+
+  /* ---------- react to OS reduced-motion changes ---------- */
+  if(reduceMQ.addEventListener){
+    reduceMQ.addEventListener('change', function(){
+      reveals.forEach(function(el){ el.classList.add('in'); });
+      counters.forEach(function(el){ paintFinal(el); });
+      onScroll();
+    });
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+# Screenshots are local QA artifacts — 31MB of PNG is not worth git history.
+# Regenerate with: node previews/shoot-new.mjs <dir> [dir...]
+*.png
+
+# Local-only helpers
+node_modules/

@@ -9,13 +9,13 @@
         font-family: 'Archivo';
         font-weight: 600;
         font-display: swap;
-        src: url('../public/fonts/archivo-600-normal.woff2') format('woff2');
+        src: url('fonts/archivo-600-normal.woff2') format('woff2');
       }
       @font-face {
         font-family: 'Plex Mono';
         font-weight: 500;
         font-display: swap;
-        src: url('../public/fonts/plex-mono-500-normal.woff2') format('woff2');
+        src: url('fonts/plex-mono-500-normal.woff2') format('woff2');
       }
       * { box-sizing: border-box; margin: 0; padding: 0; }
       body {
@@ -114,12 +114,12 @@
   </head>
   <body>
     <p class="eyebrow">Resume Studio · landing page exploration</p>
-    <h1>Six directions. Nothing merged yet.</h1>
+    <h1>Eleven directions. Nothing merged yet.</h1>
     <p class="lede">
       Each is a separate self-contained page with its own palette, type, and motion
-      language. All three share one constraint: the copy has to be true of the
-      running app. Open them full-screen, then tell me which — or which parts of
-      which — to merge into the project.
+      language. One shared constraint: the copy has to be true of the running app.
+      Open them full-screen, then tell me which — or which parts of which — to merge
+      into the project.
     </p>
 
     <div class="grid">
@@ -223,19 +223,111 @@
           <span style="background: #f4f0e6"></span>
         </div>
         <a href="F-studio/index.html">Open F →</a>
-      </div>      <div class="card full">
+      </div>
+
+      <div class="card">
+        <span class="k">Direction G</span>
+        <h2>Paper &amp; ink</h2>
+        <p>
+          A warm editorial print journal. Paper ground, ink text, one oxblood spot,
+          a Palatino-class serif at broadsheet size, numbered sections divided by
+          hairline rules. The argument: a résumé is printed matter, so the page is
+          printed matter.
+        </p>
+        <div class="swatches">
+          <span style="background: #f7f4ee"></span>
+          <span style="background: #1a1815"></span>
+          <span style="background: #7a1f1a"></span>
+        </div>
+        <a href="G-paper-ink/index.html">Open G →</a>
+      </div>
+
+      <div class="card">
+        <span class="k">Direction H</span>
+        <h2>Signal</h2>
+        <p>
+          Dark, precise, all-monospace. The hero types a job description into the
+          field while a scoring pipeline runs beside it and counts the match from
+          42 to 87. Acid lime is rationed to under five percent of the page.
+        </p>
+        <div class="swatches">
+          <span style="background: #0a0a0b"></span>
+          <span style="background: #131316"></span>
+          <span style="background: #c8fa4b"></span>
+        </div>
+        <a href="H-signal/index.html">Open H →</a>
+      </div>
+
+      <div class="card">
+        <span class="k">Direction I — the Apple one</span>
+        <h2>Daylight</h2>
+        <p>
+          A bright Apple product page. White and near-white grounds, one blue,
+          display type clamped to 88px at −0.03em tracking, 20–28px radii, soft
+          layered shadows. The résumé card tilts in 3D under the pointer.
+        </p>
+        <div class="swatches">
+          <span style="background: #ffffff"></span>
+          <span style="background: #f5f5f7"></span>
+          <span style="background: #1d1d1f"></span>
+          <span style="background: #0071e3"></span>
+        </div>
+        <a href="I-daylight/index.html">Open I →</a>
+      </div>
+
+      <div class="card">
+        <span class="k">Direction J — Daylight, in glass</span>
+        <h2>Daylight Glass</h2>
+        <p>
+          The chosen direction, built out. Real frosted panels —
+          <code>backdrop-filter: blur(24px) saturate(180%)</code> over
+          <code>rgba(255,255,255,.55)</code>, a 1px specular top edge, inset
+          highlights — floating over four parallaxing colour fields. Fourteen
+          sections, hero word-mask choreography, a magnetic primary button, 3D
+          pointer tilt, count-ups, a one-shot light sweep.
+        </p>
+        <div class="swatches">
+          <span style="background: #ffffff"></span>
+          <span style="background: #f5f5f7"></span>
+          <span style="background: #0071e3"></span>
+          <span style="background: #e8f0fe"></span>
+        </div>
+        <a href="J-daylight-glass/index.html">Open J →</a>
+      </div>
+
+      <div class="card">
+        <span class="k">Direction K — Daylight, in dark glass</span>
+        <h2>Daylight Noir Glass</h2>
+        <p>
+          The same fourteen-section architecture with the ground dropped to
+          near-black. Glass here is <code>rgba(255,255,255,.06)</code> at
+          <code>blur(28px)</code>, so the colour fields glow through instead of
+          glowing. Cyan is reserved for success states only, which makes the ATS
+          score the brightest thing on the page.
+        </p>
+        <div class="swatches">
+          <span style="background: #060607"></span>
+          <span style="background: #0c0c10"></span>
+          <span style="background: #0a84ff"></span>
+          <span style="background: #5eead4"></span>
+        </div>
+        <a href="K-daylight-noir/index.html">Open K →</a>
+      </div>
+      <div class="card full">
         <span class="k">How these were built</span>
         <p>
           A, B and C came from three agents on one brief each. D and E were built
           directly, with a higher bar: each is organised around a single hard
           interaction rather than a motion language — a drag-tracked dual
           <code>clip-path</code> lens in D, a spring-damper with real angular
-          momentum in E. Shared rules across all five: motion on
-          transform/opacity/clip-path/stroke only, full
+          momentum in E. G through K were built after you rejected the dark
+          instrument direction; I, J and K are the Apple-grade line, and J and K
+          are the glass evolution of the one you picked. Shared rules across all
+          of them: motion on transform/opacity/clip-path/stroke only, full
           <code>prefers-reduced-motion</code> resolution, no horizontal overflow at
           320–1920, no decorative gradients, and a ban on the usual tells (centred
-          hero with a blob, three icon cards, "Seamlessly", glassmorphism).
-          All five pass <code>node previews/audit.mjs</code> — 10 checks each.
+          hero with a blob, three icon cards, "Seamlessly", glassmorphism). A
+          through F pass <code>node previews/audit.mjs</code> — 10 checks each.
         </p>
       </div>
     </div>

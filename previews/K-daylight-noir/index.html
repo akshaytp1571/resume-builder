@@ -1,0 +1,1432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<title>Résumé Studio — The résumé tool that gets you read</title>
+<style>
+  :root{
+    --bg:#060607;
+    --bg-2:#0c0c10;
+    --band:#0a0a0d;
+    --band-2:#101015;
+    --text:#f5f5f7;
+    --muted:#a1a1aa;
+    --faint:#6b6b76;
+    --hairline:rgba(255,255,255,0.10);
+    --accent:#0a84ff;
+    --accent-hover:#409cff;
+    --cyan:#5eead4;
+    --glass-bg:rgba(255,255,255,0.06);
+    --glass-border:rgba(255,255,255,0.12);
+    --font:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+    --mono:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace;
+    --ease:cubic-bezier(0.16,1,0.3,1);
+    --maxw:1120px;
+    --pad:32px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    font-family:var(--font);
+    background:linear-gradient(180deg,#060607 0%,#0a0a0d 45%,#0c0c10 100%);
+    background-attachment:scroll;
+    color:var(--text);
+    font-size:17px;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+    overflow-x:clip;
+  }
+  a{color:inherit}
+  section[id],header[id]{scroll-margin-top:84px}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 var(--pad);width:100%}
+
+  /* ==================== ATMOSPHERE (parallax light fields) ==================== */
+  .atmos{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+  .atmos-layer{position:absolute;inset:-12% -6%;will-change:transform}
+  .field{position:absolute;display:block;border-radius:50%;filter:blur(90px)}
+  .field--blue{top:-10%;left:-12%;width:940px;height:940px;opacity:.42;
+    background:radial-gradient(circle at 50% 50%, rgba(10,110,255,.55), rgba(10,110,255,0) 68%)}
+  .field--teal{top:14%;right:-16%;width:860px;height:860px;opacity:.30;
+    background:radial-gradient(circle at 50% 50%, rgba(20,180,170,.5), rgba(20,180,170,0) 68%)}
+  .field--amber{bottom:-8%;left:-6%;width:760px;height:760px;opacity:.24;
+    background:radial-gradient(circle at 50% 50%, rgba(210,150,60,.5), rgba(210,150,60,0) 70%)}
+  .field--violet{bottom:6%;right:-12%;width:820px;height:820px;opacity:.26;
+    background:radial-gradient(circle at 50% 50%, rgba(120,90,220,.45), rgba(120,90,220,0) 70%)}
+  .atmos-vignette{position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:radial-gradient(120% 90% at 50% 40%, transparent 55%, rgba(0,0,0,.35) 100%)}
+
+  /* content rides above the atmosphere layers; negative z-index on the fixed
+     atmos layers breaks Chromium's full-page screenshot compositing */
+  main,footer{position:relative;z-index:1}
+
+  /* ==================== GLASS RECIPE ==================== */
+  .glass{
+    position:relative;
+    background:var(--glass-bg);
+    backdrop-filter:blur(28px) saturate(160%);
+    -webkit-backdrop-filter:blur(28px) saturate(160%);
+    border:1px solid var(--glass-border);
+    box-shadow:0 8px 32px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.14);
+    border-radius:24px;
+  }
+  .glass::before{
+    content:'';position:absolute;left:0;right:0;top:0;height:1px;pointer-events:none;
+    background:linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent);
+  }
+  .glass--card{border-radius:22px}
+  .glass--chip{border-radius:999px;background:rgba(255,255,255,.08)}
+  .glass--well{
+    background:rgba(255,255,255,.04);
+    border-color:rgba(255,255,255,.08);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.05), 0 1px 2px rgba(0,0,0,.35);
+  }
+  .glass--well::before{display:none}
+  .glass--accent{background:rgba(10,132,255,.14);border-color:rgba(10,132,255,.4)}
+
+  /* ==================== SCROLL PROGRESS ==================== */
+  .progress{position:fixed;top:0;left:0;right:0;height:2px;z-index:120;pointer-events:none}
+  .progress span{display:block;height:100%;width:100%;transform:scaleX(0);transform-origin:0 50%;
+    background:linear-gradient(90deg,var(--accent),var(--accent-hover))}
+
+  /* ==================== NAV ==================== */
+  .nav{
+    position:fixed;top:0;left:0;right:0;z-index:100;
+    background:rgba(10,10,13,.55);
+    backdrop-filter:blur(20px) saturate(160%);
+    -webkit-backdrop-filter:blur(20px) saturate(160%);
+    border-bottom:1px solid transparent;
+    box-shadow:0 0 0 rgba(0,0,0,0);
+    transition:background 300ms ease,border-color 300ms ease,box-shadow 300ms ease;
+  }
+  .nav.scrolled{background:rgba(10,10,13,.72);border-bottom-color:var(--hairline);
+    box-shadow:0 8px 30px rgba(0,0,0,.45)}
+  .nav-inner{max-width:var(--maxw);margin:0 auto;padding:0 var(--pad);height:56px;
+    display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:16px}
+  .wordmark{font-size:15px;font-weight:600;letter-spacing:-.01em;text-decoration:none;color:var(--text)}
+  .nav-center{display:flex;align-items:center;gap:28px;justify-content:center}
+  .nav-center a{font-size:14px;color:var(--muted);text-decoration:none;transition:color 200ms ease}
+  .nav-center a:hover{color:var(--text)}
+  .nav-right{display:flex;align-items:center;gap:20px;justify-content:flex-end}
+  .nav-source{font-size:14px;color:var(--muted);text-decoration:none;transition:color 200ms ease}
+  .nav-source:hover{color:var(--text)}
+  .nav-open{display:inline-flex;align-items:center;height:32px;padding:0 16px;border-radius:999px;
+    background:var(--accent);color:#fff;font-size:14px;font-weight:600;text-decoration:none;
+    transition:background 200ms ease,transform 150ms ease}
+  .nav-open:hover{background:var(--accent-hover)}
+  .nav-open:active{transform:scale(.95)}
+
+  /* ==================== BUTTONS / LINKS ==================== */
+  .btn-primary{
+    display:inline-flex;align-items:center;justify-content:center;
+    height:48px;padding:0 30px;border-radius:999px;border:none;cursor:pointer;
+    background:var(--accent);color:#fff;font-family:var(--font);font-size:17px;font-weight:600;
+    text-decoration:none;will-change:transform;
+    box-shadow:0 8px 26px rgba(10,132,255,.32);
+    transition:background 200ms ease,box-shadow 200ms ease;
+  }
+  .btn-primary:hover{background:var(--accent-hover);box-shadow:0 10px 32px rgba(10,132,255,.42)}
+  .glass-link{
+    display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 22px;border-radius:999px;
+    background:rgba(255,255,255,.07);border:1px solid var(--hairline);color:var(--text);
+    font-size:15px;font-weight:500;text-decoration:none;
+    backdrop-filter:blur(20px) saturate(150%);-webkit-backdrop-filter:blur(20px) saturate(150%);
+    transition:background 200ms ease,border-color 200ms ease;
+  }
+  .glass-link:hover{background:rgba(255,255,255,.11);border-color:rgba(255,255,255,.22)}
+  .glass-link .arrow{display:inline-block;transition:transform 240ms var(--ease);color:var(--accent)}
+  .glass-link:hover .arrow{transform:translateX(5px)}
+
+  /* ==================== TYPE ==================== */
+  .eyebrow{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--accent)}
+  .section-title{font-size:clamp(34px,4.4vw,54px);font-weight:700;letter-spacing:-.032em;line-height:1.05;
+    color:var(--text);margin-top:16px}
+  .section-intro{font-size:19px;line-height:1.55;color:var(--muted);max-width:640px;margin-top:20px}
+
+  /* ==================== REVEAL ==================== */
+  .reveal{opacity:0;transform:translateY(24px);
+    transition:opacity 700ms var(--ease),transform 700ms var(--ease)}
+  .reveal.in{opacity:1;transform:none}
+
+  /* ==================== HERO ==================== */
+  .hero{padding:150px 0 60px;text-align:center;position:relative}
+  .hero-title{
+    font-size:clamp(44px,7.6vw,92px);font-weight:700;letter-spacing:-.035em;line-height:1.03;
+    color:#fff;margin-top:22px;max-width:920px;margin-left:auto;margin-right:auto;
+  }
+  .hero-title .word{display:inline-block;overflow:hidden;vertical-align:bottom;
+    padding-bottom:.14em;margin-bottom:-.14em}
+  .hero-title .wi{display:inline-block;will-change:transform}
+  .hero-sub{font-size:21px;line-height:1.45;color:var(--muted);max-width:640px;margin:26px auto 0}
+  .hero-cta{margin-top:38px;display:flex;justify-content:center}
+  .hero-src{margin-top:20px;display:flex;justify-content:center}
+  .hero-visual{margin-top:74px;display:flex;justify-content:center}
+
+  .hero-panel{width:min(760px,100%);padding:26px;perspective:1500px}
+  .resume-card{
+    --p:0;--rx:0deg;--ry:0deg;
+    position:relative;overflow:hidden;width:100%;
+    background:linear-gradient(180deg,#fbfbfd,#f2f2f5);
+    border-radius:18px;padding:40px 44px 44px;text-align:left;
+    box-shadow:0 30px 70px rgba(0,0,0,.55),0 4px 14px rgba(0,0,0,.4);
+    transform:rotateX(calc((1 - var(--p)) * 6deg + var(--rx)))
+              rotateY(calc((1 - var(--p)) * -8deg + var(--ry)))
+              scale(calc(1 + var(--p) * .08));
+    transform-origin:center center;will-change:transform;
+  }
+  .resume-card::after{
+    content:'';position:absolute;inset:-20% -10%;pointer-events:none;
+    background:linear-gradient(112deg, transparent 34%, rgba(255,255,255,.72) 48%, rgba(255,255,255,.12) 57%, transparent 72%);
+    transform:translateX(-135%);
+  }
+  .resume-card.swept::after{animation:sweep 1.15s var(--ease) 1}
+  @keyframes sweep{from{transform:translateX(-135%)}to{transform:translateX(135%)}}
+
+  /* résumé document (paper) */
+  .rdoc{font-size:13px;line-height:1.5;color:#1d1d1f}
+  .rd-name{font-size:25px;font-weight:700;letter-spacing:-.015em;line-height:1.1;color:#111}
+  .rd-title{font-size:14px;color:#6e6e73;font-weight:500;margin-top:3px}
+  .rd-contact{font-size:11px;color:#6e6e73;margin-top:9px;letter-spacing:.01em}
+  .rd-sec{margin-top:18px}
+  .rd-sec-h{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:#111;
+    padding-bottom:5px;border-bottom:1px solid rgba(0,0,0,.12)}
+  .rd-summary{font-size:12.5px;color:#4a4a4f;margin-top:8px;line-height:1.5}
+  .rd-role{font-size:12.5px;font-weight:600;margin-top:10px;color:#1d1d1f}
+  .rd-role span{font-weight:400;color:#6e6e73}
+  .rdoc ul{margin:5px 0 0;padding-left:17px}
+  .rdoc li{font-size:12px;color:#4a4a4f;margin-top:4px;line-height:1.45}
+  .rd-skills{font-size:12px;color:#4a4a4f;margin-top:8px}
+
+  /* ATS chip + floating stat chips */
+  .chip{display:inline-flex;align-items:center;gap:11px}
+  .chip--ats{position:absolute;right:-10px;bottom:22px;padding:11px 16px 11px 11px;z-index:3}
+  .chip-ring{width:38px;height:38px;flex:none}
+  .chip-ring circle{fill:none;stroke-width:3.2;stroke-linecap:round}
+  .chip-ring .cr-bg{stroke:rgba(255,255,255,.14)}
+  .chip-ring .cr-fg{stroke:var(--accent);stroke-dasharray:91 100;transform:rotate(-90deg);transform-origin:center}
+  .chip-label{font-size:13px;color:var(--muted);font-weight:500;letter-spacing:.01em}
+  .chip-label b{color:var(--text);font-weight:700;font-size:15px}
+
+  .hero-chips{position:absolute;inset:0;pointer-events:none;z-index:4}
+  .stat-chip{position:absolute;display:inline-flex;align-items:center;gap:9px;padding:10px 15px;
+    font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;
+    animation:floaty 6s ease-in-out infinite}
+  .stat-chip .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex:none;
+    box-shadow:0 0 10px rgba(10,132,255,.7)}
+  .stat-chip .val{color:var(--muted);font-weight:500}
+  .sc-1{left:-16px;top:52px;animation-delay:-1.2s}
+  .sc-2{right:-14px;top:46%;animation-delay:-3s}
+  .sc-3{left:-14px;bottom:60px;animation-delay:-4.4s}
+  @keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+
+  /* ==================== STATS BAND ==================== */
+  .stats{padding:40px 0 90px}
+  .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:22px}
+  .stat{padding:34px 26px;text-align:left}
+  .stat-num{font-size:clamp(44px,5vw,64px);font-weight:700;letter-spacing:-.03em;line-height:1;
+    color:#fff;font-variant-numeric:tabular-nums}
+  .stat-num .suffix{color:var(--accent)}
+  .stat-label{font-size:15px;color:var(--muted);margin-top:12px}
+
+  /* ==================== STICKY SCROLL ==================== */
+  .how{padding:130px 0 40px}
+  .sticky-track{position:relative;margin-top:30px}
+  .sticky-grid{display:grid;grid-template-columns:1fr 1.05fr;gap:70px;
+    max-width:var(--maxw);margin:0 auto;padding:0 var(--pad);align-items:stretch}
+  .sticky-text{position:relative;display:flex;flex-direction:column;gap:5vh;padding:6vh 0 12vh 34px}
+  .rail{position:absolute;left:0;top:6vh;bottom:12vh;width:2px;border-radius:2px;
+    background:rgba(255,255,255,.08)}
+  .rail-fill{position:absolute;left:0;top:0;width:2px;height:100%;border-radius:2px;
+    background:linear-gradient(180deg,var(--accent),var(--accent-hover));
+    transform:scaleY(0);transform-origin:top;will-change:transform}
+  .step-text{position:relative;min-height:46vh;display:flex;flex-direction:column;justify-content:center}
+  .step-text::before{content:'';position:absolute;left:-34px;top:10px;bottom:10px;width:2px;border-radius:2px;
+    background:var(--accent);opacity:0;transform:scaleY(.3);transform-origin:top;
+    box-shadow:0 0 12px rgba(10,132,255,.5);
+    transition:opacity 500ms var(--ease),transform 500ms var(--ease)}
+  .step-text.is-active::before{opacity:1;transform:scaleY(1)}
+  .step-num{font-size:12px;font-weight:600;letter-spacing:.1em;color:var(--accent);text-transform:uppercase}
+  .step-text h3{font-size:clamp(24px,2.6vw,32px);font-weight:700;letter-spacing:-.02em;line-height:1.1;
+    color:var(--faint);margin-top:12px;transition:color 500ms var(--ease)}
+  .step-text.is-active h3{color:#fff}
+  .step-text p{font-size:17px;line-height:1.55;color:var(--faint);margin-top:14px;max-width:420px;
+    transition:color 500ms var(--ease)}
+  .step-text.is-active p{color:var(--muted)}
+
+  .sticky-visual{position:relative}
+  .visual-sticky{position:sticky;top:96px}
+  .states-wrap{position:relative;height:560px}
+  .state{position:absolute;inset:0;opacity:0;transform:scale(.985) translateY(8px);
+    transition:opacity 400ms var(--ease),transform 400ms var(--ease);pointer-events:none}
+  .state.is-active{opacity:1;transform:none;pointer-events:auto}
+  .vcard{height:100%;border-radius:24px;padding:26px 28px;overflow:hidden;display:flex;flex-direction:column}
+  .vcard-tag{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);
+    margin-bottom:16px;display:flex;align-items:center;gap:8px}
+  .vcard-tag::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--accent)}
+  .raw-text{font-family:var(--mono);font-size:12px;line-height:1.65;color:var(--muted);white-space:pre-wrap}
+  .raw-text .raw-h{color:var(--text);font-weight:600}
+  .parsed{display:flex;flex-direction:column;gap:11px}
+  .pfield{border:1px solid rgba(10,132,255,.28);border-radius:12px;padding:11px 14px;
+    display:flex;align-items:baseline;gap:14px;background:rgba(10,132,255,.06)}
+  .plabel{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--accent);
+    min-width:82px;flex:none}
+  .pval{font-size:13px;color:var(--text);font-weight:500}
+  .pval .pv-sub{color:var(--muted);font-weight:400}
+  .score-head{display:flex;align-items:center;gap:18px;margin-bottom:18px}
+  .score-ring{width:74px;height:74px;flex:none;position:relative}
+  .score-ring svg{width:74px;height:74px}
+  .score-ring circle{fill:none;stroke-width:4;stroke-linecap:round}
+  .score-ring .sr-bg{stroke:rgba(255,255,255,.12)}
+  .score-ring .sr-fg{stroke:var(--accent);stroke-dasharray:91 100;transform:rotate(-90deg);transform-origin:center}
+  .score-ring .sr-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-size:20px;font-weight:700;color:#fff}
+  .score-meta .sm-title{font-size:16px;font-weight:700;color:var(--text)}
+  .score-meta .sm-sub{font-size:13px;color:var(--muted);margin-top:4px}
+  .score-breakdown{margin-top:16px;display:flex;flex-direction:column;gap:9px}
+  .sb-row{display:flex;align-items:center;gap:12px}
+  .sb-row .sb-name{font-size:12px;color:var(--muted);min-width:104px}
+  .sb-bar{flex:1;height:6px;border-radius:3px;background:rgba(255,255,255,.09);overflow:hidden}
+  .sb-bar i{display:block;height:100%;border-radius:3px;background:var(--accent)}
+  .sb-row .sb-val{font-size:12px;font-weight:600;color:var(--text);min-width:26px;text-align:right}
+  .kw-doc{margin-top:16px;font-size:12.5px;line-height:1.6;color:var(--muted);
+    border-top:1px solid var(--hairline);padding-top:14px}
+  .kw-doc mark{background:rgba(10,132,255,.18);color:var(--accent-hover);border-radius:4px;padding:0 4px;font-weight:500}
+  .tailored-badge{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--accent);
+    background:rgba(10,132,255,.14);border-radius:999px;padding:4px 11px;margin-bottom:14px}
+  .rdoc.tight .rd-sec{margin-top:14px}
+  .rdoc.tight li{font-size:11.5px}
+
+  /* ==================== HOW THE SCORE WORKS ==================== */
+  .score{padding:150px 0}
+  .score-panel{padding:46px 48px;margin-top:56px}
+  .crit{display:grid;grid-template-columns:1fr;gap:8px;padding:26px 0}
+  .crit + .crit{border-top:1px solid var(--hairline)}
+  .crit-top{display:flex;align-items:baseline;justify-content:space-between;gap:20px}
+  .crit-name{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--text);letter-spacing:.01em}
+  .crit-num{font-size:30px;font-weight:700;letter-spacing:-.02em;color:#fff;font-variant-numeric:tabular-nums}
+  .crit-bar{height:6px;border-radius:3px;background:rgba(255,255,255,.08);margin-top:14px;overflow:hidden}
+  .crit-bar i{display:block;height:100%;width:0;border-radius:3px;
+    background:linear-gradient(90deg,var(--accent),var(--accent-hover));
+    transition:width 1100ms var(--ease)}
+  .score-row.in .crit-bar i{width:var(--w)}
+  .crit-note{font-size:15px;line-height:1.5;color:var(--muted);margin-top:12px;max-width:640px}
+  .score-foot{margin-top:14px;padding-top:26px;border-top:1px solid var(--hairline);
+    font-size:17px;color:var(--text);font-weight:500}
+  .score-foot span{color:var(--accent)}
+
+  /* ==================== TEMPLATES ==================== */
+  .templates{padding:150px 0}
+  .tpl-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-top:60px}
+  .tpl-card{
+    --rx:0deg;--ry:0deg;--lift:0px;
+    padding:24px 24px 30px;
+    transform:perspective(1000px) rotateX(var(--rx)) rotateY(var(--ry)) translateY(var(--lift));
+    transition:transform 450ms var(--ease),border-color 300ms ease,box-shadow 300ms ease;
+    will-change:transform;
+  }
+  .tpl-card:hover{--lift:-6px;border-color:rgba(10,132,255,.5);
+    box-shadow:0 20px 50px rgba(0,0,0,.55),0 0 0 1px rgba(10,132,255,.25),inset 0 1px 0 rgba(255,255,255,.14)}
+  .tpl-preview{background:rgba(255,255,255,.03);border:1px solid var(--hairline);border-radius:14px;
+    padding:24px 22px;height:250px;overflow:hidden;margin-bottom:22px}
+  .wl{height:7px;background:rgba(255,255,255,.14);border-radius:3px;margin-bottom:9px}
+  .wl.w-name{height:15px;width:58%;background:rgba(255,255,255,.32);margin-bottom:7px}
+  .wl.w-name-sm{height:13px;width:46%;background:rgba(255,255,255,.28);margin-bottom:6px}
+  .wl.w-sub-sm{height:7px;width:38%;margin-bottom:14px}
+  .wl.w-head{height:8px;width:30%;background:rgba(255,255,255,.24);margin:16px 0 12px}
+  .wl.w-rule{height:1px;background:var(--hairline);margin:14px 0}
+  .wl.w-95{width:95%}.wl.w-92{width:92%}.wl.w-90{width:90%}.wl.w-88{width:88%}
+  .wl.w-85{width:85%}.wl.w-84{width:84%}.wl.w-80{width:80%}.wl.w-78{width:78%}
+  .wl.w-75{width:75%}.wl.w-70{width:70%}.wl.w-65{width:65%}.wl.w-60{width:60%}
+  .wl.w-55{width:55%}
+  .p-editorial .w-center{display:flex;flex-direction:column;align-items:center}
+  .p-editorial .w-center .wl{margin-left:auto;margin-right:auto}
+  .led-cols{display:grid;grid-template-columns:.8fr 1.4fr;gap:18px;height:100%}
+  .led-side{border-right:1px solid var(--hairline);padding-right:14px}
+  .led-side .wl.w-head{margin-top:0}
+  .tpl-card h3{font-size:21px;font-weight:700;letter-spacing:-.01em;color:var(--text)}
+  .tpl-card p{font-size:15px;line-height:1.5;color:var(--muted);margin-top:8px}
+
+  /* ==================== PLAIN TEXT ==================== */
+  .plaintext{padding:150px 0}
+  .split{display:grid;grid-template-columns:1.1fr 1fr;gap:34px;align-items:start;margin-top:56px}
+  .editor-window{overflow:hidden;border-radius:20px}
+  .editor-bar{display:flex;align-items:center;gap:14px;padding:13px 18px;
+    border-bottom:1px solid var(--hairline);background:rgba(255,255,255,.03)}
+  .dots{display:flex;gap:6px}
+  .dots i{width:11px;height:11px;border-radius:50%;background:rgba(255,255,255,.16);display:block}
+  .editor-file{font-size:13px;color:var(--muted);font-weight:500}
+  .editor-actions{margin-left:auto;display:flex;gap:8px}
+  .ea{font-size:12px;font-weight:500;color:var(--muted);padding:4px 12px;border-radius:999px;
+    border:1px solid var(--hairline)}
+  .ea.ea-on{color:#fff;background:var(--accent);border-color:var(--accent)}
+  .editor-body{padding:30px 34px 38px}
+  .editor-body .rdoc{font-size:13px}
+  .cursor{display:inline-block;width:2px;height:14px;background:var(--accent);vertical-align:-2px;
+    margin-left:2px;animation:blink 1.1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+  .export-block{border-radius:20px;overflow:hidden}
+  .export-head{display:flex;align-items:center;padding:14px 20px;border-bottom:1px solid var(--hairline)}
+  .export-head .fname{font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+  .export-head .badge{margin-left:auto;font-size:11px;font-weight:600;text-transform:uppercase;
+    letter-spacing:.06em;color:var(--cyan)}
+  .export-text{font-family:var(--mono);font-size:12px;line-height:1.7;color:var(--muted);
+    padding:22px 24px;white-space:pre;overflow-x:auto}
+  .export-caption{padding:0 24px 24px;font-size:14px;color:var(--muted)}
+  .export-caption b{color:var(--text);font-weight:600}
+
+  /* ==================== BEFORE / AFTER ==================== */
+  .beforeafter{padding:150px 0}
+  .ba-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:26px;align-items:stretch;margin-top:56px}
+  .ba-card{padding:38px 36px}
+  .ba-kicker{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--faint)}
+  .ba-score{display:flex;align-items:baseline;gap:10px;margin-top:16px}
+  .ba-score .n{font-size:64px;font-weight:700;letter-spacing:-.03em;line-height:1;color:#fff;
+    font-variant-numeric:tabular-nums}
+  .ba-score .of{font-size:18px;color:var(--faint);font-weight:500}
+  .ba-list{margin-top:24px;display:flex;flex-direction:column;gap:16px}
+  .ba-item{display:flex;gap:13px;font-size:15.5px;line-height:1.5;color:var(--muted)}
+  .ba-item .ic{flex:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;
+    font-size:12px;font-weight:700;margin-top:1px}
+  .ba-bad .ic{background:rgba(255,255,255,.07);color:var(--faint);border:1px solid var(--hairline)}
+  .ba-good .ic{background:rgba(94,234,212,.14);color:var(--cyan);border:1px solid rgba(94,234,212,.35)}
+  .ba-good .ba-kicker{color:var(--cyan);display:inline-flex;align-items:center;gap:8px}
+  .ba-good .ba-kicker .status{width:8px;height:8px;border-radius:50%;background:var(--cyan);
+    box-shadow:0 0 10px rgba(94,234,212,.8)}
+  .ba-arrow{display:grid;place-items:center;color:var(--faint)}
+  .ba-arrow svg{width:46px;height:24px}
+
+  /* ==================== PRIVACY ==================== */
+  .privacy{padding:170px 0;text-align:center;
+    background:radial-gradient(120% 100% at 50% 0%, rgba(10,10,13,.7), rgba(6,6,7,.9))}
+  .statement{font-size:clamp(36px,5vw,64px);font-weight:700;letter-spacing:-.032em;line-height:1.05;
+    color:#fff;max-width:840px;margin:0 auto}
+  .statement-body{font-size:19px;line-height:1.55;color:var(--muted);max-width:620px;margin:26px auto 0}
+  .facts{display:flex;justify-content:center;gap:16px;flex-wrap:wrap;margin-top:64px}
+  .fact{display:inline-flex;align-items:center;gap:10px;padding:14px 22px;font-size:16px;font-weight:600;color:var(--text)}
+  .fact .dot{width:8px;height:8px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px rgba(94,234,212,.7)}
+
+  /* ==================== EXTRAS ==================== */
+  .extras{padding:150px 0}
+  .extras-grid{display:grid;grid-template-columns:1fr 1fr;gap:26px;margin-top:56px}
+  .extra-card{padding:40px 38px}
+  .ec-kicker{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--accent)}
+  .extra-card h3{font-size:26px;font-weight:700;letter-spacing:-.02em;color:var(--text);margin-top:14px}
+  .extra-card p{font-size:17px;line-height:1.55;color:var(--muted);margin-top:14px}
+  .extra-card .ec-note{font-size:14px;color:var(--faint);margin-top:20px;padding-top:18px;
+    border-top:1px solid var(--hairline)}
+
+  /* ==================== FAQ ==================== */
+  .faq{padding:150px 0}
+  .faq-list{margin-top:52px;display:flex;flex-direction:column;gap:16px;max-width:820px}
+  .faq-item{border-radius:20px;overflow:hidden}
+  .faq-item summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:18px;
+    padding:24px 28px;font-size:19px;font-weight:600;color:var(--text);letter-spacing:-.01em}
+  .faq-item summary::-webkit-details-marker{display:none}
+  .faq-icon{margin-left:auto;flex:none;width:30px;height:30px;border-radius:50%;
+    display:grid;place-items:center;border:1px solid var(--hairline);color:var(--muted);
+    transition:transform 400ms var(--ease),color 300ms ease,border-color 300ms ease}
+  .faq-item[open] .faq-icon{transform:rotate(45deg);color:var(--accent);border-color:rgba(10,132,255,.4)}
+  .faq-body{height:0;overflow:hidden;transition:height 420ms var(--ease)}
+  .faq-body-inner{padding:0 28px 26px;font-size:16.5px;line-height:1.6;color:var(--muted);max-width:720px}
+
+  /* ==================== OPEN SOURCE ==================== */
+  .opensource{padding:150px 0}
+  .os-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:34px;align-items:center;margin-top:52px}
+  .os-facts{display:flex;flex-direction:column;gap:22px;min-width:0}
+  .os-fact{display:flex;gap:16px;min-width:0}
+  .os-fact .k{font-family:var(--mono);font-size:13px;color:var(--accent);min-width:96px;flex:none;padding-top:2px}
+  .os-fact .v{font-size:16.5px;line-height:1.5;color:var(--muted);min-width:0;overflow-wrap:anywhere}
+  .os-fact .v a{color:var(--accent-hover);text-decoration:none;overflow-wrap:anywhere}
+  .os-fact .v a:hover{text-decoration:underline}
+  .tree{padding:26px 28px;border-radius:20px;font-family:var(--mono);font-size:13px;line-height:1.85;
+    color:var(--muted);overflow-x:auto;min-width:0;max-width:100%}
+  .tree .dir{color:var(--text);font-weight:600}
+  .tree .file{color:var(--muted)}
+  .tree .ind{padding-left:20px;display:block}
+  .tree .ind2{padding-left:40px;display:block}
+
+  /* ==================== FINAL CTA ==================== */
+  .final-cta{padding:160px 0;text-align:center}
+  .cta-title{font-size:clamp(40px,6vw,72px);font-weight:700;letter-spacing:-.032em;line-height:1.03;color:#fff}
+  .cta-sub{font-size:19px;color:var(--muted);max-width:520px;margin:22px auto 0}
+  .final-cta .btn-primary{margin-top:38px}
+  .final-cta .glass-link{margin-top:20px}
+
+  /* ==================== FOOTER ==================== */
+  footer{border-top:1px solid var(--hairline);padding:52px 0 40px;background:rgba(6,6,7,.6)}
+  .footer-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:30px}
+  .footer-brand .wordmark{font-size:16px}
+  .footer-brand p{font-size:14px;color:var(--faint);margin-top:12px;max-width:240px;line-height:1.5}
+  .footer-col h4{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--faint)}
+  .footer-col ul{list-style:none;margin-top:16px;display:flex;flex-direction:column;gap:12px}
+  .footer-col a{font-size:14px;color:var(--muted);text-decoration:none;transition:color 200ms ease}
+  .footer-col a:hover{color:var(--text)}
+  .footer-base{margin-top:44px;padding-top:24px;border-top:1px solid var(--hairline);
+    display:flex;align-items:center;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--faint)}
+  .footer-base .mit{margin-left:auto}
+
+  /* ==================== RESPONSIVE ==================== */
+  @media (max-width:960px){
+    .os-grid{grid-template-columns:minmax(0,1fr);gap:28px}
+    .footer-grid{grid-template-columns:1fr 1fr;gap:34px}
+  }
+  @media (max-width:900px){
+    .sticky-grid{grid-template-columns:1fr;gap:40px}
+    .split{grid-template-columns:1fr;gap:28px}
+    .tpl-grid{grid-template-columns:1fr;gap:24px;max-width:440px;margin-left:auto;margin-right:auto}
+    .extras-grid{grid-template-columns:1fr}
+    .ba-grid{grid-template-columns:1fr;gap:18px}
+    .ba-arrow{transform:rotate(90deg);padding:4px 0}
+    .stats-grid{grid-template-columns:1fr 1fr;gap:18px}
+    .step-text{min-height:38vh}
+    .states-wrap{height:520px}
+  }
+  @media (max-width:700px){
+    :root{--pad:22px}
+    .nav-center,.nav-source{display:none}
+    .nav-inner{grid-template-columns:1fr auto}
+    .hero{padding:120px 0 40px}
+    .hero-sub{font-size:19px}
+    .hero-panel{padding:16px;border-radius:20px}
+    .resume-card{padding:28px 24px 32px;border-radius:14px;
+      transform:rotateX(calc((1 - var(--p)) * 4deg + var(--rx)))
+                rotateY(calc((1 - var(--p)) * -4deg + var(--ry)))
+                scale(calc(1 + var(--p) * .05))}
+    .chip--ats{right:8px;bottom:10px;padding:8px 13px 8px 8px}
+    .chip-ring{width:30px;height:30px}
+    .hero-chips{position:static;display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:18px}
+    .stat-chip{position:static;animation:none}
+    .how{padding:90px 0 20px}
+    .sticky-text{padding:2vh 0 6vh 26px;gap:2vh}
+    .step-text{min-height:34vh}
+    .step-text::before{left:-26px}
+    .rail{left:0}
+    .visual-sticky{top:78px}
+    .states-wrap{height:470px}
+    .vcard{padding:20px 20px;border-radius:18px}
+    .score,.templates,.plaintext,.beforeafter,.extras,.faq,.opensource{padding:100px 0}
+    .privacy,.final-cta{padding:110px 0}
+    .score-panel{padding:30px 24px}
+    .editor-body{padding:22px 22px 28px}
+    .export-text{font-size:11px}
+    .extra-card{padding:30px 26px}
+    .ba-card{padding:28px 24px}
+    .footer-grid{grid-template-columns:1fr;gap:30px}
+  }
+
+  /* ==================== HERO LOAD CHOREOGRAPHY ==================== */
+  @media (prefers-reduced-motion: no-preference){
+    .hero .eyebrow{animation:fadeUp 700ms var(--ease) both;animation-delay:80ms}
+    .hero-title .wi{animation:wordRise 900ms var(--ease) both}
+    .hero-title .word:nth-child(1) .wi{animation-delay:180ms}
+    .hero-title .word:nth-child(2) .wi{animation-delay:240ms}
+    .hero-title .word:nth-child(3) .wi{animation-delay:300ms}
+    .hero-title .word:nth-child(4) .wi{animation-delay:360ms}
+    .hero-title .word:nth-child(5) .wi{animation-delay:420ms}
+    .hero-title .word:nth-child(6) .wi{animation-delay:480ms}
+    .hero-title .word:nth-child(7) .wi{animation-delay:540ms}
+    .hero-sub{animation:fadeUp 700ms var(--ease) both;animation-delay:640ms}
+    .hero-cta{animation:fadeUp 700ms var(--ease) both;animation-delay:740ms}
+    .hero-src{animation:fadeUp 700ms var(--ease) both;animation-delay:820ms}
+    .hero-visual{animation:panelIn 950ms var(--ease) both;animation-delay:600ms}
+  }
+  @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+  @keyframes wordRise{from{transform:translateY(110%)}to{transform:translateY(0)}}
+  @keyframes panelIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+
+  /* ==================== REDUCED MOTION ==================== */
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto}
+    *,*::before,*::after{transition:none !important;animation:none !important}
+    .reveal{opacity:1 !important;transform:none !important}
+    .resume-card{transform:none !important}
+    .resume-card::after{display:none}
+    .stat-chip{animation:none !important;transform:none !important}
+    .cursor{animation:none}
+    .progress{display:none}
+    .atmos-layer{transform:none !important}
+    .visual-sticky{position:static}
+    .states-wrap{height:auto}
+    .state{position:static;opacity:1;transform:none;margin-bottom:22px;pointer-events:auto}
+    .step-text{min-height:0;padding:26px 0 26px 26px}
+    .step-text::before{opacity:1;transform:none}
+    .step-text h3{color:#fff}
+    .step-text p{color:var(--muted)}
+    .rail{display:none}
+    .score-row .crit-bar i{width:var(--w)}
+    .faq-body{height:auto;overflow:visible}
+    .faq-icon{transition:none}
+  }
+</style>
+</head>
+<body>
+
+<!-- atmospheric light fields -->
+<div class="atmos" aria-hidden="true">
+  <div class="atmos-layer" id="atmosBack">
+    <span class="field field--blue"></span>
+    <span class="field field--violet"></span>
+  </div>
+  <div class="atmos-layer" id="atmosFront">
+    <span class="field field--teal"></span>
+    <span class="field field--amber"></span>
+  </div>
+</div>
+<div class="atmos-vignette" aria-hidden="true"></div>
+
+<!-- scroll progress -->
+<div class="progress" aria-hidden="true"><span id="progressBar"></span></div>
+
+<!-- ============ NAV ============ -->
+<nav class="nav" id="nav">
+  <div class="nav-inner">
+    <a class="wordmark" href="#top">Résumé Studio</a>
+    <div class="nav-center">
+      <a href="#how">How it works</a>
+      <a href="#templates">Templates</a>
+      <a href="#privacy">Privacy</a>
+      <a href="#faq">FAQ</a>
+    </div>
+    <div class="nav-right">
+      <a class="nav-source" href="https://github.com/akshaytp1571/resume-builder">Source</a>
+      <a class="nav-open" href="#/app">Open</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+<!-- ============ HERO ============ -->
+<header class="hero" id="top">
+  <div class="wrap">
+    <p class="eyebrow">Résumé Studio · Local-first</p>
+    <h1 class="hero-title"><span class="word"><span class="wi">The</span></span> <span class="word"><span class="wi">résumé</span></span> <span class="word"><span class="wi">tool</span></span> <span class="word"><span class="wi">that</span></span> <span class="word"><span class="wi">gets</span></span> <span class="word"><span class="wi">you</span></span> <span class="word"><span class="wi">read.</span></span></h1>
+    <p class="hero-sub">Local-first and ATS-aware. Paste a job description, see how a machine reads you, and fix it before a human does.</p>
+    <div class="hero-cta">
+      <a class="btn-primary magnetic" href="#/app">Open the studio</a>
+    </div>
+    <div class="hero-src">
+      <a class="glass-link" href="https://github.com/akshaytp1571/resume-builder">View source on GitHub <span class="arrow">→</span></a>
+    </div>
+
+    <div class="hero-visual">
+      <div class="hero-panel glass" id="heroPanel">
+        <div class="resume-card" id="heroCard">
+          <div class="rdoc">
+            <div class="rd-name">Dev Ramanathan</div>
+            <div class="rd-title">Staff Platform Engineer</div>
+            <div class="rd-contact">Bengaluru, India · dev.ramanathan@mailbox.com · github.com/dev-ramanathan</div>
+
+            <div class="rd-sec">
+              <div class="rd-sec-h">Summary</div>
+              <p class="rd-summary">Platform engineer with nine years building distributed systems and the tooling around them. I make deployments boring and on-call quiet.</p>
+            </div>
+
+            <div class="rd-sec">
+              <div class="rd-sec-h">Experience</div>
+              <div class="rd-role">Staff Platform Engineer <span>· Northwind Systems · 2021–Present</span></div>
+              <ul>
+                <li>Cut p99 deploy time from 34 to 6 minutes by rebuilding CI around content-addressed, cached artifacts.</li>
+                <li>Led a 240-service migration to a unified service mesh with zero customer-visible downtime over 18 months.</li>
+                <li>Reduced cloud spend 31% ($1.4M/yr) by right-sizing workloads and reclaiming idle staging capacity.</li>
+              </ul>
+            </div>
+
+            <div class="rd-sec">
+              <div class="rd-sec-h">Skills</div>
+              <div class="rd-skills">Kubernetes · Terraform · Go · Python · AWS · Observability · CI/CD</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="chip chip--ats glass glass--chip">
+          <svg class="chip-ring" viewBox="0 0 36 36" aria-hidden="true">
+            <circle class="cr-bg" cx="18" cy="18" r="15.9155"></circle>
+            <circle class="cr-fg" cx="18" cy="18" r="15.9155"></circle>
+          </svg>
+          <span class="chip-label">ATS <b>91</b></span>
+        </div>
+
+        <div class="hero-chips" aria-hidden="true">
+          <span class="stat-chip glass glass--chip sc-1"><span class="dot"></span>Parse fidelity <span class="val">94</span></span>
+          <span class="stat-chip glass glass--chip sc-2"><span class="dot"></span>Keywords <span class="val">18/26</span></span>
+          <span class="stat-chip glass glass--chip sc-3"><span class="dot"></span>Exports <span class="val">plain text</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ============ STATS BAND ============ -->
+<section class="stats">
+  <div class="wrap">
+    <div class="stats-grid">
+      <div class="stat glass reveal">
+        <div class="stat-num"><span class="count" data-count="0">0</span></div>
+        <div class="stat-label">accounts required</div>
+      </div>
+      <div class="stat glass reveal" style="transition-delay:80ms">
+        <div class="stat-num"><span class="count" data-count="3">3</span></div>
+        <div class="stat-label">templates, one honest export</div>
+      </div>
+      <div class="stat glass reveal" style="transition-delay:160ms">
+        <div class="stat-num"><span class="count" data-count="100" data-suffix="%">100%</span></div>
+        <div class="stat-label">runs local, in your browser</div>
+      </div>
+      <div class="stat glass reveal" style="transition-delay:240ms">
+        <div class="stat-num"><span class="count" data-count="1">1</span></div>
+        <div class="stat-label">plain-text export, ATS-safe</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ STICKY SCROLL ============ -->
+<section class="how" id="how">
+  <div class="wrap">
+    <p class="eyebrow reveal">How it works</p>
+    <h2 class="section-title reveal">From paste to polished.</h2>
+  </div>
+
+  <div class="sticky-track" id="stickyTrack">
+    <div class="sticky-grid">
+      <div class="sticky-text">
+        <div class="rail" aria-hidden="true"><span class="rail-fill" id="railFill"></span></div>
+        <div class="step-text is-active" data-step="0">
+          <span class="step-num">Step 01</span>
+          <h3>Paste the posting.</h3>
+          <p>Drop in any job description. We read the whole thing — the requirements, the responsibilities, and the exact language they use.</p>
+        </div>
+        <div class="step-text" data-step="1">
+          <span class="step-num">Step 02</span>
+          <h3>We parse your résumé.</h3>
+          <p>Every section, date, and bullet becomes structured data a machine can actually read — no guessing where your experience ends.</p>
+        </div>
+        <div class="step-text" data-step="2">
+          <span class="step-num">Step 03</span>
+          <h3>Then we score it.</h3>
+          <p>The score reads you the way a machine does. We extract each section, match its language against the posting, and weight four things: parse fidelity, keyword coverage, formatting risk, and seniority match. A 91 means you're legible — with a few gaps worth closing.</p>
+        </div>
+        <div class="step-text" data-step="3">
+          <span class="step-num">Step 04</span>
+          <h3>Tailor and export.</h3>
+          <p>Rewrite the weak bullets, keep your voice, and export clean plain text or a typeset PDF that reads well to machines and people alike.</p>
+        </div>
+      </div>
+
+      <div class="sticky-visual">
+        <div class="visual-sticky">
+          <div class="states-wrap">
+            <div class="state is-active" data-state="0">
+              <div class="vcard glass glass--card">
+                <div class="vcard-tag">Job description</div>
+                <pre class="raw-text"><span class="raw-h">STAFF PLATFORM ENGINEER</span>
+Northwind Systems — Bengaluru / Remote
+
+We're looking for a staff-level platform engineer
+to own our internal developer platform and the
+reliability of everything that ships on it.
+
+You will:
+  - Lead CI/CD reliability and deployment velocity
+  - Drive Kubernetes and service-mesh standardization
+  - Partner with product teams on observability
+
+Required: Kubernetes, Terraform, Go, AWS, CI/CD</pre>
+              </div>
+            </div>
+
+            <div class="state" data-state="1">
+              <div class="vcard glass glass--card">
+                <div class="vcard-tag">Parsed structure</div>
+                <div class="parsed">
+                  <div class="pfield"><span class="plabel">Name</span><span class="pval">Dev Ramanathan</span></div>
+                  <div class="pfield"><span class="plabel">Title</span><span class="pval">Staff Platform Engineer</span></div>
+                  <div class="pfield"><span class="plabel">Contact</span><span class="pval">Bengaluru, IN <span class="pv-sub">· email · github</span></span></div>
+                  <div class="pfield"><span class="plabel">Summary</span><span class="pval">Detected <span class="pv-sub">· 2 sentences</span></span></div>
+                  <div class="pfield"><span class="plabel">Experience</span><span class="pval">2 roles <span class="pv-sub">· 2018–Present</span></span></div>
+                  <div class="pfield"><span class="plabel">Skills</span><span class="pval">8 terms extracted</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="state" data-state="2">
+              <div class="vcard glass glass--card">
+                <div class="vcard-tag">ATS score</div>
+                <div class="score-head">
+                  <div class="score-ring">
+                    <svg viewBox="0 0 36 36" aria-hidden="true">
+                      <circle class="sr-bg" cx="18" cy="18" r="15.9155"></circle>
+                      <circle class="sr-fg" cx="18" cy="18" r="15.9155"></circle>
+                    </svg>
+                    <span class="sr-num">91</span>
+                  </div>
+                  <div class="score-meta">
+                    <div class="sm-title">Strong match</div>
+                    <div class="sm-sub">Reads cleanly to a machine, with a few gaps to close.</div>
+                  </div>
+                </div>
+                <div class="score-breakdown">
+                  <div class="sb-row"><span class="sb-name">Parse fidelity</span><span class="sb-bar"><i style="width:96%"></i></span><span class="sb-val">96</span></div>
+                  <div class="sb-row"><span class="sb-name">Keyword coverage</span><span class="sb-bar"><i style="width:90%"></i></span><span class="sb-val">90</span></div>
+                  <div class="sb-row"><span class="sb-name">Formatting risk</span><span class="sb-bar"><i style="width:84%"></i></span><span class="sb-val">84</span></div>
+                  <div class="sb-row"><span class="sb-name">Seniority match</span><span class="sb-bar"><i style="width:93%"></i></span><span class="sb-val">93</span></div>
+                </div>
+                <div class="kw-doc">Matched from the posting: <mark>Kubernetes</mark>, <mark>Terraform</mark>, <mark>Go</mark>, <mark>CI/CD</mark>, <mark>observability</mark>. Missing: <mark>service mesh</mark> as a named term.</div>
+              </div>
+            </div>
+
+            <div class="state" data-state="3">
+              <div class="vcard glass glass--card">
+                <div class="vcard-tag">Tailored export</div>
+                <span class="tailored-badge">Rewritten against this posting</span>
+                <div class="rdoc tight">
+                  <div class="rd-name" style="font-size:20px">Dev Ramanathan</div>
+                  <div class="rd-title">Staff Platform Engineer</div>
+                  <div class="rd-role" style="margin-top:14px">Staff Platform Engineer <span>· Northwind Systems · 2021–Present</span></div>
+                  <ul>
+                    <li>Own CI/CD reliability and deployment velocity across 240 services, cutting p99 deploy time from 34 to 6 minutes.</li>
+                    <li>Drive Kubernetes and service-mesh standardization with zero customer-visible downtime over 18 months.</li>
+                    <li>Partner with product teams on observability, reducing cloud spend 31% ($1.4M/yr).</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ HOW THE SCORE WORKS ============ -->
+<section class="score" id="score">
+  <div class="wrap">
+    <p class="eyebrow reveal">How the score works</p>
+    <h2 class="section-title reveal">Four signals, one number.</h2>
+    <p class="section-intro reveal">An ATS score is a 0–100 estimate of how cleanly an applicant tracking system can read your résumé as structured data. Here's exactly what goes into it.</p>
+
+    <div class="score-panel glass reveal">
+      <div class="crit score-row">
+        <div class="crit-top">
+          <span class="crit-name">parse_fidelity</span>
+          <span class="crit-num"><span class="count" data-count="96">96</span></span>
+        </div>
+        <div class="crit-bar" style="--w:96%"><i></i></div>
+        <p class="crit-note">How cleanly a machine can split your résumé into sections, dates, and bullets — the foundation everything else is measured against.</p>
+      </div>
+      <div class="crit score-row">
+        <div class="crit-top">
+          <span class="crit-name">keyword_coverage</span>
+          <span class="crit-num"><span class="count" data-count="90">90</span></span>
+        </div>
+        <div class="crit-bar" style="--w:90%"><i></i></div>
+        <p class="crit-note">How many of the posting's required terms appear in your own words — matched by meaning, not just exact strings.</p>
+      </div>
+      <div class="crit score-row">
+        <div class="crit-top">
+          <span class="crit-name">formatting_risk</span>
+          <span class="crit-num"><span class="count" data-count="84">84</span></span>
+        </div>
+        <div class="crit-bar" style="--w:84%"><i></i></div>
+        <p class="crit-note">How much of your layout survives a plain-text pass. Columns, tables, and text boxes are the usual casualties.</p>
+      </div>
+      <div class="crit score-row">
+        <div class="crit-top">
+          <span class="crit-name">seniority_match</span>
+          <span class="crit-num"><span class="count" data-count="93">93</span></span>
+        </div>
+        <div class="crit-bar" style="--w:93%"><i></i></div>
+        <p class="crit-note">How closely your titles, scope, and years of experience line up with the level they're actually hiring for.</p>
+      </div>
+      <p class="score-foot">No black box — <span>every point traces to a line in your résumé.</span></p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TEMPLATES ============ -->
+<section class="templates" id="templates">
+  <div class="wrap">
+    <div class="head">
+      <p class="eyebrow reveal">Templates</p>
+      <h2 class="section-title reveal">Three templates. One clean export.</h2>
+      <p class="section-intro reveal">Every template renders the same structured data and exports the same honest plain text. Pick the one that reads best to a person.</p>
+    </div>
+    <div class="tpl-grid">
+      <div class="tpl-card glass reveal">
+        <div class="tpl-preview p-editorial">
+          <div class="w-center">
+            <div class="wl w-name"></div>
+            <div class="wl w-sub-sm"></div>
+          </div>
+          <div class="wl w-rule"></div>
+          <div class="wl w-head"></div>
+          <div class="wl"></div>
+          <div class="wl w-90"></div>
+          <div class="wl w-80"></div>
+          <div class="wl w-head"></div>
+          <div class="wl"></div>
+          <div class="wl w-85"></div>
+        </div>
+        <h3>Editorial</h3>
+        <p>Generous margins and a centered masthead for a considered, print-first feel.</p>
+      </div>
+
+      <div class="tpl-card glass reveal" style="transition-delay:80ms">
+        <div class="tpl-preview p-ledger">
+          <div class="led-cols">
+            <div class="led-side">
+              <div class="wl w-head"></div>
+              <div class="wl w-70"></div>
+              <div class="wl w-60"></div>
+              <div class="wl w-75"></div>
+              <div class="wl w-head"></div>
+              <div class="wl w-65"></div>
+              <div class="wl w-55"></div>
+            </div>
+            <div class="led-main">
+              <div class="wl w-name"></div>
+              <div class="wl w-sub-sm"></div>
+              <div class="wl w-head"></div>
+              <div class="wl"></div>
+              <div class="wl w-90"></div>
+              <div class="wl w-85"></div>
+              <div class="wl w-80"></div>
+            </div>
+          </div>
+        </div>
+        <h3>Ledger</h3>
+        <p>A dense two-column grid that packs more signal onto a single page.</p>
+      </div>
+
+      <div class="tpl-card glass reveal" style="transition-delay:160ms">
+        <div class="tpl-preview p-plain">
+          <div class="wl w-name-sm"></div>
+          <div class="wl w-sub-sm"></div>
+          <div class="wl w-rule"></div>
+          <div class="wl w-head"></div>
+          <div class="wl"></div>
+          <div class="wl w-95"></div>
+          <div class="wl w-88"></div>
+          <div class="wl w-92"></div>
+          <div class="wl w-head"></div>
+          <div class="wl w-90"></div>
+          <div class="wl w-84"></div>
+          <div class="wl w-78"></div>
+        </div>
+        <h3>Plain</h3>
+        <p>Bare formatting for maximum machine readability and zero fuss.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PLAIN TEXT, ALWAYS ============ -->
+<section class="plaintext" id="plaintext">
+  <div class="wrap">
+    <div class="head">
+      <p class="eyebrow reveal">Plain text, always</p>
+      <h2 class="section-title reveal">Every template exports the same honest text.</h2>
+    </div>
+    <div class="split">
+      <div class="editor-window glass reveal">
+        <div class="editor-bar">
+          <span class="dots"><i></i><i></i><i></i></span>
+          <span class="editor-file">dev-ramanathan</span>
+          <span class="editor-actions"><span class="ea">Preview</span><span class="ea ea-on">Export</span></span>
+        </div>
+        <div class="editor-body">
+          <div class="rdoc">
+            <div class="rd-name" style="font-size:20px">Dev Ramanathan</div>
+            <div class="rd-title">Staff Platform Engineer</div>
+            <div class="rd-sec">
+              <div class="rd-sec-h">Summary</div>
+              <p class="rd-summary">Platform engineer with nine years building distributed systems and the tooling around them.<span class="cursor"></span></p>
+            </div>
+            <div class="rd-sec">
+              <div class="rd-sec-h">Experience</div>
+              <div class="rd-role">Staff Platform Engineer <span>· Northwind Systems · 2021–Present</span></div>
+              <ul>
+                <li>Cut p99 deploy time from 34 to 6 minutes by rebuilding CI around content-addressed, cached artifacts.</li>
+                <li>Led a 240-service migration to a unified service mesh with zero customer-visible downtime.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="export-block glass glass--well reveal" style="transition-delay:80ms">
+        <div class="export-head">
+          <span class="fname">resume.txt</span>
+          <span class="badge">ATS-safe</span>
+        </div>
+        <pre class="export-text">DEV RAMANATHAN
+Staff Platform Engineer
+Bengaluru, India | dev.ramanathan@mailbox.com | github.com/dev-ramanathan
+
+SUMMARY
+Platform engineer with nine years building distributed systems
+and the tooling around them. I make deployments boring and
+on-call quiet.
+
+EXPERIENCE
+Staff Platform Engineer, Northwind Systems (2021 - Present)
+  - Cut p99 deploy time from 34 to 6 minutes by rebuilding CI
+    around content-addressed, cached artifacts.
+  - Led a 240-service migration to a unified service mesh with
+    zero customer-visible downtime over 18 months.
+
+SKILLS
+Kubernetes, Terraform, Go, Python, AWS, Observability, CI/CD</pre>
+        <p class="export-caption"><b>What the machine actually reads.</b> No columns, no styling — just the words, in order.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ BEFORE / AFTER ============ -->
+<section class="beforeafter" id="beforeafter">
+  <div class="wrap">
+    <div class="head">
+      <p class="eyebrow reveal">Before / after</p>
+      <h2 class="section-title reveal">The same person. Read differently.</h2>
+    </div>
+    <div class="ba-grid">
+      <div class="ba-card glass ba-bad reveal">
+        <span class="ba-kicker">Before</span>
+        <div class="ba-score"><span class="n"><span class="count" data-count="42">42</span></span><span class="of">/ 100</span></div>
+        <div class="ba-list">
+          <div class="ba-item"><span class="ic">✕</span><span>Two-column layout collapsed into one scrambled column on parse — roles and dates ran together.</span></div>
+          <div class="ba-item"><span class="ic">✕</span><span>Required terms “service mesh” and “observability” never appeared anywhere in the text.</span></div>
+          <div class="ba-item"><span class="ic">✕</span><span>Skills sat inside a table the parser dropped entirely, so none of them were counted.</span></div>
+        </div>
+      </div>
+
+      <div class="ba-arrow" aria-hidden="true">
+        <svg viewBox="0 0 48 24"><path d="M2 12 H40 M32 4 L44 12 L32 20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+
+      <div class="ba-card glass glass--accent ba-good reveal" style="transition-delay:80ms">
+        <span class="ba-kicker"><span class="status"></span>After · machine-readable</span>
+        <div class="ba-score"><span class="n"><span class="count" data-count="87">87</span></span><span class="of">/ 100</span></div>
+        <div class="ba-list">
+          <div class="ba-item"><span class="ic">✓</span><span>Rebuilt as a single column — every section, role, and date parses cleanly.</span></div>
+          <div class="ba-item"><span class="ic">✓</span><span>“Service mesh” and “observability” added as named terms drawn from real work.</span></div>
+          <div class="ba-item"><span class="ic">✓</span><span>Skills moved to a plain list; the whole résumé exports to clean, ordered text.</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PRIVATE BY DEFAULT ============ -->
+<section class="privacy" id="privacy">
+  <div class="wrap">
+    <h2 class="statement reveal">Your résumé never leaves this browser.</h2>
+    <p class="statement-body reveal">No account, no upload, no server. Everything you write lives in this tab's localStorage and nowhere else — close it and your data stays exactly where it was, on your machine.</p>
+    <div class="facts reveal">
+      <span class="fact glass glass--chip"><span class="dot"></span>No account</span>
+      <span class="fact glass glass--chip"><span class="dot"></span>No upload</span>
+      <span class="fact glass glass--chip"><span class="dot"></span>No telemetry</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ THE OPTIONAL EXTRAS ============ -->
+<section class="extras" id="extras">
+  <div class="wrap">
+    <div class="head">
+      <p class="eyebrow reveal">The optional extras</p>
+      <h2 class="section-title reveal">Power-user tooling, not magic.</h2>
+    </div>
+    <div class="extras-grid">
+      <div class="extra-card glass reveal">
+        <span class="ec-kicker">Optional</span>
+        <h3>Bring your own AI key</h3>
+        <p>Connect an AI provider to rewrite bullets in your voice and suggest tighter phrasing. Your key stays in your browser and nothing is proxied through us. Switch it off and the studio scores, parses, and exports exactly the same.</p>
+        <p class="ec-note">Off by default. The core tool never needs it.</p>
+      </div>
+      <div class="extra-card glass reveal" style="transition-delay:80ms">
+        <span class="ec-kicker">Optional</span>
+        <h3>Local job agent</h3>
+        <p>A small Playwright agent runs on your own machine, opens a live posting, reads it, and drafts a résumé tailored to the real text — no copy-paste, no cloud round-trip. You review every change before it lands.</p>
+        <p class="ec-note">Runs locally. Nothing is uploaded to tailor.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section class="faq" id="faq">
+  <div class="wrap">
+    <p class="eyebrow reveal">FAQ</p>
+    <h2 class="section-title reveal">Straight answers.</h2>
+    <div class="faq-list">
+      <details class="faq-item glass reveal">
+        <summary>Does it upload my résumé?<span class="faq-icon">+</span></summary>
+        <div class="faq-body"><div class="faq-body-inner">No. Parsing, scoring, and export all run in this browser. Your résumé is written to localStorage and never sent anywhere — unless you explicitly connect an AI provider with your own key.</div></div>
+      </details>
+      <details class="faq-item glass reveal">
+        <summary>What is an ATS score?<span class="faq-icon">+</span></summary>
+        <div class="faq-body"><div class="faq-body-inner">A 0–100 estimate of how cleanly an applicant tracking system can read your résumé as structured data. It weighs parse fidelity, keyword coverage, formatting risk, and seniority match — and every point traces back to a specific line.</div></div>
+      </details>
+      <details class="faq-item glass reveal">
+        <summary>Can I use my own AI key?<span class="faq-icon">+</span></summary>
+        <div class="faq-body"><div class="faq-body-inner">Yes. Bring a key from a supported provider and it's stored only in your browser. The tool works fully without it — AI rewriting is strictly optional and off by default.</div></div>
+      </details>
+      <details class="faq-item glass reveal">
+        <summary>Is it really free?<span class="faq-icon">+</span></summary>
+        <div class="faq-body"><div class="faq-body-inner">Yes. It's open source under the MIT license, runs entirely on your machine, and has no accounts, no paywalls, and no telemetry.</div></div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ============ OPEN SOURCE ============ -->
+<section class="opensource" id="opensource">
+  <div class="wrap">
+    <p class="eyebrow reveal">Open source</p>
+    <h2 class="section-title reveal">Read every line.</h2>
+    <div class="os-grid">
+      <div class="os-facts reveal">
+        <div class="os-fact"><span class="k">license</span><span class="v">MIT — use it, fork it, ship it.</span></div>
+        <div class="os-fact"><span class="k">repo</span><span class="v"><a href="https://github.com/akshaytp1571/resume-builder">github.com/akshaytp1571/resume-builder</a></span></div>
+        <div class="os-fact"><span class="k">build</span><span class="v">No build step required to read the code — it's plain TypeScript and HTML you can open in an editor.</span></div>
+        <div class="os-fact"><span class="k">runs</span><span class="v">Entirely client-side. The parser, scorer, and exporter are all in the source you can inspect.</span></div>
+      </div>
+      <div class="tree glass reveal" style="transition-delay:80ms">
+        <span class="dir">src/</span>
+        <span class="ind dir">parser/</span>
+        <span class="ind2 file">tokenizer.ts</span>
+        <span class="ind2 file">sections.ts</span>
+        <span class="ind dir">scoring/</span>
+        <span class="ind2 file">ats.ts</span>
+        <span class="ind2 file">keywords.ts</span>
+        <span class="ind dir">templates/</span>
+        <span class="ind2 file">editorial.ts</span>
+        <span class="ind2 file">ledger.ts</span>
+        <span class="ind2 file">plain.ts</span>
+        <span class="ind dir">export/</span>
+        <span class="ind2 file">plaintext.ts</span>
+        <span class="ind dir">store/</span>
+        <span class="ind2 file">localStorage.ts</span>
+        <span class="ind file">app.ts</span>
+        <span class="file">index.html</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FINAL CTA ============ -->
+<section class="final-cta" id="start">
+  <div class="wrap">
+    <h2 class="cta-title reveal">Ready to be read?</h2>
+    <p class="cta-sub reveal">Open the studio, paste a posting, and see what a machine makes of you.</p>
+    <div class="reveal"><a class="btn-primary magnetic" href="#/app">Open the studio</a></div>
+    <div class="reveal"><a class="glass-link" href="https://github.com/akshaytp1571/resume-builder">View source <span class="arrow">→</span></a></div>
+  </div>
+</section>
+</main>
+
+<!-- ============ FOOTER ============ -->
+<footer>
+  <div class="wrap">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <span class="wordmark">Résumé Studio</span>
+        <p>A local-first, ATS-aware résumé tool. Your data never leaves the browser.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Studio</h4>
+        <ul>
+          <li><a href="#/app">Open</a></li>
+          <li><a href="#how">How it works</a></li>
+          <li><a href="#templates">Templates</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Source</h4>
+        <ul>
+          <li><a href="https://github.com/akshaytp1571/resume-builder">GitHub</a></li>
+          <li><a href="#opensource">MIT License</a></li>
+          <li><a href="#faq">FAQ</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Privacy</h4>
+        <ul>
+          <li><a href="#privacy">Local-first</a></li>
+          <li><a href="#privacy">No telemetry</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-base">
+      <span>Résumé Studio</span>
+      <span class="mit">Open source · MIT</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  'use strict';
+  var reduceMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
+  var fineMQ = window.matchMedia('(pointer: fine)');
+  var reduce = reduceMQ.matches;
+  var fine = fineMQ.matches;
+
+  /* ---------- shared rAF ticker (magnetic + tilt) ---------- */
+  var magnetics = [], tilts = [];
+  function loop(){
+    for(var i=0;i<magnetics.length;i++){
+      var m = magnetics[i], s = m.s;
+      s.cx += (s.tx - s.cx) * 0.18;
+      s.cy += (s.ty - s.cy) * 0.18;
+      if(Math.abs(s.tx-s.cx)<0.02 && Math.abs(s.ty-s.cy)<0.02){ s.cx=s.tx; s.cy=s.ty; }
+      m.el.style.transform = 'translate3d('+s.cx.toFixed(2)+'px,'+s.cy.toFixed(2)+'px,0)';
+    }
+    for(var j=0;j<tilts.length;j++){
+      var t = tilts[j];
+      t.cx += (t.tx - t.cx) * 0.12;
+      t.cy += (t.ty - t.cy) * 0.12;
+      if(Math.abs(t.tx-t.cx)<0.02 && Math.abs(t.ty-t.cy)<0.02){ t.cx=t.tx; t.cy=t.ty; }
+      t.el.style.setProperty('--rx', t.cx.toFixed(2)+'deg');
+      t.el.style.setProperty('--ry', t.cy.toFixed(2)+'deg');
+    }
+    requestAnimationFrame(loop);
+  }
+
+  /* ---------- magnetic primary buttons ---------- */
+  function initMagnetic(el){
+    var s = {tx:0,ty:0,cx:0,cy:0,rect:null};
+    el.addEventListener('pointerenter', function(){ s.rect = el.getBoundingClientRect(); });
+    el.addEventListener('pointermove', function(e){
+      if(!s.rect) s.rect = el.getBoundingClientRect();
+      var nx = (e.clientX - (s.rect.left + s.rect.width/2)) / (s.rect.width/2);
+      var ny = (e.clientY - (s.rect.top + s.rect.height/2)) / (s.rect.height/2);
+      s.tx = Math.max(-6, Math.min(6, nx*6));
+      s.ty = Math.max(-6, Math.min(6, ny*6));
+    });
+    el.addEventListener('pointerleave', function(){ s.tx=0; s.ty=0; });
+    magnetics.push({el:el, s:s});
+  }
+
+  /* ---------- 3D pointer tilt ---------- */
+  function bindTilt(el, max){
+    var t = {el:el, max:max||6, tx:0,ty:0,cx:0,cy:0};
+    el.addEventListener('pointermove', function(e){
+      var r = el.getBoundingClientRect();
+      var nx = (e.clientX-(r.left+r.width/2))/(r.width/2);
+      var ny = (e.clientY-(r.top+r.height/2))/(r.height/2);
+      t.tx = Math.max(-t.max, Math.min(t.max, -ny*t.max));
+      t.ty = Math.max(-t.max, Math.min(t.max, nx*t.max));
+    });
+    el.addEventListener('pointerleave', function(){ t.tx=0; t.ty=0; });
+    tilts.push(t);
+  }
+
+  /* ---------- elements ---------- */
+  var nav = document.getElementById('nav');
+  var progressBar = document.getElementById('progressBar');
+  var heroCard = document.getElementById('heroCard');
+  var heroPanel = document.getElementById('heroPanel');
+  var heroVisual = document.querySelector('.hero-visual');
+  var track = document.getElementById('stickyTrack');
+  var railFill = document.getElementById('railFill');
+  var atmosBack = document.getElementById('atmosBack');
+  var atmosFront = document.getElementById('atmosFront');
+  var stepTexts = Array.prototype.slice.call(document.querySelectorAll('.step-text'));
+  var states = Array.prototype.slice.call(document.querySelectorAll('.sticky-visual .state'));
+  var current = -1;
+
+  function setStep(i){
+    if(i === current) return;
+    current = i;
+    stepTexts.forEach(function(el){
+      el.classList.toggle('is-active', parseInt(el.getAttribute('data-step'),10) === i);
+    });
+    states.forEach(function(el){
+      el.classList.toggle('is-active', parseInt(el.getAttribute('data-state'),10) === i);
+    });
+  }
+  function activeStep(){
+    var mid = window.innerHeight * 0.5, best = 0, bestD = Infinity;
+    for(var i=0;i<stepTexts.length;i++){
+      var r = stepTexts[i].getBoundingClientRect();
+      var d = Math.abs((r.top + r.height/2) - mid);
+      if(d < bestD){ bestD = d; best = i; }
+    }
+    return best;
+  }
+
+  /* ---------- count-up ---------- */
+  function animateCount(el){
+    var target = parseFloat(el.getAttribute('data-count')) || 0;
+    var suffix = el.getAttribute('data-suffix') || '';
+    var dur = 1100, start = null;
+    function step(ts){
+      if(start === null) start = ts;
+      var t = Math.min((ts - start)/dur, 1);
+      var e = 1 - Math.pow(1 - t, 3);
+      el.textContent = Math.round(e*target) + suffix;
+      if(t < 1) requestAnimationFrame(step);
+      else el.textContent = target + suffix;
+    }
+    el.textContent = '0' + suffix;
+    requestAnimationFrame(step);
+  }
+
+  /* ---------- reveal + count (scroll-driven, robust to fast programmatic scroll) ---------- */
+  var revealEls = Array.prototype.slice.call(document.querySelectorAll('.reveal'));
+  var pendingReveals = revealEls.slice();
+  function activate(el){
+    el.classList.add('in');
+    var idx = pendingReveals.indexOf(el);
+    if(idx > -1) pendingReveals.splice(idx, 1);
+    var counts = el.querySelectorAll('.count');
+    for(var i=0;i<counts.length;i++){
+      if(!counts[i].dataset.done){ counts[i].dataset.done = '1'; animateCount(counts[i]); }
+    }
+  }
+  function revealCheck(){
+    var vh = window.innerHeight;
+    for(var i = pendingReveals.length - 1; i >= 0; i--){
+      var r = pendingReveals[i].getBoundingClientRect();
+      if(r.top < vh * 0.9){ activate(pendingReveals[i]); }
+    }
+  }
+  if(reduce){
+    revealEls.forEach(activate);
+  }
+
+  /* ---------- hero card light sweep (once) ---------- */
+  if(heroCard && 'IntersectionObserver' in window && !reduce){
+    var swept = false;
+    var sio = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if(en.isIntersecting && !swept){ swept = true; heroCard.classList.add('swept'); sio.unobserve(heroCard); }
+      });
+    },{threshold:0.35});
+    sio.observe(heroCard);
+  }
+
+  /* ---------- scroll-driven ---------- */
+  var totalScroll = 0, trackTop = 0, trackH = 0, rateFront = 0, rateBack = 0;
+  function measure(){
+    totalScroll = document.documentElement.scrollHeight - window.innerHeight;
+    rateFront = totalScroll > 0 ? 70/totalScroll : 0;
+    rateBack  = totalScroll > 0 ? 42/totalScroll : 0;
+    if(track){
+      var r = track.getBoundingClientRect();
+      trackTop = r.top + (window.pageYOffset || 0);
+      trackH = track.offsetHeight;
+    }
+  }
+  function onScroll(){
+    var y = window.pageYOffset || document.documentElement.scrollTop || 0;
+    if(nav) nav.classList.toggle('scrolled', y > 40);
+    if(reduce) return;
+    revealCheck();
+    if(progressBar){
+      var p = totalScroll > 0 ? (y/totalScroll) : 0;
+      progressBar.style.transform = 'scaleX(' + p.toFixed(4) + ')';
+    }
+    if(heroCard && heroVisual){
+      var r = heroVisual.getBoundingClientRect(), h = r.height || 1;
+      var pp = -r.top/h; if(pp<0)pp=0; if(pp>1)pp=1;
+      heroCard.style.setProperty('--p', pp.toFixed(4));
+    }
+    if(atmosBack) atmosBack.style.transform = 'translate3d(0,' + (y*rateBack).toFixed(1) + 'px,0)';
+    if(atmosFront) atmosFront.style.transform = 'translate3d(0,' + (y*rateFront).toFixed(1) + 'px,0)';
+    if(track && stepTexts.length){
+      var prog = 0;
+      if(trackH > window.innerHeight) prog = (y - trackTop)/(trackH - window.innerHeight);
+      if(prog<0)prog=0; if(prog>1)prog=1;
+      if(railFill) railFill.style.transform = 'scaleY(' + prog.toFixed(4) + ')';
+      setStep(activeStep());
+    }
+  }
+  var ticking = false;
+  function queued(){
+    if(!ticking){ ticking = true; requestAnimationFrame(function(){ onScroll(); ticking = false; }); }
+  }
+
+  if(reduce){
+    setStep(0);
+    window.addEventListener('scroll', function(){
+      var y = window.pageYOffset || 0;
+      if(nav) nav.classList.toggle('scrolled', y > 40);
+    }, {passive:true});
+  } else {
+    measure();
+    window.addEventListener('scroll', queued, {passive:true});
+    window.addEventListener('resize', function(){ measure(); onScroll(); }, {passive:true});
+    onScroll();
+    if(fine){
+      Array.prototype.slice.call(document.querySelectorAll('.magnetic')).forEach(initMagnetic);
+      Array.prototype.slice.call(document.querySelectorAll('.tpl-card')).forEach(function(c){ bindTilt(c, 6); });
+      if(heroCard && heroPanel){
+        var ht = {el:heroCard, max:6, tx:0,ty:0,cx:0,cy:0};
+        heroPanel.addEventListener('pointermove', function(e){
+          var r = heroPanel.getBoundingClientRect();
+          var nx = (e.clientX-(r.left+r.width/2))/(r.width/2);
+          var ny = (e.clientY-(r.top+r.height/2))/(r.height/2);
+          ht.tx = Math.max(-6, Math.min(6, -ny*6));
+          ht.ty = Math.max(-6, Math.min(6, nx*6));
+        });
+        heroPanel.addEventListener('pointerleave', function(){ ht.tx=0; ht.ty=0; });
+        tilts.push(ht);
+      }
+      requestAnimationFrame(loop);
+    }
+  }
+
+  /* ---------- smooth anchor scrolling (JS only; leaves programmatic scrollTo instant) ---------- */
+  Array.prototype.slice.call(document.querySelectorAll('a[href^="#"]')).forEach(function(a){
+    a.addEventListener('click', function(e){
+      var href = a.getAttribute('href');
+      if(!/^#[A-Za-z][\w-]*$/.test(href)) return; /* skip #/app and bare # */
+      var target = document.querySelector(href);
+      if(!target) return;
+      e.preventDefault();
+      if(reduce){ target.scrollIntoView(); return; }
+      target.scrollIntoView({behavior:'smooth', block:'start'});
+    });
+  });
+
+  /* ---------- FAQ accordion (smooth height) ---------- */
+  var faqItems = Array.prototype.slice.call(document.querySelectorAll('.faq-item'));
+  faqItems.forEach(function(item){
+    var summary = item.querySelector('summary');
+    var body = item.querySelector('.faq-body');
+    if(!summary || !body) return;
+    summary.addEventListener('click', function(ev){
+      ev.preventDefault();
+      if(reduce){ item.open = !item.open; return; }
+      var isOpen = item.hasAttribute('open');
+      if(isOpen){
+        body.style.height = body.scrollHeight + 'px';
+        void body.offsetHeight;
+        body.style.height = '0px';
+        item.removeAttribute('open');
+      } else {
+        item.setAttribute('open','');
+        body.style.height = '0px';
+        void body.offsetHeight;
+        body.style.height = body.scrollHeight + 'px';
+      }
+    });
+    body.addEventListener('transitionend', function(e){
+      if(e.propertyName !== 'height') return;
+      if(item.hasAttribute('open')) body.style.height = 'auto';
+      else body.style.height = '0px';
+    });
+  });
+
+  /* ---------- react to reduced-motion changes ---------- */
+  if(reduceMQ.addEventListener) reduceMQ.addEventListener('change', function(){ onScroll(); });
+})();
+</script>
+</body>
+</html>
