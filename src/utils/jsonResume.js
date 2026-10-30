@@ -235,7 +235,11 @@ export function toJsonResume(resumeData, options = {}) {
       institution: e?.school || '',
       studyType: '',
       area: '',
-      // Read both spellings: sample data uses score, normalizeResume uses grade.\n      score: e?.grade || e?.score || '',
+      // `score` is the app's canonical field (every template, the DOCX exporter
+      // and the ATS text view read it); `grade` is the internal alias. Read the
+      // canonical one first so a resume carrying both cannot export the stale
+      // half of the pair.
+      score: e?.score || e?.grade || '',
     };
     // The internal model keeps the whole qualification in `degree`, and the
     // year range in `period`. `degree` is also read by older code paths, so
@@ -269,7 +273,8 @@ export function toJsonResume(resumeData, options = {}) {
 
   const languages = (Array.isArray(data.languages) ? data.languages : []).map((l) => ({
     language: l?.name || '',
-    // Read both spellings: sample data uses proficiency, normalizeResume uses level.\n    fluency: l?.level || l?.proficiency || '',
+    // `proficiency` is canonical; `level` is the internal alias.
+    fluency: l?.proficiency || l?.level || '',
   }));
 
   const certificates = (Array.isArray(data.certifications) ? data.certifications : []).map(
@@ -426,14 +431,18 @@ export function fromJsonResume(json) {
     const degree =
       asText(e['x-degree']) ||
       [asText(e.studyType), asText(e.area)].filter(Boolean).join(', ');
+    // The schema's field is `score`. `grade` is this app's internal alias for
+    // the same value, and every template, the DOCX exporter and the ATS text
+    // view read `score` — so writing only `grade` made an imported grade
+    // invisible everywhere. Emit both; they are the same string.
+    const score = asText(e.score) || asText(e.grade);
     return {
       school: asText(e.institution),
       degree,
       period,
       location: asText(e['x-location']),
-      // The sample data authors this as `score`; normalizeResume's canonical
-      // name is `grade`. Read both so neither is silently dropped.
-      grade: asText(e.score) || asText(e.grade),
+      score,
+      grade: score,
     };
   });
 
@@ -450,12 +459,17 @@ export function fromJsonResume(json) {
     highlights: asList(pr.highlights),
   }));
 
-  const languages = asObjects(json.languages).map((l) => ({
-    name: asText(l.language),
-    // The sample data authors this as `proficiency`; normalizeResume's canonical
-    // name is `level`. Read all three so nothing is dropped.
-    level: asText(l.fluency) || asText(l.level) || asText(l.proficiency),
-  }));
+  const languages = asObjects(json.languages).map((l) => {
+    // `fluency` is the schema's field; `proficiency` is what every template,
+    // the DOCX exporter and the ATS text view actually read. Emit both so an
+    // imported language level is visible instead of silently dropped.
+    const proficiency = asText(l.fluency) || asText(l.level) || asText(l.proficiency);
+    return {
+      name: asText(l.language),
+      proficiency,
+      level: proficiency,
+    };
+  });
 
   const certifications = asObjects(json.certificates).map((c) => ({
     name: asText(c.name),

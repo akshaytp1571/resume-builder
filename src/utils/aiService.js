@@ -60,9 +60,18 @@ export const AI_PROVIDERS = [
   },
 ];
 
+/**
+ * Canonicalise an OpenAI-compatible base URL.
+ *
+ * Only http(s) survives. `fetch()` would reject `javascript:` and friends on
+ * its own, but the failure surfaces as an opaque network error at the far end
+ * of the AI call rather than at the point the URL was typed. Returning '' here
+ * makes every caller's existing "Base URL is missing" guard fire instead.
+ */
 export function normalizeBaseUrl(url) {
   if (!url || typeof url !== 'string') return '';
   let clean = url.trim().replace(/\/+$/, '');
+  if (!/^https?:\/\//i.test(clean)) return '';
   // If the user entered a domain without /v1 (e.g. https://vyceai.com or https://api.openai.com)
   if (/^https?:\/\/[^/]+$/i.test(clean)) {
     clean = `${clean}/v1`;
@@ -73,8 +82,10 @@ export function normalizeBaseUrl(url) {
 export const DEFAULT_AI_CONFIG = {
   providerId: 'vyceai',
   baseUrl: 'https://vyceai.com/v1',
-  // Never commit a real key. Set it in the app: AI Settings, or via the
-  // VITE_AI_API_KEY environment variable.
+  // Never commit a real key. The supported path is AI Settings, which stores it
+  // in localStorage. The VITE_AI_API_KEY fallback below is dev-only: the build
+  // plugin in vite.config.js refuses to produce a bundle while it is set,
+  // because a VITE_ var is inlined into public JavaScript.
   apiKey: import.meta.env?.VITE_AI_API_KEY || '',
   model: 'deepseek-v4.1',
   temperature: 0.7,
@@ -240,7 +251,12 @@ export async function callAiChat({ systemPrompt, userPrompt, config = null }) {
     );
   }
 
-  const cleanBaseUrl = activeConfig.baseUrl.replace(/\/+$/, '');
+  // Normalised for the same reason discoverAiModels normalises: a saved config
+  // written as "https://api.openai.com" (no /v1) used to produce
+  // https://api.openai.com/chat/completions here while model discovery hit
+  // https://api.openai.com/v1/models — so discovery succeeded and the actual
+  // refinement call 404'd, with nothing in the UI explaining why.
+  const cleanBaseUrl = normalizeBaseUrl(activeConfig.baseUrl).replace(/\/+$/, '');
   const endpoint = `${cleanBaseUrl}/chat/completions`;
 
   const headers = {
@@ -309,7 +325,7 @@ export async function testAiConnection(config) {
     throw new Error('Model is not set. Please enter a model name or click [DISCOVER_MODELS] first.');
   }
 
-  const cleanBaseUrl = config.baseUrl?.replace(/\/+$/, '') || '';
+  const cleanBaseUrl = normalizeBaseUrl(config.baseUrl).replace(/\/+$/, '');
   const sanitizedKey = cleanApiKey(config.apiKey);
 
   // If using OpenRouter, verify the key against OpenRouter auth/key endpoint first

@@ -79,6 +79,36 @@ function normalize(text) {
     .trim();
 }
 
+/**
+ * True when `phrase` appears in `haystack` as a whole-word run.
+ *
+ * The previous test was `haystack.includes(phrase)`, which made the short
+ * aliases fire on unrelated fields: `pin` matched "Pipeline stage" and
+ * "Shipping address", `state` matched "Statement of purpose" and "Real estate",
+ * `city` matched "Capacity planning" and "Velocity". The agent then typed a
+ * postcode into a pipeline selector and a city into a capacity field, and the
+ * report said it had filled them. Word-boundary matching costs one split.
+ */
+function containsPhrase(haystack, phrase) {
+  const h = normalize(haystack);
+  const p = normalize(phrase);
+  if (!h || !p) return false;
+  const hWords = h.split(' ');
+  const pWords = p.split(' ');
+  if (pWords.length > hWords.length) return false;
+  for (let i = 0; i <= hWords.length - pWords.length; i++) {
+    let match = true;
+    for (let j = 0; j < pWords.length; j++) {
+      if (hWords[i + j] !== pWords[j]) {
+        match = false;
+        break;
+      }
+    }
+    if (match) return true;
+  }
+  return false;
+}
+
 /** Find which answer key (if any) a field corresponds to. */
 function matchField(hint) {
   const h = normalize(hint);
@@ -86,7 +116,7 @@ function matchField(hint) {
 
   // Protected-characteristic and demographic questions are never answered
   // on the candidate's behalf.
-  if (NEVER_FILL.some((blocked) => h.includes(normalize(blocked)))) return null;
+  if (NEVER_FILL.some((blocked) => containsPhrase(h, blocked))) return null;
 
   // Longest alias first so "current job title" beats "job title".
   let best = null;
@@ -95,7 +125,7 @@ function matchField(hint) {
     for (const alias of aliases) {
       const a = normalize(alias);
       if (!a) continue;
-      if (h === a || h.includes(a)) {
+      if (containsPhrase(h, a)) {
         if (a.length > bestLen) {
           best = key;
           bestLen = a.length;
@@ -104,6 +134,40 @@ function matchField(hint) {
     }
   }
   return best;
+}
+
+/**
+ * Build a selector list for one collected field, safest first.
+ *
+ * `field.name` and `field.id` come straight from the page's DOM, which is
+ * attacker-controlled: a job board (or anything that can inject into one) can
+ * serve `<input name='x"], input[type=file][name="'>` and the old string
+ * interpolation produced a selector that matched a different element than the
+ * one that was classified. `data-field-idx` is stamped by `collectFields` and
+ * is a bare integer, so it cannot be broken out of. It goes first; the
+ * name/id forms remain as fallbacks for a DOM that reordered between the scan
+ * and the fill, and are escaped before use.
+ */
+function selectorsFor(field) {
+  const out = [];
+  if (field.idx !== undefined && field.idx !== null) {
+    out.push(`[data-field-idx="${Number(field.idx)}"]`);
+  }
+  if (field.name) {
+    out.push(`[name="${cssEscapeAttr(field.name)}"]`);
+  }
+  if (field.id) {
+    out.push(`#${cssEscapeAttr(field.id)}`);
+  }
+  return out;
+}
+
+/**
+ * Escape a value for use inside a double-quoted CSS attribute selector.
+ * Covers the characters that can terminate the string or the selector.
+ */
+function cssEscapeAttr(value) {
+  return String(value).replace(/[\\"]/g, '\\$&');
 }
 
 /** Detect the ATS platform so we can apply platform-specific tweaks. */
@@ -252,15 +316,8 @@ export async function fillForm(page, profile, options = {}) {
         continue;
       }
       if (!dryRun) {
-        const selector = field.name ? `select[name="${field.name}"]` : `#${field.id}`;
-        const ok = await page.selectOption(selector, { value: opt.value }).then(
-          () => true,
-          async () => {
-            if (field.id) {
-              return page.selectOption(`#${field.id}`, { value: opt.value }).then(() => true, () => false);
-            }
-            return false;
-          }
+        const ok = await trySelectors(page, selectorsFor(field), (sel) =>
+          page.selectOption(sel, { value: opt.value })
         );
         if (ok) {
           report.filled.push({ field: field.name || field.id, type: 'select', value: opt.label });
@@ -292,17 +349,8 @@ export async function fillForm(page, profile, options = {}) {
     }
 
     if (!dryRun) {
-      const primary = field.name
-        ? `input[name="${field.name}"], textarea[name="${field.name}"]`
-        : `#${field.id}`;
-      const ok = await page.fill(primary, String(value)).then(
-        () => true,
-        async () => {
-          if (field.id) {
-            return page.fill(`#${field.id}`, String(value)).then(() => true, () => false);
-          }
-          return false;
-        }
+      const ok = await trySelectors(page, selectorsFor(field), (sel) =>
+        page.fill(sel, String(value))
       );
       if (ok) {
         report.filled.push({
@@ -342,6 +390,23 @@ export async function fillForm(page, profile, options = {}) {
   return report;
 }
 
+/**
+ * Try each candidate selector until one works. Returns true on the first
+ * success. Keeps the old "prefer name, fall back to id" behaviour while making
+ * the injection-proof index selector the first thing attempted.
+ */
+async function trySelectors(page, selectors, action) {
+  for (const selector of selectors) {
+    try {
+      await action(selector);
+      return true;
+    } catch (err) {
+      /* try the next candidate */
+    }
+  }
+  return false;
+}
+
 /** Upload the resume to every detected file input. */
 export async function attachResume(page, fileInputs) {
   const results = [];
@@ -349,25 +414,21 @@ export async function attachResume(page, fileInputs) {
   for (const input of list) {
     const label = input.name || input.id || String(input.idx);
     try {
-      // Prefer the most specific selector available so we never land on the
-      // wrong one of several file inputs on the page.
       const selectors = [];
-      if (input.name) selectors.push(`input[type="file"][name="${input.name}"]`);
-      if (input.id) selectors.push(`input[type="file"]#${input.id}`);
-      if (input.idx !== undefined) selectors.push(`input[type="file"][data-field-idx="${input.idx}"]`);
-
-      let done = false;
-      let lastError = null;
-      for (const selector of selectors) {
-        try {
-          await page.setInputFiles(selector, input.resumePath);
-          done = true;
-          break;
-        } catch (err) {
-          lastError = err;
-        }
+      if (input.idx !== undefined && input.idx !== null) {
+        selectors.push(`input[type="file"][data-field-idx="${Number(input.idx)}"]`);
       }
-      if (!done) throw lastError || new Error('no file input matched');
+      if (input.name) {
+        selectors.push(`input[type="file"][name="${cssEscapeAttr(input.name)}"]`);
+      }
+      if (input.id) {
+        selectors.push(`input[type="file"]#${cssEscapeAttr(input.id)}`);
+      }
+
+      const done = await trySelectors(page, selectors, (sel) =>
+        page.setInputFiles(sel, input.resumePath)
+      );
+      if (!done) throw new Error('no file input matched');
       results.push({ field: label, ok: true });
     } catch (err) {
       results.push({ field: label, ok: false, error: err.message });

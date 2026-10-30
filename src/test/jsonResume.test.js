@@ -35,7 +35,11 @@ function comparable(resume) {
       school: e.school,
       degree: e.degree,
       period: e.period,
-      grade: e.grade,
+      // `score` is the field every template reads. Comparing `grade` instead
+      // used to pass for the wrong reason: the export dropped the value, the
+      // import read it into a field nothing renders, and both sides came back
+      // empty.
+      score: e.score,
     })),
     projects: n.projects.map((p) => ({
       name: p.name,
@@ -43,6 +47,11 @@ function comparable(resume) {
       period: p.period,
       link: p.link,
       highlights: p.highlights,
+    })),
+    languages: n.languages.map((l) => ({
+      name: l.name,
+      // `proficiency` is canonical here, for the same reason as `score`.
+      proficiency: l.proficiency,
     })),
     customSections: n.customSections.map((c) => ({
       title: c.title,
@@ -294,5 +303,70 @@ describe('JSON Resume — document shape', () => {
     expect(jsonResumeFilename({ personalInfo: { fullName: '!!!' } })).toBe(
       'resume-jsonresume.json'
     );
+  });
+});
+
+/**
+ * Regression tests for the fields that used to vanish.
+ *
+ * `toJsonResume` had a literal `\n` typed into the middle of two object
+ * literals, which commented out the `score` and `fluency` properties entirely.
+ * `fromJsonResume` then read the values back into `grade` and `level`, which
+ * no template, the DOCX exporter or the ATS text view ever reads. The net
+ * effect was that an education grade and a language level survived a JSON
+ * Resume round-trip as far as the data model and then disappeared from every
+ * rendered output — in a module whose header promises no silent data loss.
+ */
+describe('JSON Resume — the fields that used to vanish', () => {
+  it('writes the education grade into the schema field', () => {
+    const doc = toJsonResume({
+      personalInfo: { fullName: 'A' },
+      education: [{ school: 'MIT', degree: 'BSc', score: 'CGPA: 8.00/10.00' }],
+    });
+    expect(doc.education[0].score).toBe('CGPA: 8.00/10.00');
+  });
+
+  it('writes the language level into the schema field', () => {
+    const doc = toJsonResume({
+      personalInfo: { fullName: 'A' },
+      languages: [{ name: 'Tamil', proficiency: 'Native' }],
+    });
+    expect(doc.languages[0].fluency).toBe('Native');
+  });
+
+  it('reads an imported grade back into the field templates render', () => {
+    const resume = fromJsonResume({
+      basics: { name: 'A' },
+      education: [{ institution: 'MIT', studyType: 'BSc', score: 'CGPA: 8.00/10.00' }],
+    });
+    expect(resume.education[0].score).toBe('CGPA: 8.00/10.00');
+  });
+
+  it('reads an imported language level back into the field templates render', () => {
+    const resume = fromJsonResume({
+      basics: { name: 'A' },
+      languages: [{ language: 'Tamil', fluency: 'Native' }],
+    });
+    expect(resume.languages[0].proficiency).toBe('Native');
+  });
+
+  it('keeps the alias in step so neither half of the pair can go stale', () => {
+    const resume = fromJsonResume({
+      basics: { name: 'A' },
+      education: [{ institution: 'MIT', score: '3.9' }],
+      languages: [{ language: 'Tamil', fluency: 'Native' }],
+    });
+    expect(resume.education[0].grade).toBe('3.9');
+    expect(resume.languages[0].level).toBe('Native');
+  });
+
+  it('survives a document that only carries the alias spelling', () => {
+    const resume = fromJsonResume({
+      basics: { name: 'A' },
+      education: [{ institution: 'MIT', grade: '3.9' }],
+      languages: [{ language: 'Tamil', level: 'Native' }],
+    });
+    expect(resume.education[0].score).toBe('3.9');
+    expect(resume.languages[0].proficiency).toBe('Native');
   });
 });

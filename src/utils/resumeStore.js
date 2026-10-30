@@ -137,12 +137,19 @@ export function normalizeResume(data) {
     school: asString(e.school),
     period: asString(e.period),
     location: asString(e.location),
-    grade: asString(e.grade),
+    // `score` is the field every template, the DOCX exporter and the ATS text
+    // view read; `grade` is the alias the JSON Resume mapper uses. They are the
+    // same value, so keep both populated from whichever one arrived. Leaving
+    // one empty is how an imported grade ends up invisible in every template.
+    grade: asString(e.grade) || asString(e.score),
+    score: asString(e.score) || asString(e.grade),
   }));
   merged.languages = asObjectList(data.languages, 'lang').map((l) => ({
     ...l,
     name: asString(l.name),
-    level: asString(l.level),
+    // Same pair as education: `proficiency` is canonical, `level` is the alias.
+    level: asString(l.level) || asString(l.proficiency),
+    proficiency: asString(l.proficiency) || asString(l.level),
   }));
   merged.certifications = asObjectList(data.certifications, 'cert').map((c) => ({
     ...c,

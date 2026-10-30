@@ -10,7 +10,17 @@
  *     without clicking when `confirmSubmit` is false (the default).
  *   - It never types into CAPTCHAs, and it reports them for a human.
  *   - It never touches payment or identity-verification fields.
- *   - It refuses to run against a job whose URL it does not recognise.
+ *   - It refuses to navigate to a URL that is not a public http(s) address,
+ *     and it re-checks every URL it is about to visit — including the
+ *     offsite redirect it discovers on the page.
+ *
+ * WHAT THE URL CHECK IS AND IS NOT
+ *   It is a guard against the agent being pointed somewhere it should not go:
+ *   payment and identity providers, the loopback and private ranges the user's
+ *   own machine and LAN expose, and URLs that disguise their real host. It is
+ *   NOT a reputation check and it does NOT vet the employer. A URL that passes
+ *   `isSafeUrl` is merely a well-formed public address; the agent still drives
+ *   a real browser to it, which is the user's own explicit action.
  */
 
 const { chromium } = require('playwright');
@@ -20,22 +30,177 @@ const { fillForm, attachResume, detectAts } = require('./form-filler.js');
 const UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36';
 
+/**
+ * Hosts the agent must never be driven to. Matched as a domain suffix, so
+ * `paypal.com` covers `www.paypal.com` and `paypal.com.evil.example` does NOT
+ * sneak through the way a raw substring test would have to be written.
+ */
 const BLOCKED_HOSTS = [
   'accounts.google.com',
   'paypal.com',
   'stripe.com',
-  'bank',
 ];
 
+/**
+ * Loopback, link-local (including the cloud metadata address), private ranges,
+ * and other non-global IPv4 space. The old rule was `host.includes('bank')`,
+ * which was both over-broad — any hostname containing "bank" — and useless
+ * against the addresses that actually matter here.
+ */
+const BLOCKED_IPV4 = [
+  ['0.0.0.0', '8'],
+  ['10.0.0.0', '8'],
+  ['100.64.0.0', '10'],
+  ['127.0.0.0', '8'],
+  ['169.254.0.0', '16'],
+  ['172.16.0.0', '12'],
+  ['192.0.0.0', '24'],
+  ['192.0.2.0', '24'],
+  ['192.168.0.0', '16'],
+  ['198.18.0.0', '15'],
+  ['224.0.0.0', '4'],
+  ['240.0.0.0', '4'],
+];
+
+function ipv4ToInt(host) {
+  const parts = host.split('.');
+  if (parts.length !== 4) return null;
+  let n = 0;
+  for (const part of parts) {
+    if (!/^\d{1,3}$/.test(part)) return null;
+    const octet = Number(part);
+    if (octet > 255) return null;
+    n = n * 256 + octet;
+  }
+  return n;
+}
+
+function isBlockedIpv4(host) {
+  const value = ipv4ToInt(host);
+  if (value === null) return false;
+  return BLOCKED_IPV4.some(([base, bits]) => {
+    const shift = 32 - Number(bits);
+    const mask = shift === 32 ? 0 : (0xffffffff << shift) >>> 0;
+    const network = ipv4ToInt(base);
+    return (value & mask) === (network & mask);
+  });
+}
+
+/** `paypal.com` matches itself and `x.paypal.com`, never `notpaypal.com`. */
+function hostMatchesBlocklist(host) {
+  return BLOCKED_HOSTS.some(
+    (blocked) => host === blocked || host.endsWith(`.${blocked}`)
+  );
+}
+
+/**
+ * Parse an IPv6 literal into its eight 16-bit groups, or null.
+ *
+ * Needed because Node's URL normalises `[::ffff:127.0.0.1]` to the hex form
+ * `[::ffff:7f00:1]`, so a regex looking for a dotted quad inside the hostname
+ * never fires — which is exactly the kind of parser disagreement that turns a
+ * validation check into a bypass.
+ */
+function ipv6Groups(host) {
+  const text = String(host || '').replace(/^\[|\]$/g, '');
+  if (!text.includes(':')) return null;
+
+  const halves = text.split('::');
+  if (halves.length > 2) return null;
+
+  const expand = (part) =>
+    part === '' ? [] : part.split(':').filter(Boolean).map((g) => parseInt(g, 16));
+
+  const head = expand(halves[0]);
+  const tail = halves.length === 2 ? expand(halves[1]) : [];
+  const missing = 8 - head.length - tail.length;
+  if (missing < 0) return null;
+
+  const groups =
+    halves.length === 2
+      ? [...head, ...new Array(missing).fill(0), ...tail]
+      : [...head, ...tail];
+
+  if (groups.length !== 8) return null;
+  if (groups.some((g) => !Number.isInteger(g) || g < 0 || g > 0xffff)) return null;
+  return groups;
+}
+
+/** The dotted-quad IPv4 address an IPv6-mapped literal stands for, or null. */
+function ipv6MappedIpv4(host) {
+  const groups = ipv6Groups(host);
+  if (!groups) return null;
+  // ::ffff:a.b.c.d — five leading zero groups, then 0xffff.
+  const isMapped =
+    groups[0] === 0 &&
+    groups[1] === 0 &&
+    groups[2] === 0 &&
+    groups[3] === 0 &&
+    groups[4] === 0 &&
+    groups[5] === 0xffff;
+  if (!isMapped) return null;
+  return `${groups[6] >> 8}.${groups[6] & 0xff}.${groups[7] >> 8}.${groups[7] & 0xff}`;
+}
+
+/** Loopback, link-local, unique-local and other non-global IPv6 space. */
+function isBlockedIpv6(host) {
+  const groups = ipv6Groups(host);
+  if (!groups) return false;
+  if (groups.every((g) => g === 0)) return true; // ::
+  if (groups[0] === 0 && groups[1] === 0 && groups[2] === 0 &&
+      groups[3] === 0 && groups[4] === 0 && groups[5] === 0 &&
+      groups[6] === 0 && groups[7] === 1) return true; // ::1
+  if ((groups[0] & 0xffc0) === 0xfe80) return true; // fe80::/10 link-local
+  if ((groups[0] & 0xfe00) === 0xfc00) return true; // fc00::/7 unique-local
+  return false;
+}
+
+/**
+ * Decide whether the agent may navigate to `url`.
+ *
+ * Exported because the offsite-apply redirect is discovered from page content
+ * the app does not control, and it used to skip this check entirely: the agent
+ * validated `job.applyUrl` and then followed whatever link the page offered,
+ * which made the guard decorative.
+ */
 function isSafeUrl(url) {
+  let u;
   try {
-    const u = new URL(url);
-    if (!/^https?:$/.test(u.protocol)) return false;
-    const host = u.hostname.toLowerCase();
-    return !BLOCKED_HOSTS.some((b) => host.includes(b));
+    u = new URL(url);
   } catch (e) {
     return false;
   }
+
+  // Only plain http(s). `file:`, `data:` and `blob:` are not navigable targets
+  // for a form-filling agent.
+  if (u.protocol !== 'http:' && u.protocol !== 'https:') return false;
+
+  // Credentials in the authority. `https://accounts.google.com@evil.example/`
+  // parses with hostname `evil.example`, so a denylist that only inspects the
+  // hostname sees a host it does not recognise and waves it through. Reject
+  // the whole form instead of trying to be clever about it.
+  if (u.username || u.password) return false;
+
+  const host = u.hostname.toLowerCase().replace(/^\[|\]$/g, '');
+
+  // IPv6 first: a mapped v4 address is judged on the v4 it stands for, and an
+  // IPv6 literal is judged on its own non-global ranges.
+  const mapped = ipv6MappedIpv4(host);
+  if (mapped) {
+    if (isBlockedIpv4(mapped)) return false;
+  } else if (host.includes(':')) {
+    if (isBlockedIpv6(host)) return false;
+  } else if (isBlockedIpv4(host)) {
+    return false;
+  }
+
+  // mDNS and other names that resolve inside the user's own network.
+  if (host === 'localhost') return false;
+  if (host.endsWith('.local') || host.endsWith('.internal') || host.endsWith('.localhost')) {
+    return false;
+  }
+
+  return !hostMatchesBlocklist(host);
 }
 
 class ApplyAgent {
@@ -154,11 +319,27 @@ class ApplyAgent {
 
       if (!hasForm) {
         const offsite = await findOffsiteApplyLink(page);
-        if (offsite) {
+        // The redirect target comes from the page's own DOM, which the app does
+        // not control. It used to be followed on a bare `^https?://` test, so
+        // the only URL that was ever validated was the one we started from.
+        if (offsite && isSafeUrl(offsite)) {
           result.redirectedFrom = job.applyUrl;
           await page.goto(offsite, { waitUntil: 'domcontentloaded', timeout });
           await page.waitForTimeout(3000);
+        } else if (offsite) {
+          result.needsHuman.push({
+            field: 'offsite apply link',
+            reason: 'the redirect target was refused by the URL guard',
+          });
         }
+      }
+
+      // Re-check after any redirect: the page we actually landed on is the one
+      // the form gets filled on, and it is not necessarily the URL we approved.
+      if (!isSafeUrl(page.url())) {
+        result.error = 'Refused: the page redirected to an unsafe URL';
+        result.status = 'refused';
+        return result;
       }
 
       result.finalUrl = page.url();
@@ -258,3 +439,5 @@ module.exports.ApplyAgent = ApplyAgent;
 module.exports.buildProfile = buildProfile;
 module.exports.profileAnswers = profileAnswers;
 module.exports.detectAts = detectAts;
+// Exported so the URL guard can be tested without launching a browser.
+module.exports.isSafeUrl = isSafeUrl;
